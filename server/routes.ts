@@ -213,8 +213,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postWithUser = await storage.getPost(post.id);
       res.json(postWithUser);
     } catch (error: any) {
+      console.error('Post creation error:', error);
       if (error.name === 'ZodError') {
-        return res.status(400).json({ message: error.errors[0].message });
+        console.error('Validation errors:', error.errors);
+        return res.status(400).json({ message: error.errors[0].message, field: error.errors[0].path[0] });
       }
       res.status(500).json({ message: 'Internal server error' });
     }

@@ -32,13 +32,11 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
   });
 
   const signUpForm = useForm<SignUpData & { profilePicture?: FileList }>({
-    resolver: zodResolver(signUpSchema),
     defaultValues: {
       username: "",
       password: "",
       name: "",
     },
-    mode: "onChange",
   });
 
   const handleSignIn = async (data: SignInData) => {
@@ -146,89 +144,54 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
               </form>
             </Form>
           ) : (
-            <Form {...signUpForm}>
-              <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
-                <FormField
-                  control={signUpForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter your full name"
-                          className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter your full name"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  {...signUpForm.register("name", { required: true })}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Choose a username"
-                          className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  placeholder="Choose a username"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  {...signUpForm.register("username", { required: true })}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Create a password"
-                          className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Create a password"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  {...signUpForm.register("password", { required: true })}
                 />
-                <FormField
-                  control={signUpForm.control}
-                  name="profilePicture"
-                  render={({ field: { onChange } }) => (
-                    <FormItem>
-                      <FormLabel>Profile Picture</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="file"
-                          accept="image/jpeg,image/png"
-                          className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                          onChange={(e) => onChange(e.target.files)}
-                          value=""
-                        />
-                      </FormControl>
-                      <p className="text-xs text-gray-500">JPEG or PNG, max 1MB</p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              </div>
+              <div>
+                <Label htmlFor="profilePicture">Profile Picture</Label>
+                <Input
+                  id="profilePicture"
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  {...signUpForm.register("profilePicture")}
                 />
-                <Button
-                  type="submit"
-                  className="w-full bg-pinterest-red text-white hover:bg-red-700"
-                  disabled={signUpForm.formState.isSubmitting}
-                >
-                  {signUpForm.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </form>
-            </Form>
+                <p className="text-xs text-gray-500">JPEG or PNG, max 1MB</p>
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-pinterest-red text-white hover:bg-red-700"
+                disabled={signUpForm.formState.isSubmitting}
+              >
+                {signUpForm.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </form>
           )}
 
           <div className="mt-6 text-center">
