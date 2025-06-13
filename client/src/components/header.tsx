@@ -27,11 +27,11 @@ export default function Header() {
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
               <Link href="/">
-                <a className={`text-gray-700 hover:text-pinterest-red transition-colors ${
+                <span className={`text-gray-700 hover:text-pinterest-red transition-colors cursor-pointer ${
                   location === '/' ? 'text-pinterest-red font-medium' : ''
                 }`}>
                   Home
-                </a>
+                </span>
               </Link>
             </nav>
           </div>

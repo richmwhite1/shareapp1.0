@@ -177,23 +177,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Post routes
-  app.post('/api/posts', authenticateToken, upload.array('additionalPhotos', 4), async (req: any, res) => {
+  app.post('/api/posts', authenticateToken, upload.fields([
+    { name: 'primaryPhoto', maxCount: 1 },
+    { name: 'additionalPhotos', maxCount: 4 }
+  ]), async (req: any, res) => {
     try {
       const { primaryLink, primaryDescription } = createPostSchema.parse(req.body);
       
       // Handle primary photo upload (required)
-      if (!req.files || !req.files.find((f: any) => f.fieldname === 'primaryPhoto')) {
+      if (!req.files || !req.files['primaryPhoto'] || !req.files['primaryPhoto'][0]) {
         return res.status(400).json({ message: 'Primary photo is required' });
       }
 
-      const primaryPhotoFile = req.files.find((f: any) => f.fieldname === 'primaryPhoto');
+      const primaryPhotoFile = req.files['primaryPhoto'][0];
       const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
 
       // Handle additional photos
       const additionalPhotos: string[] = [];
-      const additionalPhotoFiles = req.files.filter((f: any) => f.fieldname === 'additionalPhotos');
-      for (const file of additionalPhotoFiles) {
-        additionalPhotos.push(saveUploadedFile(file));
+      if (req.files['additionalPhotos']) {
+        for (const file of req.files['additionalPhotos']) {
+          additionalPhotos.push(saveUploadedFile(file));
+        }
       }
 
       // Create post
