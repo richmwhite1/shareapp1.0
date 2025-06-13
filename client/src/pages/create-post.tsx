@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
 import { createPostSchema, type CreatePostData } from "@shared/schema";
 
-interface CreatePostFormData extends CreatePostData {
+interface CreatePostFormData {
+  primaryLink: string;
+  primaryDescription: string;
   primaryPhoto: FileList;
   additionalPhotos?: FileList;
 }
@@ -166,7 +168,7 @@ export default function CreatePostPage() {
                 <FormField
                   control={form.control}
                   name="primaryPhoto"
-                  render={({ field: { onChange, ...field } }) => (
+                  render={({ field: { onChange } }) => (
                     <FormItem>
                       <FormLabel>Primary Photo *</FormLabel>
                       <FormControl>
@@ -206,7 +208,7 @@ export default function CreatePostPage() {
                               onChange(e.target.files);
                               handlePrimaryPhotoChange(e.target.files);
                             }}
-                            {...field}
+                            value=""
                           />
                         </div>
                       </FormControl>

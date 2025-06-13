@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth.tsx";
 import { signInSchema, signUpSchema, type SignInData, type SignUpData } from "@shared/schema";
 
 interface AuthModalProps {
@@ -203,7 +203,7 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
                 <FormField
                   control={signUpForm.control}
                   name="profilePicture"
-                  render={({ field: { onChange, ...field } }) => (
+                  render={({ field: { onChange } }) => (
                     <FormItem>
                       <FormLabel>Profile Picture</FormLabel>
                       <FormControl>
@@ -212,7 +212,7 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
                           accept="image/jpeg,image/png"
                           className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                           onChange={(e) => onChange(e.target.files)}
-                          {...field}
+                          value=""
                         />
                       </FormControl>
                       <p className="text-xs text-gray-500">JPEG or PNG, max 1MB</p>

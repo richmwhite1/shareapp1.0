@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
 import { createCommentSchema, type CommentWithUser, type CreateCommentData } from "@shared/schema";
 
@@ -150,7 +150,7 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                             accept="image/jpeg,image/png"
                             className="hidden"
                             onChange={(e) => onChange(e.target.files)}
-                            {...field}
+                            value=""
                           />
                         </FormControl>
                       </Label>
