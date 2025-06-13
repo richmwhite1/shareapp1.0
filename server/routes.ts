@@ -190,8 +190,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const primaryPhotoFile = req.files['primaryPhoto'][0];
       const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
 
-      // Validate the request body
-      const { primaryLink, primaryDescription, categoryId } = createPostRequestSchema.parse(req.body);
+      // Parse and validate the request body
+      const bodyData = {
+        primaryLink: req.body.primaryLink,
+        primaryDescription: req.body.primaryDescription,
+        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1
+      };
+      
+      const { primaryLink, primaryDescription, categoryId } = createPostRequestSchema.parse(bodyData);
 
       // Handle additional photos
       const additionalPhotos: string[] = [];
