@@ -32,14 +32,11 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
   });
 
   const signUpForm = useForm<SignUpData & { profilePicture?: FileList }>({
-    resolver: zodResolver(signUpSchema.extend({
-      profilePicture: signUpSchema.shape.profilePictureUrl.optional(),
-    })),
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
       username: "",
       password: "",
       name: "",
-      profilePicture: undefined,
     },
     mode: "onChange",
   });
