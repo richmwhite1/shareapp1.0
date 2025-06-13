@@ -11,9 +11,19 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isPublic: boolean("is_public").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  categoryId: integer("category_id").notNull().default(1), // Default to "General" category
   primaryPhotoUrl: text("primary_photo_url").notNull(),
   primaryLink: text("primary_link").notNull(),
   primaryDescription: text("primary_description").notNull(),
@@ -67,6 +77,20 @@ export const createPostSchema = insertPostSchema.extend({
 export const createPostRequestSchema = z.object({
   primaryLink: z.string().url("Must be a valid URL"),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
+  categoryId: z.number().optional(),
+});
+
+// Category schemas
+export const insertCategorySchema = createInsertSchema(categories).pick({
+  name: true,
+  description: true,
+  isPublic: true,
+});
+
+export const createCategorySchema = insertCategorySchema.extend({
+  name: z.string().min(1).max(50, "Category name must be between 1 and 50 characters"),
+  description: z.string().max(200, "Description must be less than 200 characters").optional(),
+  isPublic: z.boolean().optional(),
 });
 
 // Comment schemas
@@ -87,6 +111,10 @@ export type User = typeof users.$inferSelect;
 export type SignUpData = z.infer<typeof signUpSchema>;
 export type SignInData = z.infer<typeof signInSchema>;
 
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type Category = typeof categories.$inferSelect;
+export type CreateCategoryData = z.infer<typeof createCategorySchema>;
+
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
 export type CreatePostData = z.infer<typeof createPostSchema>;
@@ -98,6 +126,13 @@ export type CreateCommentData = z.infer<typeof createCommentSchema>;
 // Extended types for API responses
 export type PostWithUser = Post & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
+  category?: Pick<Category, 'id' | 'name'>;
+};
+
+export type CategoryWithPosts = Category & {
+  posts: PostWithUser[];
+  postCount: number;
+  firstPostImage?: string;
 };
 
 export type CommentWithUser = Comment & {
