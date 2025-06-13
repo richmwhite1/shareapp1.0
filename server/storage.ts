@@ -48,6 +48,7 @@ export class MemStorage implements IStorage {
     const user: User = {
       ...insertUser,
       id,
+      profilePictureUrl: insertUser.profilePictureUrl || null,
       createdAt: new Date(),
     };
     this.users.set(id, user);
@@ -59,6 +60,7 @@ export class MemStorage implements IStorage {
     const post: Post = {
       ...postData,
       id,
+      additionalPhotos: postData.additionalPhotos || null,
       createdAt: new Date(),
     };
     this.posts.set(id, post);
@@ -86,7 +88,7 @@ export class MemStorage implements IStorage {
   async getAllPosts(): Promise<PostWithUser[]> {
     const postsWithUsers: PostWithUser[] = [];
     
-    for (const post of this.posts.values()) {
+    for (const post of Array.from(this.posts.values())) {
       const user = await this.getUser(post.userId);
       if (user) {
         postsWithUsers.push({
@@ -109,6 +111,8 @@ export class MemStorage implements IStorage {
     const comment: Comment = {
       ...commentData,
       id,
+      parentId: commentData.parentId || null,
+      imageUrl: commentData.imageUrl || null,
       createdAt: new Date(),
     };
     this.comments.set(id, comment);
