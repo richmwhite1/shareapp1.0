@@ -28,6 +28,7 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
       username: "",
       password: "",
     },
+    mode: "onChange",
   });
 
   const signUpForm = useForm<SignUpData & { profilePicture?: FileList }>({
@@ -38,7 +39,9 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
       username: "",
       password: "",
       name: "",
+      profilePicture: undefined,
     },
+    mode: "onChange",
   });
 
   const handleSignIn = async (data: SignInData) => {
