@@ -1,0 +1,447 @@
+Create a full-stack web application in Replit similar to a social media platform, using a dark, masculine theme. Use React (with JSX) for the frontend, Tailwind CSS for styling, Node.js with Express for the backend, and MongoDB for the database. Build a single-page application hosted via CDN for dependencies (e.g., React from cdn.jsdelivr.net). Ensure the app is secure, scalable, and follows best practices for code organization.
+
+Features and Requirements
+
+1. Post Creation and Viewing
+
+
+
+
+
+Public Viewing: All content (posts, profiles, lists) is viewable without authentication via public links (e.g., app-url/post/:postId, app-url/profile/:username, app-url/list/:listId).
+
+
+
+Post Creation:
+
+
+
+
+
+Only authenticated users can create posts.
+
+
+
+Required fields:
+
+
+
+
+
+Primary photo (image upload).
+
+
+
+Link to what is pictured (URL).
+
+
+
+Description (text, max 500 characters).
+
+
+
+Optional fields: Additional photos (array of images, each with optional link and description).
+
+
+
+Category: Defaults to “general.” Provide a dropdown with a “+” button to add up to 20 custom categories (stored in database). Users select one category per post.
+
+
+
+Post Display:
+
+
+
+
+
+Show primary photo, clickable link, description, and additional photos in a grid/carousel.
+
+
+
+Include a “Share” button to copy a public link (app-url/post/:postId).
+
+
+
+Database:
+
+
+
+
+
+Post schema: { postId, creatorId, primaryPhotoUrl, link, description, additionalPhotos: [{ photoUrl, link?, description? }], categoryId, createdAt }.
+
+
+
+Category schema: { categoryId, name, creatorId, createdAt }.
+
+
+
+AdditionalPhoto schema: { photoUrl, link?, description? }.
+
+2. Authentication
+
+
+
+
+
+Sign-In/Sign-Up:
+
+
+
+
+
+Non-authenticated users can view all content but are redirected to a sign-in page when attempting to comment.
+
+
+
+Use username and password for authentication.
+
+
+
+Sign-up requires: username (unique), password, name, profile picture (image upload).
+
+
+
+Store user data: { userId, username, password (hashed with bcrypt), name, profilePictureUrl, createdAt }.
+
+
+
+Use JWT for session management (store in localStorage).
+
+
+
+Provide a logout option in a user menu.
+
+
+
+Security:
+
+
+
+
+
+Hash passwords with bcrypt.
+
+
+
+Validate JWT for authenticated actions.
+
+
+
+Sanitize inputs to prevent XSS/injection.
+
+3. Commenting System
+
+
+
+
+
+Comment Section:
+
+
+
+
+
+Display a comment input and list below each post.
+
+
+
+Only authenticated users can comment; redirect others to sign-in.
+
+
+
+Comments show: commenter’s profile picture (40x40px), name (links to profile), text (max 500 characters), optional image, timestamp.
+
+
+
+Support threaded replies (indefinite nesting) with optional images.
+
+
+
+Include a “Reply” button for each comment.
+
+
+
+Database:
+
+
+
+
+
+Comment schema: { commentId, postId, creatorId, text, imageUrl?, parentCommentId?, createdAt }.
+
+
+
+Display:
+
+
+
+
+
+Use a nested repeating structure for comments/replies (indent replies 20px).
+
+4. User Profile (“My Wall”)
+
+
+
+
+
+Profile Page:
+
+
+
+
+
+Accessible via app-url/profile/:username (publicly viewable).
+
+
+
+Displays: name, profile picture (100x100px), “Share” button (app-url/profile/:username), and icons for user-created lists.
+
+
+
+Each list icon uses the primary photo of the first post in the list (default) or a user-uploaded image.
+
+
+
+Clicking a list icon shows all posts in that list (app-url/list/:listId).
+
+
+
+Authenticated users see a “My Wall” section (their profile) in the menu.
+
+
+
+Profile owners can edit name/profile picture and manage lists.
+
+
+
+Lists:
+
+
+
+
+
+Users can create lists to group posts (e.g., “Cars,” “Tech”).
+
+
+
+List creation requires a name; image defaults to the first post’s primary photo but allows custom upload.
+
+
+
+Include a “Share” button for each list (app-url/list/:listId).
+
+
+
+Database:
+
+
+
+
+
+List schema: { listId, creatorId, name, imageUrl, postIds: [postId], createdAt }.
+
+5. Technical Requirements
+
+
+
+
+
+Frontend:
+
+
+
+
+
+Use React with JSX for components (Post, Comment, Profile, List, SignIn, Home).
+
+
+
+Use Tailwind CSS (CDN) for styling.
+
+
+
+Use CDNs: React (https://cdn.jsdelivr.net/npm/react@18.2.0), ReactDOM (https://cdn.jsdelivr.net/npm/react-dom@18.2.0), React Router (https://cdn.jsdelivr.net/npm/react-router-dom@6.26.2), axios (https://cdn.jsdelivr.net/npm/axios@1.7.7).
+
+
+
+Implement routing for Home, Post, Profile, List, SignIn pages.
+
+
+
+Handle image uploads with multipart/form-data.
+
+
+
+Use button clicks (not <form> onSubmit) for actions.
+
+
+
+Backend:
+
+
+
+
+
+Use Node.js/Express for API.
+
+
+
+Use Mongoose for MongoDB.
+
+
+
+Endpoints:
+
+
+
+
+
+POST /api/auth/signup: Create user.
+
+
+
+POST /api/auth/signin: Return JWT.
+
+
+
+POST /api/posts: Create post (authenticated).
+
+
+
+GET /api/posts/:postId: Get post (public).
+
+
+
+POST /api/categories: Create category (authenticated).
+
+
+
+GET /api/categories/:userId: Get user’s categories.
+
+
+
+POST /api/lists: Create list (authenticated).
+
+
+
+GET /api/lists/:listId: Get list and posts (public).
+
+
+
+GET /api/users/:username: Get profile and lists (public).
+
+
+
+POST /api/comments: Create comment/reply (authenticated).
+
+
+
+GET /api/posts/:postId/comments: Get comments.
+
+
+
+PUT /api/users/:userId: Update profile (authenticated).
+
+
+
+Store images in Cloudinary or as base64 in MongoDB.
+
+
+
+Use .env for MongoDB URI, JWT secret, Cloudinary credentials.
+
+
+
+Styling:
+
+
+
+
+
+Dark theme: black/gray background (#1a1a1a), white text (#ffffff), accent color (e.g., #b22222).
+
+
+
+Masculine design: bold fonts (e.g., Montserrat), sharp edges, minimal gradients.
+
+
+
+Responsive grid for posts/lists (2 columns mobile, 4 desktop).
+
+
+
+Hover effects for buttons (e.g., scale 1.05, brighter accent).
+
+
+
+Rounded corners for images (4px border-radius).
+
+
+
+Security:
+
+
+
+
+
+Limit image uploads to 5MB (JPEG/PNG).
+
+
+
+Validate inputs and URLs.
+
+
+
+Use JWT middleware for protected routes.
+
+6. Additional Notes
+
+
+
+
+
+Show loading spinners for API calls/image uploads.
+
+
+
+Handle errors (e.g., “Post not found”).
+
+
+
+Ensure shareable links work without authentication.
+
+
+
+Sort comments by createdAt (newest first); indent replies.
+
+
+
+Deploy on Replit with a public URL.
+
+Deliverables
+
+
+
+
+
+Frontend: index.html with React, React Router, Tailwind CSS, axios, and components.
+
+
+
+Backend: server.js with Express routes, MongoDB, image handling.
+
+
+
+Database: MongoDB schemas for User, Post, Category, List, Comment.
+
+
+
+Environment: .env template for sensitive data.
+
+
+
+README: Instructions for running on Replit (dependencies, setup).
+
+Please generate the complete code for this app, ensuring it’s deployable on Replit. Provide files (index.html, server.js, etc.) in separate <xaiArtifact> tags, with a README for setup.

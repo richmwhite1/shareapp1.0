@@ -1,0 +1,185 @@
+Objective
+Build a web application similar to Pinterest, focusing on a single post feature that anyone can view via a link, with authenticated users able to comment and reply in threaded conversations. The app should include user authentication, image uploads, and a shareable link feature. Use modern web technologies suitable for Replit, such as React for the frontend, Node.js with Express for the backend, and a database (e.g., MongoDB or SQLite) for data storage. Ensure the app is deployable on Replit with a simple setup.
+Functional Requirements
+1. Post Creation
+* Access: Only authenticated users can create posts.
+* Fields:
+    * Required:
+        * One primary photo (image upload, supported formats: JPEG, PNG, max size: 5MB).
+        * A link (URL) to what is pictured in the primary photo (must be a valid URL, e.g., starts with http:// or https://).
+        * A description (text, max 500 characters).
+    * Optional:
+        * Additional photos (up to 5 total, including the primary photo, same format and size restrictions).
+        * For additional photos, the link and description fields are optional.
+* Validation:
+    * Ensure all required fields are provided for the primary photo.
+    * Validate image formats and sizes.
+    * Validate the link as a proper URL.
+    * Show user-friendly error messages for invalid inputs (e.g., "Please upload a JPEG or PNG image" or "Enter a valid URL").
+* Storage:
+    * Store images in a cloud storage service compatible with Replit (e.g., Replit’s file system or an external service like Cloudinary if supported).
+    * Store post data (links, descriptions, image references, user ID, timestamp) in the database.
+* UI:
+    * A form with fields for uploading the primary photo, entering the link, and writing the description.
+    * A button to add additional photos, dynamically showing fields for each (with optional link and description inputs).
+    * A "Submit" button to create the post.
+    * Preview images before submission.
+2. Post Viewing
+* Access: Anyone with the post’s unique link can view the post (no authentication required).
+* Display:
+    * Show the primary photo prominently at the top.
+    * Below the primary photo, display the link (as a clickable hyperlink) and description.
+    * If additional photos exist, show them in a horizontal scrollable gallery below the description.
+    * Display the posting user’s name and profile picture (thumbnail, 50x50px) next to the post title.
+    * Show the post creation timestamp (e.g., "Posted on June 12, 2025, 12:07 PM").
+* URL Structure:
+    * Each post has a unique URL (e.g., https://yourapp.replit.app/post/:postId, where :postId is a unique identifier like a MongoDB ObjectID or UUID).
+* Error Handling:
+    * If the post ID in the URL is invalid or the post doesn’t exist, show a 404 page with a message like "Post not found" and a link to the homepage.
+3. Comments and Replies
+* Access:
+    * Only authenticated users can comment or reply.
+    * Non-authenticated users clicking the comment box are redirected to the sign-in page.
+* Comment Functionality:
+    * Below the post, display a text area for users to write comments (max 1000 characters).
+    * Option to attach one image per comment (JPEG/PNG, max 2MB, optional).
+    * A "Post Comment" button to submit.
+* Reply Functionality:
+    * Each comment has a "Reply" button.
+    * Clicking "Reply" opens a nested text area below the comment for a reply (same fields: text up to 1000 characters, optional image).
+    * Replies are threaded, meaning they appear indented under the parent comment.
+    * Threads can continue indefinitely (replies to replies, etc.).
+* Display:
+    * Show comments in chronological order (newest at the bottom).
+    * For each comment/reply, display:
+        * The user’s profile picture (50x50px).
+        * The user’s name.
+        * The comment text.
+        * Any attached image (resized to fit, max width 300px).
+        * Timestamp (e.g., "Commented on June 12, 2025, 12:10 PM").
+        * A "Reply" button.
+    * Threaded replies are indented to show hierarchy (e.g., 20px indent per level, up to 3 levels deep, then flatten visually).
+* Storage:
+    * Store comments and replies in the database with references to the post, user, parent comment (for replies), text, image (if any), and timestamp.
+    * Store comment images similarly to post images.
+4. User Authentication
+* Sign-In:
+    * A simple sign-in page with fields for username and password.
+    * On successful sign-in, redirect the user back to the post page they attempted to comment on.
+    * Store sessions securely (e.g., using JSON Web Tokens or session cookies).
+* Sign-Up:
+    * A sign-up page linked from the sign-in page ("Don’t have an account? Sign up").
+    * Required fields:
+        * Username (unique, 3–20 characters, alphanumeric).
+        * Password (min 8 characters).
+        * Full name (text, max 50 characters).
+        * Profile picture (JPEG/PNG, max 1MB, resized to 100x100px for storage).
+    * Validation:
+        * Ensure username is unique (check database).
+        * Validate password length.
+        * Validate image format and size.
+        * On successful sign-up, automatically log the user in and redirect to the post page or homepage.
+    * Security:
+        * Hash passwords using bcrypt before storing in the database.
+        * Prevent SQL injection or XSS in user inputs (sanitize inputs).
+* UI:
+    * Clean, minimal sign-in and sign-up forms with clear labels and error messages (e.g., “Username already exists” or “Invalid credentials”).
+    * Session:
+        * Maintain user session until logout.
+        * Provide a logout button in the app header.
+5. Sharing
+* Functionality:
+    * A “Share” button on the post page.
+    * Clicking it generates the post’s unique post URL (e.g., https://yourapp.replit.app/post/:postId) and copies it to the clipboard.
+    * Display a tooltip (e.g., “Link copied!”) for 2 seconds after copying).
+* Implementation:
+    * Use the JavaScript navigator.clipboard.writeText() to copy the URL.
+    * Ensure the URL is accessible to anyone without requiring authentication.
+Technical Stack
+* Frontend:
+    * Use React with JSX for the single-page application.
+    * Use Tailwind CSS for styling (via CDN: https://cdn.tailwindcss.com).
+    * Use modern JavaScript (ES6+) and Babel for transpilation (via CDN: https://cdn.jsdelivr.net/npm/@babel/standalone).
+    * Use React Router (@react-router-dom) for client-side routing.
+    * Fetch API or Axios for API calls.
+* Backend:
+    * Node.js with Express.js for the server.
+    * Database: SQLite for simplicity (built into Replit) or MongoDB if available via Replit’s environment.
+    * If using SQLite, define tables for:
+        * users: (id, id, hashed_password, password_hash, name, full_name, profile_picture_url, created_at).
+        * posts: (id, id, user_id, primary_photo_url, primary_url, primary_description, created_at, created_at).
+        * additional_photos: (id, id, post_id, photo_url, url, link?, description?, created_at, created_at?).
+        * comments: (id, id, post_id, user_id, parent_id?, text, comment?, image_url?, created_at).
+    * Use Multer for image uploads (store images in Replit’s filesystem or an external service if supported).
+    * Use jsonwebtoken for JWT-based authentication or express-session for session management.
+    * Use bcryptjs for password hashing passwords.
+* Deployment:
+    * Ensure the app runs on Replit’s web server (port defined by process.env.PORT).
+    * Provide a .replit file with the command: node npm run start.
+    * Use a package.json with dependencies (e.g., express, sqlite3 or mongoose, multer, bcryptjs, jsonwebtoken).
+* File Structure: /project
+* ├── /public (index.html, static assets)
+* ├── /src
+* │   ├── /components (React components: Post, Comment, CommentForm, AuthForm, etc.)
+* │   ├── /pages (React pages: PostPage, SignInPage, SignUpPage)
+* │   ├── /api (Express routes: routes.js, auth.js, posts.js, comments.js)
+* │   ├── /db (Database setup: db.js)
+* │   └── App.jsx
+* ├── server.js (Express server)
+* ├── package.json
+* ├── .replit
+* └── .env (SECRET_KEY for JWT)
+UI/UX Guidelines
+* Design:
+    * Use a clean, modern aesthetic inspired by Pinterest (white background, rounded corners, subtle shadows).
+    * Use Tailwind classes like bg-white, rounded-lg, shadow-md, p-4 for components.
+    * Ensure responsiveness for mobile and desktop (use Tailwind’s responsive utilities: e.g., sm:, md:).
+* Navigation:
+    * A header with the app name, a “Home” link, and “Sign In”/”Logout” (based on auth state).
+    * A footer with a simple text like “© 2025 MyApp”.
+* Forms:
+    * Use <input type="file" accept="image/jpeg,image/png"> for image uploads.
+    * Style inputs with Tailwind (e.g., border-gray-300, p-2, rounded-md).
+    * Show loading spinners for form submissions or image uploads (Tailwind animate-spin).
+* Accessibility:
+    * Add alt attributes to all images (e.g., “User’s profile picture” or “Post image”).
+    * Ensure keyboard navigability (use tabindex where needed).
+    * Use semantic HTML (<article> for posts, <section> for comments).
+API Endpoints
+Define RESTful endpoints for the backend:
+* Auth:
+    * POST /api/auth/signup: Create user (username, password, password, name, profile_picture).
+    * POST /api/auth/login: Sign in (username, password), return JWT.
+    * POST /api/auth/verify: Validate JWT, return user data.
+* Posts:
+    * POST /api/posts: Create post (multipart form: primary_photo, primary_link, primary_description, additional_photos[]).
+    * GET /api/posts/:id: Get post by ID (public).
+* Comments:
+    * POST /api/comments/:postId: Create comment (multipart: text, image?, optional).
+    * POST /api/comments/:commentId/reply: Create reply (multipart: text, image?, optional).
+    * GET /api/comments/:postId: Get comments and replies for a post (public, threaded structure).
+Security
+* Validate and sanitize all user inputs to prevent XSS and SQL injection (use libraries like sanitize-html or express-validator).
+* Restrict image uploads to specified formats and sizes.
+* Use HTTPS for all requests (Replit handles this).
+* Protect API endpoints requiring authentication with JWT middleware.
+* Store sensitive data (e.g., SECRET_KEY) in .env.
+Deliverables
+* A fully functional Replit project with:
+    * Frontend React app serving the UI.
+    * Backend Express server with API endpoints.
+    * Database setup with initial schema.
+    * Image upload handling.
+    * Authentication and session management.
+    * Deployable on Replit with a public URL.
+* A README.md explaining:
+    * How to run the app (e.g., npm install && npm run start).
+    * How to access the app (Replit URL).
+    * Basic usage instructions (create a post, comment, share).
+Notes
+* Prioritize simplicity for the sign-in/sign-up process.
+* Ensure the app is intuitive, with clear feedback for user actions (e.g., “Comment posted!” toast).
+* Use Replit-compatible libraries and avoid external services unless supported (e.g., avoid AWS S3 unless Replit supports it).
+* Test the app thoroughly to ensure posts are viewable without login, but comments require authentication.
+* Handle errors gracefully with user-friendly messages.
+Please generate the complete project code, including all files (index.html, App.jsx, server.js, etc.), and provide the Replit URL once deployed. Let me know if you need clarification on any requirements!
