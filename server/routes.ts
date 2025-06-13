@@ -182,8 +182,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: 'additionalPhotos', maxCount: 4 }
   ]), async (req: any, res) => {
     try {
-      const { primaryLink, primaryDescription } = createPostSchema.parse(req.body);
-      
       // Handle primary photo upload (required)
       if (!req.files || !req.files['primaryPhoto'] || !req.files['primaryPhoto'][0]) {
         return res.status(400).json({ message: 'Primary photo is required' });
@@ -191,6 +189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const primaryPhotoFile = req.files['primaryPhoto'][0];
       const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
+
+      // Validate the request body with the photo URL
+      const { primaryLink, primaryDescription } = createPostSchema.parse({
+        ...req.body,
+        primaryPhotoUrl
+      });
 
       // Handle additional photos
       const additionalPhotos: string[] = [];

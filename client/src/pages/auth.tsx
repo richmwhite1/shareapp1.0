@@ -1,5 +1,5 @@
-import AuthModal from "@/components/auth-modal";
+import SimpleAuth from "@/components/simple-auth";
 
 export default function AuthPage() {
-  return <AuthModal />;
+  return <SimpleAuth defaultMode="signup" />;
 }
