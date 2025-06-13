@@ -1,4 +1,6 @@
-import { users, posts, comments, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser } from "@shared/schema";
+import { users, posts, comments, categories, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -6,23 +8,262 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
+  // Category methods
+  createCategory(category: InsertCategory & { userId: number }): Promise<Category>;
+  getCategoriesByUserId(userId: number): Promise<CategoryWithPosts[]>;
+  getCategory(id: number): Promise<Category | undefined>;
+  getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
+
   // Post methods
-  createPost(post: InsertPost & { userId: number }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
+  getPostsByUserId(userId: number): Promise<PostWithUser[]>;
+  getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]>;
 
   // Comment methods
   createComment(comment: InsertComment & { postId: number; userId: number }): Promise<Comment>;
   getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
 }
 
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {
+    const [category] = await db.insert(categories).values(categoryData).returning();
+    return category;
+  }
+
+  async getCategoriesByUserId(userId: number): Promise<CategoryWithPosts[]> {
+    const userCategories = await db.select().from(categories).where(eq(categories.userId, userId));
+    
+    const categoriesWithPosts: CategoryWithPosts[] = [];
+    for (const category of userCategories) {
+      const categoryPosts = await this.getPostsByCategoryId(category.id);
+      categoriesWithPosts.push({
+        ...category,
+        posts: categoryPosts,
+        postCount: categoryPosts.length,
+        firstPostImage: categoryPosts[0]?.primaryPhotoUrl
+      });
+    }
+    
+    return categoriesWithPosts;
+  }
+
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category || undefined;
+  }
+
+  async getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined> {
+    const category = await this.getCategory(id);
+    if (!category) return undefined;
+    
+    const categoryPosts = await this.getPostsByCategoryId(id);
+    return {
+      ...category,
+      posts: categoryPosts,
+      postCount: categoryPosts.length,
+      firstPostImage: categoryPosts[0]?.primaryPhotoUrl
+    };
+  }
+
+  async createPost(postData: InsertPost & { userId: number; categoryId?: number }): Promise<Post> {
+    // Default to category 1 (General) if none specified
+    const categoryId = postData.categoryId || 1;
+    const [post] = await db.insert(posts).values({ ...postData, categoryId }).returning();
+    return post;
+  }
+
+  async getPost(id: number): Promise<PostWithUser | undefined> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(posts.id, id));
+
+    if (!result[0]) return undefined;
+
+    return {
+      ...result[0].post,
+      user: result[0].user,
+      category: result[0].category
+    } as PostWithUser;
+  }
+
+  async getAllPosts(): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .orderBy(posts.createdAt);
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user,
+      category: r.category
+    })) as PostWithUser[];
+  }
+
+  async getPostsByUserId(userId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(posts.userId, userId))
+      .orderBy(posts.createdAt);
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user,
+      category: r.category
+    })) as PostWithUser[];
+  }
+
+  async getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(posts.categoryId, categoryId))
+      .orderBy(posts.createdAt);
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user,
+      category: r.category
+    })) as PostWithUser[];
+  }
+
+  async createComment(commentData: InsertComment & { postId: number; userId: number }): Promise<Comment> {
+    const [comment] = await db.insert(comments).values(commentData).returning();
+    return comment;
+  }
+
+  async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
+    const result = await db
+      .select({
+        comment: comments,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.userId, users.id))
+      .where(eq(comments.postId, postId))
+      .orderBy(comments.createdAt);
+
+    const commentsMap = new Map<number, CommentWithUser>();
+    const topLevelComments: CommentWithUser[] = [];
+
+    // First pass: create all comments
+    for (const r of result) {
+      const commentWithUser: CommentWithUser = {
+        ...r.comment,
+        user: r.user,
+        replies: []
+      };
+      commentsMap.set(r.comment.id, commentWithUser);
+      
+      if (!r.comment.parentId) {
+        topLevelComments.push(commentWithUser);
+      }
+    }
+
+    // Second pass: organize replies
+    for (const r of result) {
+      if (r.comment.parentId) {
+        const parent = commentsMap.get(r.comment.parentId);
+        const child = commentsMap.get(r.comment.id);
+        if (parent && child) {
+          parent.replies!.push(child);
+        }
+      }
+    }
+
+    return topLevelComments;
+  }
+}
+
+// Legacy MemStorage for reference - to be removed
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private posts: Map<number, Post>;
   private comments: Map<number, Comment>;
+  private categories: Map<number, Category>;
   private currentUserId: number;
   private currentPostId: number;
   private currentCommentId: number;
+  private currentCategoryId: number;
 
   constructor() {
     this.users = new Map();
@@ -179,4 +420,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

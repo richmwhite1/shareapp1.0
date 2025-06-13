@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema } from "@shared/schema";
+import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema } from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -191,7 +191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
 
       // Validate the request body
-      const { primaryLink, primaryDescription } = createPostRequestSchema.parse(req.body);
+      const { primaryLink, primaryDescription, categoryId } = createPostRequestSchema.parse(req.body);
 
       // Handle additional photos
       const additionalPhotos: string[] = [];
@@ -208,6 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryLink,
         primaryDescription,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
+        categoryId: categoryId || 1, // Default to General category
       });
 
       // Get post with user data
