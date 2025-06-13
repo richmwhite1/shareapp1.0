@@ -1,19 +1,16 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, X, Upload, ExternalLink } from "lucide-react";
+import { Plus, X, Upload, ExternalLink, Image } from "lucide-react";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
-import { createPostSchema, type CreatePostData } from "@shared/schema";
 
 interface CreatePostFormData {
   primaryLink: string;

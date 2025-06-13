@@ -7,7 +7,7 @@ import { AuthProvider } from "./lib/auth.tsx";
 import Home from "@/pages/home";
 import PostPage from "@/pages/post";
 import AuthPage from "@/pages/auth";
-import CreatePostPage from "@/pages/create-post";
+import CreatePostPage from "@/pages/create-post-simple";
 import NotFound from "@/pages/not-found";
 
 function Router() {
