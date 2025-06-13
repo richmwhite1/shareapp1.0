@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { signUpSchema, signInSchema, createPostSchema, createCommentSchema } from "@shared/schema";
+import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema } from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -190,11 +190,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const primaryPhotoFile = req.files['primaryPhoto'][0];
       const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
 
-      // Validate the request body with the photo URL
-      const { primaryLink, primaryDescription } = createPostSchema.parse({
-        ...req.body,
-        primaryPhotoUrl
-      });
+      // Validate the request body
+      const { primaryLink, primaryDescription } = createPostRequestSchema.parse(req.body);
 
       // Handle additional photos
       const additionalPhotos: string[] = [];
