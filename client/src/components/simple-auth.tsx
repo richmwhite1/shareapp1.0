@@ -101,13 +101,13 @@ export default function SimpleAuth({ defaultMode = 'signin', onSuccess }: Simple
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-pinterest-light p-4">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+      <Card className="w-full max-w-md bg-card border-border">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-pinterest-red">
             {mode === 'signin' ? 'Welcome Back' : 'Join PinShare'}
           </CardTitle>
-          <p className="text-pinterest-gray">
+          <p className="text-muted-foreground">
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account to get started'}
           </p>
         </CardHeader>

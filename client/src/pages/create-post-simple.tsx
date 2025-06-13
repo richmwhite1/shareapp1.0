@@ -1,22 +1,34 @@
 import { useState, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus } from "lucide-react";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function CreatePostPage() {
   const [formData, setFormData] = useState({
     primaryLink: "",
-    primaryDescription: ""
+    primaryDescription: "",
+    categoryId: "1" // Default to General category
   });
+  
+  const [newCategoryData, setNewCategoryData] = useState({
+    name: "",
+    description: "",
+    isPublic: false
+  });
+  
+  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
   const [additionalPhotos, setAdditionalPhotos] = useState<File[]>([]);
@@ -31,6 +43,52 @@ export default function CreatePostPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch user's categories
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['/api/categories'],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: isAuthenticated,
+  });
+
+  // Create new category mutation
+  const createCategoryMutation = useMutation({
+    mutationFn: async (categoryData: typeof newCategoryData) => {
+      const token = getAuthToken();
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create category');
+      }
+
+      return response.json();
+    },
+    onSuccess: (newCategory) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      setFormData(prev => ({ ...prev, categoryId: newCategory.id.toString() }));
+      setNewCategoryData({ name: "", description: "", isPublic: false });
+      setShowNewCategoryDialog(false);
+      toast({
+        title: "Category Created",
+        description: `${newCategory.name} category has been created successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Creating Category",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handle primary photo selection
   const handlePrimaryPhotoChange = (file: File | null) => {
@@ -108,6 +166,7 @@ export default function CreatePostPage() {
       formDataToSend.append('primaryLink', formData.primaryLink);
       formDataToSend.append('primaryDescription', formData.primaryDescription);
       formDataToSend.append('primaryPhoto', primaryPhoto);
+      formDataToSend.append('categoryId', formData.categoryId);
       
       additionalPhotos.forEach(photo => {
         formDataToSend.append('additionalPhotos', photo);
@@ -198,10 +257,10 @@ export default function CreatePostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-pinterest-light">
+    <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto">
+        <Card className="max-w-2xl mx-auto bg-card border-border">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-pinterest-red flex items-center gap-2">
               <Upload className="h-6 w-6" />
@@ -233,12 +292,107 @@ export default function CreatePostPage() {
                 <Textarea
                   id="primaryDescription"
                   placeholder="Describe what you're sharing..."
-                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent bg-input text-foreground border-border"
                   rows={3}
                   value={formData.primaryDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
                   required
                 />
+              </div>
+
+              {/* Category Selection */}
+              <div>
+                <Label htmlFor="category">Category *</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.categoryId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+                  >
+                    <SelectTrigger className="flex-1 bg-input border-border">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      <SelectItem value="1">General</SelectItem>
+                      {categories?.map((category: any) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name} ({category.postCount} posts)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="border-border hover:bg-accent"
+                      >
+                        <FolderPlus className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border">
+                      <DialogHeader>
+                        <DialogTitle className="text-foreground">Create New Category</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="categoryName">Category Name *</Label>
+                          <Input
+                            id="categoryName"
+                            placeholder="e.g., Christmas, Travel, Recipes"
+                            className="bg-input border-border"
+                            value={newCategoryData.name}
+                            onChange={(e) => setNewCategoryData(prev => ({ ...prev, name: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="categoryDescription">Description (Optional)</Label>
+                          <Textarea
+                            id="categoryDescription"
+                            placeholder="Brief description of this category"
+                            className="bg-input border-border"
+                            rows={2}
+                            value={newCategoryData.description}
+                            onChange={(e) => setNewCategoryData(prev => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="isPublic"
+                            checked={newCategoryData.isPublic}
+                            onChange={(e) => setNewCategoryData(prev => ({ ...prev, isPublic: e.target.checked }))}
+                            className="rounded border-border"
+                          />
+                          <Label htmlFor="isPublic" className="text-sm">Make this category public (others can see it)</Label>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowNewCategoryDialog(false)}
+                            className="border-border"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => createCategoryMutation.mutate(newCategoryData)}
+                            disabled={!newCategoryData.name || createCategoryMutation.isPending}
+                            className="bg-pinterest-red hover:bg-red-700"
+                          >
+                            {createCategoryMutation.isPending ? 'Creating...' : 'Create Category'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose a category to organize your posts. Create custom categories like "Christmas" or "Travel".
+                </p>
               </div>
 
               {/* Primary Photo Upload */}

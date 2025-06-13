@@ -224,6 +224,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Category routes
+  app.get('/api/categories', authenticateToken, async (req: any, res) => {
+    try {
+      const categories = await storage.getCategoriesByUserId(req.user.userId);
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/categories', authenticateToken, async (req: any, res) => {
+    try {
+      const categoryData = createCategorySchema.parse(req.body);
+      const category = await storage.createCategory({
+        ...categoryData,
+        userId: req.user.userId,
+      });
+      res.json(category);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/categories/:id', async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const category = await storage.getCategoryWithPosts(categoryId);
+      if (!category) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/posts/:id', async (req, res) => {
     try {
       const postId = parseInt(req.params.id);
