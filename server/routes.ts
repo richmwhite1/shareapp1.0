@@ -14,6 +14,11 @@ const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
+    // Allow placeholder files (empty files for "Add by Link" functionality)
+    if (file.size === 0 && file.originalname === 'placeholder.jpg') {
+      return cb(null, true);
+    }
+    
     const allowedTypes = /jpeg|jpg|png/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
@@ -230,19 +235,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle additional photos with enhanced data
       const additionalPhotos: string[] = [];
-      const additionalPhotoData: { url: string; link: string; description: string }[] = [];
+      const additionalPhotoData: { url: string; link: string; description: string; discountCode: string }[] = [];
       
       if (req.files['additionalPhotos']) {
         for (let i = 0; i < req.files['additionalPhotos'].length; i++) {
           const file = req.files['additionalPhotos'][i];
-          const photoUrl = saveUploadedFile(file);
-          additionalPhotos.push(photoUrl);
           
           // Get corresponding link, description, and discount code from form data
           const link = req.body[`additionalPhotoLink_${i}`] || '';
           const description = req.body[`additionalPhotoDescription_${i}`] || '';
           const discountCode = req.body[`additionalPhotoDiscountCode_${i}`] || '';
           
+          // Handle placeholder files (when image fetch fails)
+          let photoUrl = '';
+          if (file.size === 0 && file.originalname === 'placeholder.jpg') {
+            // Create a placeholder image URL or use a default
+            photoUrl = '/placeholder-image.svg';
+          } else {
+            photoUrl = saveUploadedFile(file);
+          }
+          
+          additionalPhotos.push(photoUrl);
           additionalPhotoData.push({
             url: photoUrl,
             link,

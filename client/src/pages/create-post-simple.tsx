@@ -218,6 +218,12 @@ export default function CreatePostPage() {
   const addPhotoByUrl = async (url: string) => {
     if (!url.trim()) return;
 
+    // Always create a placeholder photo entry first
+    const placeholderFile = new File([''], 'placeholder.jpg', { type: 'image/jpeg' });
+    const newPhotoData = { file: placeholderFile, link: url, description: '', discountCode: '' };
+    const updatedPhotos = [...additionalPhotos, newPhotoData];
+    setAdditionalPhotos(updatedPhotos);
+
     try {
       const response = await fetch('/api/scrape-image', {
         method: 'POST',
@@ -239,10 +245,10 @@ export default function CreatePostPage() {
       const blob = await response2.blob();
       const file = new File([blob], 'scraped-image.jpg', { type: 'image/jpeg' });
       
-      // Create new photo data with the URL as the link
-      const newPhotoData = { file, link: url, description: '', discountCode: '' };
-      const updatedPhotos = [...additionalPhotos, newPhotoData];
-      setAdditionalPhotos(updatedPhotos);
+      // Update the last added photo with the fetched image
+      const updatedPhotosWithImage = [...updatedPhotos];
+      updatedPhotosWithImage[updatedPhotosWithImage.length - 1].file = file;
+      setAdditionalPhotos(updatedPhotosWithImage);
       
       // Generate preview
       const reader = new FileReader();
@@ -257,10 +263,14 @@ export default function CreatePostPage() {
         description: "The image has been fetched and added successfully.",
       });
     } catch (error) {
+      // If image fetch fails, still add a placeholder preview
+      const placeholderPreview = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZiNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+';
+      const newPreviews = [...additionalPhotoPreviews, placeholderPreview];
+      setAdditionalPhotoPreviews(newPreviews);
+
       toast({
-        title: "Error fetching image",
-        description: "Could not fetch the image from the URL. Please check the URL and try again.",
-        variant: "destructive",
+        title: "Photo added with link",
+        description: "Could not fetch image, but the link and description fields are available.",
       });
     }
   };
