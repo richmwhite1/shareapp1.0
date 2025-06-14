@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
 import { createCommentSchema, type CommentWithUser, type CreateCommentData } from "@shared/schema";
+import { z } from "zod";
 
 interface CommentSectionProps {
   postId: number;
@@ -35,10 +36,14 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const commentFormSchema = z.object({
+    text: z.string().min(1, "Comment text is required"),
+    parentId: z.number().optional(),
+    image: z.any().optional(),
+  });
+
   const form = useForm<CommentFormData>({
-    resolver: zodResolver(createCommentSchema.extend({
-      image: createCommentSchema.shape.imageUrl.optional(),
-    })),
+    resolver: zodResolver(commentFormSchema),
     defaultValues: {
       text: "",
       parentId,
@@ -47,6 +52,9 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
 
   const mutation = useMutation({
     mutationFn: async (data: CommentFormData) => {
+      console.log('Comment form data:', data);
+      console.log('Form errors:', form.formState.errors);
+      
       const formData = new FormData();
       formData.append('text', data.text);
       if (data.parentId) {
@@ -55,6 +63,8 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
       if (data.image && data.image.length > 0) {
         formData.append('image', data.image[0]);
       }
+
+      console.log('FormData contents:', Array.from(formData.entries()));
 
       const token = getAuthToken();
       const response = await fetch(`/api/posts/${postId}/comments`, {
@@ -67,6 +77,7 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Comment submission error:', errorData);
         throw new Error(errorData.message || 'Failed to post comment');
       }
 
