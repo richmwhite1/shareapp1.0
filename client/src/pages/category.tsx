@@ -5,13 +5,15 @@ import Header from "@/components/header";
 import PostCard from "@/components/post-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Folder, Lock, Users } from "lucide-react";
+import { ArrowLeft, Folder, Lock, Users, Share2 } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import type { CategoryWithPosts, PostWithUser } from "@shared/schema";
 
 export default function CategoryPage() {
   const [match, params] = useRoute('/category/:id');
   const categoryId = params?.id;
+  const { toast } = useToast();
 
   const { data: category, isLoading: categoryLoading } = useQuery<CategoryWithPosts>({
     queryKey: [`/api/categories/${categoryId}`],
@@ -24,6 +26,24 @@ export default function CategoryPage() {
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,
   });
+
+  const handleShareCategory = async () => {
+    const url = `${window.location.origin}/category/${categoryId}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Link copied!",
+        description: "Category link copied to clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy link to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!match) {
     return <div>Category not found</div>;
