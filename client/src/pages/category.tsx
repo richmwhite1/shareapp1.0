@@ -76,41 +76,53 @@ export default function CategoryPage() {
       <Header />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/profile">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Profile
-            </Button>
-          </Link>
-          
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-              {category?.firstPostImage ? (
-                <img 
-                  src={category.firstPostImage} 
-                  alt={category.name}
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <Folder className="h-6 w-6 text-muted-foreground" />
-              )}
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Link href="/profile">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Profile
+              </Button>
+            </Link>
             
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground">{category?.name}</h1>
-                {category?.isPublic ? (
-                  <Users className="h-4 w-4 text-green-400" />
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
+                {category?.firstPostImage ? (
+                  <img 
+                    src={category.firstPostImage} 
+                    alt={category.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
                 ) : (
-                  <Lock className="h-4 w-4 text-muted-foreground" />
+                  <Folder className="h-6 w-6 text-muted-foreground" />
                 )}
               </div>
-              <p className="text-muted-foreground">
-                {category?.description || `${posts?.length || 0} posts in this category`}
-              </p>
+              
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-foreground">{category?.name}</h1>
+                  {category?.isPublic ? (
+                    <Users className="h-4 w-4 text-green-400" />
+                  ) : (
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <p className="text-muted-foreground">
+                  {category?.description || `${posts?.length || 0} posts in this category`}
+                </p>
+              </div>
             </div>
           </div>
+
+          <Button
+            onClick={handleShareCategory}
+            variant="outline"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share Category
+          </Button>
         </div>
 
         {/* Posts Grid */}
