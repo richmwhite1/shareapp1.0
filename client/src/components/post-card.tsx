@@ -140,22 +140,24 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       {/* Post Header */}
       <CardContent className={`${isDetailView ? 'p-6' : 'p-4'} border-b border-gray-100`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Avatar className={isDetailView ? 'w-12 h-12' : 'w-10 h-10'}>
-              <AvatarImage src={post.user.profilePictureUrl || undefined} />
-              <AvatarFallback>
-                {post.user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h3 className={`font-semibold text-gray-900 ${isDetailView ? 'text-base' : 'text-sm'}`}>
-                {post.user.name}
-              </h3>
-              <p className={`text-pinterest-gray ${isDetailView ? 'text-sm' : 'text-xs'}`}>
-                {formatDate(post.createdAt)}
-              </p>
+          <Link href={`/profile/${post.user.id}`}>
+            <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
+              <Avatar className={isDetailView ? 'w-12 h-12' : 'w-10 h-10'}>
+                <AvatarImage src={post.user.profilePictureUrl || undefined} />
+                <AvatarFallback>
+                  {post.user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h3 className={`font-semibold text-gray-900 hover:text-pinterest-red transition-colors ${isDetailView ? 'text-base' : 'text-sm'}`}>
+                  {post.user.name}
+                </h3>
+                <p className={`text-pinterest-gray ${isDetailView ? 'text-sm' : 'text-xs'}`}>
+                  {formatDate(post.createdAt)}
+                </p>
+              </div>
             </div>
-          </div>
+          </Link>
           
           <Button
             onClick={handleShare}
@@ -171,11 +173,21 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* Primary Photo */}
       <div className="relative">
-        <img
-          src={selectedImage}
-          alt="Post image"
-          className={`w-full object-cover ${isDetailView ? 'h-96' : 'h-64'}`}
-        />
+        {isDetailView ? (
+          <img
+            src={selectedImage}
+            alt="Post image"
+            className="w-full h-96 object-cover"
+          />
+        ) : (
+          <Link href={`/post/${post.id}`}>
+            <img
+              src={selectedImage}
+              alt="Post image"
+              className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            />
+          </Link>
+        )}
       </div>
 
       {/* Social Actions Bar */}
@@ -226,98 +238,91 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         </div>
       </CardContent>
 
-      {/* Post Content */}
-      <CardContent className={isDetailView ? 'p-6' : 'p-4'}>
-        {/* Primary Link and Description */}
-        <div className={isDetailView ? 'mb-6' : 'mb-4'}>
-          <a
-            href={post.primaryLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`text-pinterest-red hover:text-red-700 font-medium transition-colors inline-flex items-center space-x-2 ${
-              isDetailView ? 'text-lg' : 'text-base'
-            }`}
-          >
-            <ExternalLink className="w-4 h-4" />
-            <span className="truncate">{post.primaryLink}</span>
-          </a>
-          <p className={`text-gray-700 leading-relaxed ${isDetailView ? 'mt-3' : 'mt-2'}`}>
-            {post.primaryDescription}
-          </p>
-        </div>
+      {/* Post Content - Only show in detail view */}
+      {isDetailView && (
+        <CardContent className="p-6">
+          {/* Primary Link and Description */}
+          <div className="mb-6">
+            <a
+              href={post.primaryLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-pinterest-red hover:text-red-700 font-medium transition-colors inline-flex items-center space-x-2 text-lg"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="truncate">{post.primaryLink}</span>
+            </a>
+            <p className="text-gray-700 leading-relaxed mt-3">
+              {post.primaryDescription}
+            </p>
+          </div>
 
-        {/* Additional Photos Gallery */}
-        {post.additionalPhotos && post.additionalPhotos.length > 0 && (
-          <div className={isDetailView ? 'mb-8' : 'mb-4'}>
-            <h4 className={`font-semibold text-gray-900 mb-3 ${isDetailView ? 'text-lg' : 'text-base'}`}>
-              More from this collection
-            </h4>
-            <div className="space-y-4">
-              {/* Primary image thumbnail */}
-              <div className="flex-shrink-0">
-                <img
-                  src={post.primaryPhotoUrl}
-                  alt="Primary image"
-                  onClick={() => setSelectedImage(post.primaryPhotoUrl)}
-                  className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 ${
-                    selectedImage === post.primaryPhotoUrl ? 'border-pinterest-red' : 'border-transparent'
-                  } ${isDetailView ? 'w-48 h-32' : 'w-32 h-24'}`}
-                />
-              </div>
-              {/* Additional images with metadata */}
-              {post.additionalPhotos.map((photo, index) => {
-                const photoData = Array.isArray(post.additionalPhotoData) ? post.additionalPhotoData[index] : undefined;
-                return (
-                  <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0">
-                        <img
-                          src={photo}
-                          alt={`Additional image ${index + 1}`}
-                          onClick={() => setSelectedImage(photo)}
-                          className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 ${
-                            selectedImage === photo ? 'border-pinterest-red' : 'border-transparent'
-                          } ${isDetailView ? 'w-24 h-24' : 'w-16 h-16'}`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        {photoData?.link && (
-                          <a
-                            href={photoData.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-pinterest-red hover:text-red-700 font-medium transition-colors inline-flex items-center space-x-1 text-sm"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            <span className="truncate">{photoData.link}</span>
-                          </a>
-                        )}
-                        {photoData?.description && (
-                          <p className="text-gray-600 text-sm mt-1 leading-relaxed">
-                            {photoData.description}
-                          </p>
-                        )}
+          {/* Additional Photos Gallery */}
+          {post.additionalPhotos && post.additionalPhotos.length > 0 && (
+            <div className="mb-8">
+              <h4 className="font-semibold text-gray-900 mb-3 text-lg">
+                More from this collection
+              </h4>
+              <div className="space-y-4">
+                {/* Primary image thumbnail */}
+                <div className="flex-shrink-0">
+                  <img
+                    src={post.primaryPhotoUrl}
+                    alt="Primary image"
+                    onClick={() => setSelectedImage(post.primaryPhotoUrl)}
+                    className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 w-48 h-32 ${
+                      selectedImage === post.primaryPhotoUrl ? 'border-pinterest-red' : 'border-transparent'
+                    }`}
+                  />
+                </div>
+                {/* Additional images with metadata */}
+                {post.additionalPhotos.map((photo, index) => {
+                  const photoData = Array.isArray(post.additionalPhotoData) ? post.additionalPhotoData[index] : undefined;
+                  return (
+                    <div key={index} className="border rounded-lg p-3 bg-gray-50">
+                      <div className="flex gap-3">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={photo}
+                            alt={`Additional image ${index + 1}`}
+                            onClick={() => setSelectedImage(photo)}
+                            className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 w-24 h-24 ${
+                              selectedImage === photo ? 'border-pinterest-red' : 'border-transparent'
+                            }`}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {photoData?.link && (
+                            <a
+                              href={photoData.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-pinterest-red hover:text-red-700 font-medium transition-colors inline-flex items-center space-x-1 text-sm"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              <span className="truncate">{photoData.link}</span>
+                            </a>
+                          )}
+                          {photoData?.description && (
+                            <p className="text-gray-600 text-sm mt-1 leading-relaxed">
+                              {photoData.description}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </CardContent>
+      )}
 
-        {/* View Post Link for non-detail view */}
-        {!isDetailView && (
-          <Link href={`/post/${post.id}`}>
-            <Button variant="outline" className="w-full mt-4">
-              View Post & Comments
-            </Button>
-          </Link>
-        )}
-
-        {/* Delete Button - only show for post owner */}
-        {user && post.user.id === user.id && (
-          <div className="flex justify-end mt-4">
+      {/* Delete Button - only show for post owner in detail view */}
+      {isDetailView && user && post.user.id === user.id && (
+        <CardContent className="px-6 pb-6">
+          <div className="flex justify-end">
             <Button
               onClick={handleDelete}
               variant="ghost"
@@ -328,8 +333,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-        )}
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }
