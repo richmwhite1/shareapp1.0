@@ -537,72 +537,74 @@ export default function CreatePostPage() {
               {/* Additional Photos */}
               <div>
                 <Label>Additional Photos (Optional)</Label>
-                <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pinterest-red transition-colors cursor-pointer"
-                  onDragOver={handleDragOver}
-                  onDrop={handleAdditionalDrop}
-                  onClick={() => additionalFileRef.current?.click()}
-                >
-                  {additionalPhotoPreviews.length > 0 ? (
-                    <div className="space-y-4">
-                      {additionalPhotoPreviews.map((preview, index) => (
-                        <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                          <div className="flex gap-4">
-                            <div className="relative flex-shrink-0">
-                              <img
-                                src={preview}
-                                alt={`Additional preview ${index + 1}`}
-                                className="h-20 w-20 object-cover rounded-lg"
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeAdditionalPhoto(index);
-                                }}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <div>
-                                <Label className="text-xs">Link (optional)</Label>
-                                <Input
-                                  type="url"
-                                  placeholder="https://example.com"
-                                  value={additionalPhotos[index]?.link || ''}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    updateAdditionalPhotoData(index, 'link', e.target.value);
-                                  }}
-                                  className="h-8 text-xs"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Description (optional)</Label>
-                                <Textarea
-                                  placeholder="Describe this item..."
-                                  value={additionalPhotos[index]?.description || ''}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    updateAdditionalPhotoData(index, 'description', e.target.value);
-                                  }}
-                                  className="h-16 text-xs resize-none"
-                                />
-                              </div>
-                            </div>
+                <div className="space-y-4 mt-2">
+                  {/* Display existing additional photos */}
+                  {additionalPhotoPreviews.map((preview, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex gap-4">
+                        <div className="relative flex-shrink-0">
+                          <img
+                            src={preview}
+                            alt={`Additional preview ${index + 1}`}
+                            className="h-20 w-20 object-cover rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeAdditionalPhoto(index);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex-1 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div>
+                            <Label className="text-xs">Link (optional)</Label>
+                            <Input
+                              type="url"
+                              placeholder="https://example.com"
+                              value={additionalPhotos[index]?.link || ''}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                updateAdditionalPhotoData(index, 'link', e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Description (optional)</Label>
+                            <Textarea
+                              placeholder="Describe this item..."
+                              value={additionalPhotos[index]?.description || ''}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                updateAdditionalPhotoData(index, 'description', e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-16 text-xs resize-none"
+                            />
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  ) : (
-                    <div>
-                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  ))}
+
+                  {/* Add photo button */}
+                  {additionalPhotos.length < 4 && (
+                    <div
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pinterest-red transition-colors cursor-pointer"
+                      onDragOver={handleDragOver}
+                      onDrop={handleAdditionalDrop}
+                      onClick={() => additionalFileRef.current?.click()}
+                    >
+                      <Plus className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                       <p className="text-gray-600">
-                        Add up to 4 additional photos
+                        Add additional photo ({additionalPhotos.length}/4)
                       </p>
                       <p className="text-sm text-gray-400 mt-1">
                         Click to upload or drag and drop
