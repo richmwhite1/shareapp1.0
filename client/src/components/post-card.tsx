@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2 } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -255,6 +255,32 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <p className="text-gray-700 leading-relaxed mt-3">
               {post.primaryDescription}
             </p>
+            
+            {/* Discount Code */}
+            {post.discountCode && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-medium text-green-800">Discount Code:</span>
+                    <span className="ml-2 font-mono text-green-700 font-bold">{post.discountCode}</span>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (post.discountCode) {
+                        navigator.clipboard.writeText(post.discountCode);
+                        toast({ title: "Copied!", description: "Discount code copied to clipboard" });
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="text-green-700 border-green-300 hover:bg-green-100"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Additional Photos Gallery */}

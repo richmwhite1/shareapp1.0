@@ -184,6 +184,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User routes
+  app.get('/api/users/:id', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        profilePictureUrl: user.profilePictureUrl,
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Post routes
   app.post('/api/posts', authenticateToken, upload.fields([
     { name: 'primaryPhoto', maxCount: 1 },
@@ -236,6 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryPhotoUrl,
         primaryLink,
         primaryDescription,
+        discountCode,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
         additionalPhotoData: additionalPhotoData.length > 0 ? additionalPhotoData : null,
         categoryId: categoryId || undefined, // Let storage handle default category
