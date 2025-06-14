@@ -27,6 +27,7 @@ export const posts = pgTable("posts", {
   primaryPhotoUrl: text("primary_photo_url").notNull(),
   primaryLink: text("primary_link").notNull(),
   primaryDescription: text("primary_description").notNull(),
+  discountCode: text("discount_code"),
   additionalPhotos: text("additional_photos").array(),
   additionalPhotoData: json("additional_photo_data"), // Array of {url, link, description} objects
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -80,6 +81,7 @@ export const insertPostSchema = createInsertSchema(posts).pick({
   primaryPhotoUrl: true,
   primaryLink: true,
   primaryDescription: true,
+  discountCode: true,
   additionalPhotos: true,
   additionalPhotoData: true,
 });

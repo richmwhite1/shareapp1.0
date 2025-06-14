@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Folder, Image, Plus, Users, Lock, Trash2, Share2 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
 interface CategoryWithPosts {
@@ -24,24 +24,38 @@ export default function ProfilePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const params = useParams();
+  
+  // If there's an ID param, we're viewing another user's profile
+  const profileUserId = params.id ? parseInt(params.id) : user?.id;
+  const isOwnProfile = !params.id || (user && parseInt(params.id) === user.id);
+
+  // Fetch profile user data if viewing another user's profile
+  const { data: profileUser } = useQuery({
+    queryKey: ['/api/users', profileUserId],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !isOwnProfile && !!profileUserId,
+  });
+
+  const displayUser = isOwnProfile ? user : profileUser;
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['/api/categories'],
+    queryKey: ['/api/categories', profileUserId],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: isAuthenticated,
+    enabled: isOwnProfile && isAuthenticated,
   });
 
   const { data: userPosts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/posts/user', user?.id],
+    queryKey: ['/api/posts/user', profileUserId],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: isAuthenticated && !!user?.id,
+    enabled: !!profileUserId,
   });
 
   // Fetch total shares for all user posts
   const { data: totalShares = 0 } = useQuery({
-    queryKey: [`/api/user/total-shares/${user?.id}`],
+    queryKey: [`/api/user/total-shares/${profileUserId}`],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: isAuthenticated && !!user?.id,
+    enabled: !!profileUserId,
   });
 
   // Share profile mutation

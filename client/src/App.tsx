@@ -20,6 +20,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/create" component={CreatePostPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/profile/:id" component={ProfilePage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route component={NotFound} />
     </Switch>
