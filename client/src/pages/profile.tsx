@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Folder, Image, Plus, Users, Lock } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface CategoryWithPosts {
   id: number;
@@ -20,6 +20,7 @@ interface CategoryWithPosts {
 
 export default function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
@@ -138,11 +139,7 @@ export default function ProfilePage() {
                 <Card 
                   key={category.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50"
-                  onClick={() => {
-                    // Show posts in this category
-                    console.log(`Viewing category: ${category.name} (${category.postCount} posts)`);
-                    // TODO: Add navigation to category view
-                  }}
+                  onClick={() => setLocation(`/category/${category.id}`)}
                 >
                   <CardContent className="p-2">
                     <div className="aspect-square rounded bg-secondary flex items-center justify-center mb-1 relative overflow-hidden">
