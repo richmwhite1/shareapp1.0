@@ -269,24 +269,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/posts/:id', async (req, res) => {
-    try {
-      const postId = parseInt(req.params.id);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: 'Invalid post ID' });
-      }
-
-      const post = await storage.getPost(postId);
-      if (!post) {
-        return res.status(404).json({ message: 'Post not found' });
-      }
-
-      res.json(post);
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   app.get('/api/posts', async (req, res) => {
     try {
       const posts = await storage.getAllPosts();
@@ -305,6 +287,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const posts = await storage.getPostsByUserId(userId);
       res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
+
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      res.json(post);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
