@@ -238,14 +238,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const photoUrl = saveUploadedFile(file);
           additionalPhotos.push(photoUrl);
           
-          // Get corresponding link and description from form data
+          // Get corresponding link, description, and discount code from form data
           const link = req.body[`additionalPhotoLink_${i}`] || '';
           const description = req.body[`additionalPhotoDescription_${i}`] || '';
+          const discountCode = req.body[`additionalPhotoDiscountCode_${i}`] || '';
           
           additionalPhotoData.push({
             url: photoUrl,
             link,
-            description
+            description,
+            discountCode
           });
         }
       }

@@ -32,7 +32,7 @@ export default function CreatePostPage() {
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
-  const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string }[]>([]);
+  const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string; discountCode: string }[]>([]);
   const [primaryPhotoPreview, setPrimaryPhotoPreview] = useState<string | null>(null);
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +120,7 @@ export default function CreatePostPage() {
   const handleAdditionalPhotosChange = (files: FileList | null) => {
     if (files) {
       const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-      const newPhotoData = newFiles.map(file => ({ file, link: '', description: '' }));
+      const newPhotoData = newFiles.map(file => ({ file, link: '', description: '', discountCode: '' }));
       const combinedFiles = [...additionalPhotos, ...newPhotoData].slice(0, 4); // Max 4 additional photos
       setAdditionalPhotos(combinedFiles);
       
@@ -140,10 +140,76 @@ export default function CreatePostPage() {
   };
 
   // Update additional photo data
-  const updateAdditionalPhotoData = (index: number, field: 'link' | 'description', value: string) => {
+  const updateAdditionalPhotoData = (index: number, field: 'link' | 'description' | 'discountCode', value: string) => {
     const updatedPhotos = [...additionalPhotos];
     updatedPhotos[index] = { ...updatedPhotos[index], [field]: value };
     setAdditionalPhotos(updatedPhotos);
+  };
+
+  // Fetch image from URL for additional photos
+  const fetchImageForAdditionalPhoto = async (index: number, url: string) => {
+    if (!url.trim()) return;
+
+    try {
+      const response = await fetch('/api/scrape-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+
+      const data = await response.json();
+      
+      // Convert base64 to File
+      const response2 = await fetch(data.imageDataUrl);
+      const blob = await response2.blob();
+      const file = new File([blob], 'scraped-image.jpg', { type: 'image/jpeg' });
+      
+      // Update the photo at the specific index
+      const updatedPhotos = [...additionalPhotos];
+      updatedPhotos[index] = { ...updatedPhotos[index], file };
+      setAdditionalPhotos(updatedPhotos);
+      
+      // Update preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const updatedPreviews = [...additionalPhotoPreviews];
+        updatedPreviews[index] = e.target?.result as string;
+        setAdditionalPhotoPreviews(updatedPreviews);
+      };
+      reader.readAsDataURL(file);
+
+      toast({
+        title: "Image fetched!",
+        description: "The image has been added successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error fetching image",
+        description: "Could not fetch the image from the URL. Please try uploading manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle URL paste detection for additional photos
+  const handleAdditionalPhotoUrlPaste = (index: number, value: string) => {
+    updateAdditionalPhotoData(index, 'link', value);
+    
+    // Check if the pasted value looks like a URL
+    const urlRegex = /^https?:\/\/.+/i;
+    if (urlRegex.test(value.trim())) {
+      // Auto-fetch image after a short delay
+      setTimeout(() => {
+        fetchImageForAdditionalPhoto(index, value);
+      }, 500);
+    }
   };
 
   // Remove additional photo
@@ -243,6 +309,7 @@ export default function CreatePostPage() {
         formDataToSend.append('additionalPhotos', photoData.file);
         formDataToSend.append(`additionalPhotoLink_${index}`, photoData.link);
         formDataToSend.append(`additionalPhotoDescription_${index}`, photoData.description);
+        formDataToSend.append(`additionalPhotoDiscountCode_${index}`, photoData.discountCode);
       });
 
       const token = getAuthToken();
@@ -584,17 +651,31 @@ export default function CreatePostPage() {
                         <div className="flex-1 space-y-2" onClick={(e) => e.stopPropagation()}>
                           <div>
                             <Label className="text-xs">Link (optional)</Label>
-                            <Input
-                              type="url"
-                              placeholder="https://example.com"
-                              value={additionalPhotos[index]?.link || ''}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                updateAdditionalPhotoData(index, 'link', e.target.value);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="h-8 text-xs"
-                            />
+                            <div className="relative">
+                              <Input
+                                type="url"
+                                placeholder="https://example.com (paste URL to auto-fetch image)"
+                                value={additionalPhotos[index]?.link || ''}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleAdditionalPhotoUrlPaste(index, e.target.value);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-8 text-xs pr-12"
+                              />
+                              <Button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fetchImageForAdditionalPhoto(index, additionalPhotos[index]?.link || '');
+                                }}
+                                disabled={!additionalPhotos[index]?.link?.trim()}
+                                className="absolute right-1 top-0.5 h-7 w-7 p-0 bg-pinterest-red hover:bg-red-600"
+                                title="Fetch image from URL"
+                              >
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                           <div>
                             <Label className="text-xs">Description (optional)</Label>
@@ -607,6 +688,20 @@ export default function CreatePostPage() {
                               }}
                               onClick={(e) => e.stopPropagation()}
                               className="h-16 text-xs resize-none"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Discount Code (optional)</Label>
+                            <Input
+                              type="text"
+                              placeholder="SAVE20"
+                              value={additionalPhotos[index]?.discountCode || ''}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                updateAdditionalPhotoData(index, 'discountCode', e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-8 text-xs"
                             />
                           </div>
                         </div>
