@@ -207,11 +207,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { primaryLink, primaryDescription, categoryId } = createPostRequestSchema.parse(bodyData);
 
-      // Handle additional photos
+      // Handle additional photos with enhanced data
       const additionalPhotos: string[] = [];
+      const additionalPhotoData: { url: string; link: string; description: string }[] = [];
+      
       if (req.files['additionalPhotos']) {
-        for (const file of req.files['additionalPhotos']) {
-          additionalPhotos.push(saveUploadedFile(file));
+        for (let i = 0; i < req.files['additionalPhotos'].length; i++) {
+          const file = req.files['additionalPhotos'][i];
+          const photoUrl = saveUploadedFile(file);
+          additionalPhotos.push(photoUrl);
+          
+          // Get corresponding link and description from form data
+          const link = req.body[`additionalPhotoLink_${i}`] || '';
+          const description = req.body[`additionalPhotoDescription_${i}`] || '';
+          
+          additionalPhotoData.push({
+            url: photoUrl,
+            link,
+            description
+          });
         }
       }
 
@@ -222,6 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryLink,
         primaryDescription,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
+        additionalPhotoData: additionalPhotoData.length > 0 ? additionalPhotoData : null,
         categoryId: categoryId || undefined, // Let storage handle default category
       });
 
