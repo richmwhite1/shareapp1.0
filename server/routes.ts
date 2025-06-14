@@ -609,6 +609,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share profile endpoint
+  app.post('/api/user/:userId/share', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+
+      await storage.sharePost(0, userId); // Use 0 as postId for profile shares
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

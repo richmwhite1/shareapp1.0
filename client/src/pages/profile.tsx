@@ -44,6 +44,28 @@ export default function ProfilePage() {
     enabled: isAuthenticated && !!user?.id,
   });
 
+  // Share profile mutation
+  const shareProfileMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', `/api/user/${user?.id}/share`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile shared successfully",
+        description: "Your profile has been shared!",
+      });
+      // Invalidate the total shares query to update the count
+      queryClient.invalidateQueries({ queryKey: [`/api/user/total-shares/${user?.id}`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Share failed",
+        description: error.message || "Failed to share profile",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Delete category mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
@@ -65,6 +87,10 @@ export default function ProfilePage() {
     if (confirm(`Are you sure you want to delete the "${categoryName}" category? All posts will be moved to General.`)) {
       deleteCategoryMutation.mutate(categoryId);
     }
+  };
+
+  const handleShareProfile = () => {
+    shareProfileMutation.mutate();
   };
 
   if (!isAuthenticated) {
@@ -132,12 +158,24 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 
-                <Link href="/create">
-                  <Button className="bg-pinterest-red hover:bg-red-700 text-white">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Post
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleShareProfile}
+                    variant="outline"
+                    className="border-pinterest-red text-pinterest-red hover:bg-pinterest-red hover:text-white"
+                    disabled={shareProfileMutation.isPending}
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    {shareProfileMutation.isPending ? 'Sharing...' : 'Share Profile'}
                   </Button>
-                </Link>
+                  
+                  <Link href="/create">
+                    <Button className="bg-pinterest-red hover:bg-red-700 text-white">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Post
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </CardContent>
           </Card>
