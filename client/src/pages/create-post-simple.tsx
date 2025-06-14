@@ -164,12 +164,9 @@ export default function CreatePostPage() {
         throw new Error('Failed to fetch image');
       }
 
-      const data = await response.json();
-      
-      // Convert base64 to File
-      const response2 = await fetch(data.imageDataUrl);
-      const blob = await response2.blob();
-      const file = new File([blob], 'scraped-image.jpg', { type: 'image/jpeg' });
+      // Get the image blob directly from the response
+      const blob = await response.blob();
+      const file = new File([blob], 'scraped-image.jpg', { type: blob.type });
       
       // Update the photo at the specific index
       const updatedPhotos = [...additionalPhotos];
