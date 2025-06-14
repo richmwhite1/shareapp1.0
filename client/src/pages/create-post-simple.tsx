@@ -31,7 +31,7 @@ export default function CreatePostPage() {
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
-  const [additionalPhotos, setAdditionalPhotos] = useState<File[]>([]);
+  const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string }[]>([]);
   const [primaryPhotoPreview, setPrimaryPhotoPreview] = useState<string | null>(null);
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -119,12 +119,13 @@ export default function CreatePostPage() {
   const handleAdditionalPhotosChange = (files: FileList | null) => {
     if (files) {
       const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-      const combinedFiles = [...additionalPhotos, ...newFiles].slice(0, 4); // Max 4 additional photos
+      const newPhotoData = newFiles.map(file => ({ file, link: '', description: '' }));
+      const combinedFiles = [...additionalPhotos, ...newPhotoData].slice(0, 4); // Max 4 additional photos
       setAdditionalPhotos(combinedFiles);
       
       // Generate previews
       const previews: string[] = [];
-      combinedFiles.forEach(file => {
+      combinedFiles.forEach(photoData => {
         const reader = new FileReader();
         reader.onload = (e) => {
           previews.push(e.target?.result as string);
@@ -132,7 +133,7 @@ export default function CreatePostPage() {
             setAdditionalPhotoPreviews(previews);
           }
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(photoData.file);
       });
     }
   };
@@ -227,8 +228,10 @@ export default function CreatePostPage() {
       formDataToSend.append('primaryPhoto', primaryPhoto);
       formDataToSend.append('categoryId', formData.categoryId);
       
-      additionalPhotos.forEach(photo => {
-        formDataToSend.append('additionalPhotos', photo);
+      additionalPhotos.forEach((photoData, index) => {
+        formDataToSend.append('additionalPhotos', photoData.file);
+        formDataToSend.append(`additionalPhotoLink_${index}`, photoData.link);
+        formDataToSend.append(`additionalPhotoDescription_${index}`, photoData.description);
       });
 
       const token = getAuthToken();
@@ -253,6 +256,8 @@ export default function CreatePostPage() {
         description: "Your post has been shared successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/user'] });
       setLocation('/');
     },
     onError: (error: Error) => {
