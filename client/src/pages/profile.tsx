@@ -120,7 +120,7 @@ export default function ProfilePage() {
               <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50">
                 <CardContent className="p-4">
                   <div className="aspect-square rounded-lg bg-secondary flex items-center justify-center mb-3 relative overflow-hidden">
-                    <Folder className="h-12 w-12 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
+                    <Folder className="h-3 w-3 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
                     <div className="absolute top-2 right-2">
                       <div className="w-6 h-6 bg-pinterest-red rounded-full flex items-center justify-center">
                         <span className="text-xs text-white font-medium">
@@ -149,7 +149,7 @@ export default function ProfilePage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Folder className="h-12 w-12 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
+                        <Folder className="h-3 w-3 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
                       )}
                       
                       {/* Post count badge */}
