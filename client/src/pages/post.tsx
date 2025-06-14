@@ -5,11 +5,21 @@ import PostCard from "@/components/post-card";
 import CommentSection from "@/components/comment-section";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import type { PostWithUser } from "@shared/schema";
 
 export default function PostPage() {
   const [, params] = useRoute("/post/:id");
   const postId = params?.id ? parseInt(params.id) : null;
+
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/';
+    }
+  };
 
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['/api/posts', postId],
@@ -125,6 +135,19 @@ export default function PostPage() {
       <Header />
       
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button
+            onClick={handleGoBack}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+
         {post && (
           <>
             <PostCard post={post} isDetailView={true} />

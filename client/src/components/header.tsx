@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, Home, User } from "lucide-react";
 
 export default function Header() {
   const { user, signOut, isAuthenticated } = useAuth();
@@ -27,12 +27,23 @@ export default function Header() {
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
               <Link href="/">
-                <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer ${
+                <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-2 ${
                   location === '/' ? 'text-pinterest-red font-medium' : ''
                 }`}>
+                  <Home className="w-4 h-4" />
                   Home
                 </span>
               </Link>
+              {isAuthenticated && (
+                <Link href="/profile">
+                  <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-2 ${
+                    location === '/profile' ? 'text-pinterest-red font-medium' : ''
+                  }`}>
+                    <User className="w-4 h-4" />
+                    Profile
+                  </span>
+                </Link>
+              )}
             </nav>
           </div>
           
