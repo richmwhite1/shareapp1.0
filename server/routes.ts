@@ -296,6 +296,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/posts/user/:userId', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+
+      const posts = await storage.getPostsByUserId(userId);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Comment routes
   app.post('/api/posts/:postId/comments', authenticateToken, upload.single('image'), async (req: any, res) => {
     try {

@@ -61,15 +61,21 @@ export default function Header() {
                       <ChevronDown className="w-4 h-4 text-gray-500" />
                     </div>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-popover border-border">
                     <DropdownMenuItem disabled>
-                      <span className="font-medium">{user?.name}</span>
+                      <span className="font-medium text-popover-foreground">{user?.name}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem disabled>
-                      <span className="text-sm text-gray-500">@{user?.username}</span>
+                      <span className="text-sm text-muted-foreground">@{user?.username}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut}>
+                    <Link href="/profile">
+                      <DropdownMenuItem className="text-popover-foreground hover:bg-accent cursor-pointer">
+                        View Profile
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut} className="text-popover-foreground hover:bg-accent cursor-pointer">
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>
