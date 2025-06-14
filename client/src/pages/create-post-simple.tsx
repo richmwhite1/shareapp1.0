@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Upload, X, Image, ExternalLink, Plus, FolderPlus } from "lucide-react";
@@ -50,6 +50,18 @@ export default function CreatePostPage() {
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
   });
+
+  // Set default category to user's "General" category when categories load
+  useEffect(() => {
+    if (Array.isArray(categories) && categories.length > 0 && !formData.categoryId) {
+      const generalCategory = categories.find((cat: any) => cat.name === 'General');
+      if (generalCategory) {
+        setFormData(prev => ({ ...prev, categoryId: generalCategory.id.toString() }));
+      } else if (categories.length > 0) {
+        setFormData(prev => ({ ...prev, categoryId: categories[0].id.toString() }));
+      }
+    }
+  }, [categories, formData.categoryId]);
 
   // Create new category mutation
   const createCategoryMutation = useMutation({
@@ -312,8 +324,7 @@ export default function CreatePostPage() {
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover border-border">
-                      <SelectItem value="1">General</SelectItem>
-                      {categories?.map((category: any) => (
+                      {Array.isArray(categories) && categories.map((category: any) => (
                         <SelectItem key={category.id} value={category.id.toString()}>
                           {category.name} ({category.postCount} posts)
                         </SelectItem>
