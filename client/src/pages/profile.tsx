@@ -161,7 +161,7 @@ export default function ProfilePage() {
               </Card>
 
               {/* User Categories */}
-              {categories.map((category: CategoryWithPosts) => (
+              {categories.filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => (
                 <Card 
                   key={category.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50"
