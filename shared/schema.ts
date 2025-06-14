@@ -119,6 +119,7 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
 export const createCommentSchema = insertCommentSchema.extend({
   text: z.string().min(1).max(1000, "Comment must be between 1 and 1000 characters"),
   parentId: z.number().optional(),
+  imageUrl: z.string().optional(),
 });
 
 // Types

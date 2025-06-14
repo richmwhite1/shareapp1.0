@@ -368,10 +368,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse parentId separately to handle form data properly
       const parentId = req.body.parentId ? parseInt(req.body.parentId) : undefined;
       
-      const { text } = createCommentSchema.parse({
+      // Validate only the text field since imageUrl is handled separately
+      const validationData = {
         text: req.body.text,
-        parentId: parentId,
-      });
+        ...(parentId && { parentId }),
+      };
+      
+      const { text } = createCommentSchema.parse(validationData);
 
       // Verify post exists
       const post = await storage.getPost(postId);
