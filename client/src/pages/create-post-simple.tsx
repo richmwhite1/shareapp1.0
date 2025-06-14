@@ -37,8 +37,6 @@ export default function CreatePostPage() {
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
   
   const primaryFileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
@@ -200,79 +198,24 @@ export default function CreatePostPage() {
     }
   };
 
-  // Handle URL paste detection for additional photos
+  // Handle URL paste detection for additional photos (no auto-fetch)
   const handleAdditionalPhotoUrlPaste = (index: number, value: string) => {
     updateAdditionalPhotoData(index, 'link', value);
-    
-    // Check if the pasted value looks like a URL
-    const urlRegex = /^https?:\/\/.+/i;
-    if (urlRegex.test(value.trim())) {
-      // Auto-fetch image after a short delay
-      setTimeout(() => {
-        fetchImageForAdditionalPhoto(index, value);
-      }, 500);
-    }
   };
 
-  // Add photo by URL without file upload
-  const addPhotoByUrl = async (url: string) => {
-    if (!url.trim()) return;
-
-    // Always create a placeholder photo entry first
+  // Add new photo entry with empty fields
+  const addNewPhotoEntry = () => {
+    if (additionalPhotos.length >= 4) return; // Max 4 additional photos
+    
     const placeholderFile = new File([''], 'placeholder.jpg', { type: 'image/jpeg' });
-    const newPhotoData = { file: placeholderFile, link: url, description: '', discountCode: '' };
+    const newPhotoData = { file: placeholderFile, link: '', description: '', discountCode: '' };
     const updatedPhotos = [...additionalPhotos, newPhotoData];
     setAdditionalPhotos(updatedPhotos);
-
-    try {
-      const response = await fetch('/api/scrape-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch image');
-      }
-
-      const data = await response.json();
-      
-      // Convert base64 to File
-      const response2 = await fetch(data.imageDataUrl);
-      const blob = await response2.blob();
-      const file = new File([blob], 'scraped-image.jpg', { type: 'image/jpeg' });
-      
-      // Update the last added photo with the fetched image
-      const updatedPhotosWithImage = [...updatedPhotos];
-      updatedPhotosWithImage[updatedPhotosWithImage.length - 1].file = file;
-      setAdditionalPhotos(updatedPhotosWithImage);
-      
-      // Generate preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newPreviews = [...additionalPhotoPreviews, e.target?.result as string];
-        setAdditionalPhotoPreviews(newPreviews);
-      };
-      reader.readAsDataURL(file);
-
-      toast({
-        title: "Image added!",
-        description: "The image has been fetched and added successfully.",
-      });
-    } catch (error) {
-      // If image fetch fails, still add a placeholder preview
-      const placeholderPreview = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZiNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPkltYWdlIG5vdCBhdmFpbGFibGU8L3RleHQ+PC9zdmc+';
-      const newPreviews = [...additionalPhotoPreviews, placeholderPreview];
-      setAdditionalPhotoPreviews(newPreviews);
-
-      toast({
-        title: "Photo added with link",
-        description: "Could not fetch image, but the link and description fields are available.",
-      });
-    }
+    
+    // Add placeholder preview
+    const placeholderPreview = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZiNzI4MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIGltYWdlPC90ZXh0Pjwvc3ZnPg==';
+    const newPreviews = [...additionalPhotoPreviews, placeholderPreview];
+    setAdditionalPhotoPreviews(newPreviews);
   };
 
   // Remove additional photo
@@ -717,7 +660,7 @@ export default function CreatePostPage() {
                             <div className="relative">
                               <Input
                                 type="url"
-                                placeholder="https://example.com (paste URL to auto-fetch image)"
+                                placeholder="https://example.com"
                                 value={additionalPhotos[index]?.link || ''}
                                 onChange={(e) => {
                                   e.stopPropagation();
@@ -790,59 +733,19 @@ export default function CreatePostPage() {
                         </p>
                       </div>
                       
-                      {/* Add by Link option */}
+                      {/* Add Photo option */}
                       <div className="mt-3 text-center">
-                        {!showUrlInput ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowUrlInput(true)}
-                            className="text-pinterest-red border-pinterest-red hover:bg-red-50"
-                          >
-                            <LinkIcon className="w-4 h-4 mr-2" />
-                            Add by Link
-                          </Button>
-                        ) : (
-                          <div className="flex gap-2 max-w-md mx-auto">
-                            <Input
-                              placeholder="Paste image URL here..."
-                              value={urlInput}
-                              onChange={(e) => setUrlInput(e.target.value)}
-                              className="flex-1"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  addPhotoByUrl(urlInput);
-                                  setUrlInput('');
-                                  setShowUrlInput(false);
-                                }
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              onClick={() => {
-                                addPhotoByUrl(urlInput);
-                                setUrlInput('');
-                                setShowUrlInput(false);
-                              }}
-                              disabled={!urlInput.trim()}
-                              className="bg-pinterest-red hover:bg-red-600"
-                            >
-                              Add
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={() => {
-                                setShowUrlInput(false);
-                                setUrlInput('');
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addNewPhotoEntry}
+                          disabled={additionalPhotos.length >= 4}
+                          className="text-pinterest-red border-pinterest-red hover:bg-red-50"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Photo
+                        </Button>
                       </div>
                     </div>
                   )}
