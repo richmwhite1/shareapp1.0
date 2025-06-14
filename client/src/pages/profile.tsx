@@ -5,7 +5,7 @@ import Header from "@/components/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Folder, Image, Plus, Users, Lock, Trash2 } from "lucide-react";
+import { Folder, Image, Plus, Users, Lock, Trash2, Share2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,7 +39,7 @@ export default function ProfilePage() {
 
   // Fetch total shares for all user posts
   const { data: totalShares = 0 } = useQuery({
-    queryKey: ['/api/user/total-shares', user?.id],
+    queryKey: [`/api/user/total-shares/${user?.id}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated && !!user?.id,
   });
@@ -124,6 +124,10 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-1">
                       <Folder className="h-4 w-4" />
                       <span>{categories.length} categories</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Share2 className="h-4 w-4" />
+                      <span>{totalShares} shares</span>
                     </div>
                   </div>
                 </div>

@@ -462,6 +462,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/user/total-shares/:userId', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const totalShares = await storage.getUserTotalShares(userId);
+      res.json(totalShares);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Image scraping endpoint
   app.post('/api/scrape-image', authenticateToken, async (req: any, res) => {
     try {
