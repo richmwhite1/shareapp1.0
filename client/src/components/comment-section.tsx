@@ -61,7 +61,10 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
         formData.append('parentId', data.parentId.toString());
       }
       if (data.image && data.image.length > 0) {
+        console.log('Adding image to FormData:', data.image[0]);
         formData.append('image', data.image[0]);
+      } else {
+        console.log('No image to add:', data.image);
       }
 
       console.log('FormData contents:', Array.from(formData.entries()));
@@ -173,9 +176,11 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                             type="file"
                             accept="image/jpeg,image/png"
                             className="hidden"
-                            onChange={(e) => onChange(e.target.files)}
+                            onChange={(e) => {
+                              console.log('File input changed:', e.target.files);
+                              onChange(e.target.files);
+                            }}
                             onClick={(e) => e.stopPropagation()}
-                            value=""
                           />
                         </FormControl>
                         <FormMessage />
