@@ -35,6 +35,10 @@ export interface IStorage {
 
   // Stats methods
   getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number }>;
+
+  // Delete methods
+  deletePost(postId: number): Promise<void>;
+  deleteCategory(categoryId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {

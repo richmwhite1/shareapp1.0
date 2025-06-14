@@ -462,6 +462,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Image scraping endpoint
+  app.post('/api/scrape-image', authenticateToken, async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ message: 'URL is required' });
+      }
+
+      const fetch = (await import('node-fetch')).default;
+      const cheerio = await import('cheerio');
+
+      // Fetch the webpage
+      const response = await fetch(url);
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // Try to find the main image in order of preference
+      let imageUrl = '';
+      
+      // 1. Open Graph image
+      imageUrl = $('meta[property="og:image"]').attr('content') || '';
+      
+      // 2. Twitter card image
+      if (!imageUrl) {
+        imageUrl = $('meta[name="twitter:image"]').attr('content') || '';
+      }
+      
+      // 3. Look for product images or main content images
+      if (!imageUrl) {
+        const possibleSelectors = [
+          'img[class*="product"]',
+          'img[class*="main"]',
+          'img[class*="hero"]',
+          'img[class*="primary"]',
+          'img[data-src]',
+          'img[src]'
+        ];
+        
+        for (const selector of possibleSelectors) {
+          const img = $(selector).first();
+          if (img.length) {
+            imageUrl = img.attr('src') || img.attr('data-src') || '';
+            if (imageUrl) break;
+          }
+        }
+      }
+
+      if (!imageUrl) {
+        return res.status(404).json({ message: 'No suitable image found on the page' });
+      }
+
+      // Convert relative URLs to absolute
+      if (imageUrl.startsWith('/')) {
+        const urlObj = new URL(url);
+        imageUrl = `${urlObj.protocol}//${urlObj.host}${imageUrl}`;
+      } else if (!imageUrl.startsWith('http')) {
+        const urlObj = new URL(url);
+        imageUrl = `${urlObj.protocol}//${urlObj.host}/${imageUrl}`;
+      }
+
+      // Fetch the actual image
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        return res.status(404).json({ message: 'Failed to fetch image' });
+      }
+
+      // Set appropriate headers and pipe the image
+      res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/jpeg');
+      res.setHeader('Content-Length', imageResponse.headers.get('content-length') || '0');
+      
+      // Convert the response to a buffer and send
+      const buffer = await imageResponse.buffer();
+      res.send(buffer);
+      
+    } catch (error: any) {
+      console.error('Image scraping error:', error);
+      res.status(500).json({ message: 'Failed to scrape image from URL' });
+    }
+  });
+
+  // Delete post endpoint
+  app.delete('/api/posts/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      
+      if (post.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Not authorized to delete this post' });
+      }
+      
+      await storage.deletePost(postId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Delete category endpoint
+  app.delete('/api/categories/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const category = await storage.getCategory(categoryId);
+      
+      if (!category) {
+        return res.status(404).json({ message: 'Category not found' });
+      }
+      
+      if (category.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Not authorized to delete this category' });
+      }
+      
+      await storage.deleteCategory(categoryId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

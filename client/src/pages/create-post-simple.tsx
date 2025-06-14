@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download } from "lucide-react";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ export default function CreatePostPage() {
   const [primaryPhotoPreview, setPrimaryPhotoPreview] = useState<string | null>(null);
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingImage, setIsFetchingImage] = useState(false);
   
   const primaryFileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
@@ -168,6 +169,52 @@ export default function CreatePostPage() {
     }
   };
 
+  // URL scraping functionality
+  const fetchImageFromUrl = async () => {
+    if (!formData.primaryLink.trim()) {
+      toast({
+        title: "No URL provided",
+        description: "Please enter a URL first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFetchingImage(true);
+    try {
+      const response = await fetch('/api/scrape-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url: formData.primaryLink }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch image from URL');
+      }
+
+      const blob = await response.blob();
+      const file = new File([blob], 'scraped-image.jpg', { type: blob.type });
+      
+      handlePrimaryPhotoChange(file);
+      
+      toast({
+        title: "Image fetched successfully",
+        description: "The main image from the URL has been loaded",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch image",
+        description: error.message || "Could not fetch image from the provided URL",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!primaryPhoto) {
@@ -290,12 +337,24 @@ export default function CreatePostPage() {
                     id="primaryLink"
                     type="url"
                     placeholder="https://example.com"
-                    className="pl-10 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                    className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                     value={formData.primaryLink}
                     onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
                     required
                   />
+                  <Button
+                    type="button"
+                    onClick={fetchImageFromUrl}
+                    disabled={isFetchingImage || !formData.primaryLink.trim()}
+                    className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-pinterest-red hover:bg-red-600"
+                    title="Fetch image from URL"
+                  >
+                    <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                  </Button>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click the download icon to automatically fetch the main image from the URL
+                </p>
               </div>
 
               {/* Primary Description */}
