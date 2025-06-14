@@ -139,10 +139,18 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type CreateCommentData = z.infer<typeof createCommentSchema>;
 
+// Additional photo data type
+export type AdditionalPhotoData = {
+  url: string;
+  link: string;
+  description: string;
+};
+
 // Extended types for API responses
 export type PostWithUser = Post & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
   category?: Pick<Category, 'id' | 'name'>;
+  additionalPhotoData?: AdditionalPhotoData[];
 };
 
 export type CategoryWithPosts = Category & {

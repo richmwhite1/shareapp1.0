@@ -141,19 +141,25 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                   name="image"
                   render={({ field: { onChange, ...field } }) => (
                     <FormItem>
-                      <Label className="flex items-center space-x-2 text-sm text-pinterest-gray hover:text-pinterest-red cursor-pointer transition-colors">
+                      <Label 
+                        htmlFor={`comment-file-${Date.now()}`}
+                        className="flex items-center space-x-2 text-sm text-pinterest-gray hover:text-pinterest-red cursor-pointer transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Image className="w-4 h-4" />
                         <span>Add photo</span>
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/jpeg,image/png"
-                            className="hidden"
-                            onChange={(e) => onChange(e.target.files)}
-                            value=""
-                          />
-                        </FormControl>
                       </Label>
+                      <FormControl>
+                        <Input
+                          id={`comment-file-${Date.now()}`}
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          className="hidden"
+                          onChange={(e) => onChange(e.target.files)}
+                          onClick={(e) => e.stopPropagation()}
+                          value=""
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
