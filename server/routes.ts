@@ -92,6 +92,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profilePictureUrl,
       });
 
+      // Create default "General" category for the new user
+      await storage.createCategory({
+        userId: user.id,
+        name: 'General',
+        description: 'Default category for all posts',
+        isPublic: false,
+      });
+
       // Generate JWT token
       const token = jwt.sign(
         { userId: user.id, username: user.username },
@@ -272,6 +280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/posts', async (req, res) => {
     try {
       const posts = await storage.getAllPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get current user's posts
+  app.get('/api/posts/user', authenticateToken, async (req: any, res) => {
+    try {
+      const posts = await storage.getPostsByUserId(req.user.userId);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
