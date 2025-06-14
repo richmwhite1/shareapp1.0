@@ -334,6 +334,30 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                               {photoData.description}
                             </p>
                           )}
+                          {photoData?.discountCode && (
+                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-green-800 font-medium">Code:</span>
+                                  <span className="ml-1 font-mono text-green-700 font-bold">{photoData.discountCode}</span>
+                                </div>
+                                <Button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(photoData.discountCode);
+                                    toast({ title: "Copied!", description: "Discount code copied to clipboard" });
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 px-2 text-green-700 border-green-300 hover:bg-green-100"
+                                >
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  Copy
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
