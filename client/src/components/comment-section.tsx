@@ -139,30 +139,38 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                 <FormField
                   control={form.control}
                   name="image"
-                  render={({ field: { onChange, ...field } }) => (
-                    <FormItem>
-                      <Label 
-                        htmlFor={`comment-file-${Date.now()}`}
-                        className="flex items-center space-x-2 text-sm text-pinterest-gray hover:text-pinterest-red cursor-pointer transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Image className="w-4 h-4" />
-                        <span>Add photo</span>
-                      </Label>
-                      <FormControl>
-                        <Input
-                          id={`comment-file-${Date.now()}`}
-                          type="file"
-                          accept="image/jpeg,image/png"
-                          className="hidden"
-                          onChange={(e) => onChange(e.target.files)}
+                  render={({ field: { onChange, value, ...field } }) => {
+                    const fileInputId = `comment-file-${postId}-${parentId || 'root'}`;
+                    const hasFile = value && value.length > 0;
+                    return (
+                      <FormItem>
+                        <Label 
+                          htmlFor={fileInputId}
+                          className={`flex items-center space-x-2 text-sm cursor-pointer transition-colors ${
+                            hasFile 
+                              ? 'text-pinterest-red bg-red-50 px-2 py-1 rounded' 
+                              : 'text-pinterest-gray hover:text-pinterest-red'
+                          }`}
                           onClick={(e) => e.stopPropagation()}
-                          value=""
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                        >
+                          <Image className="w-4 h-4" />
+                          <span>{hasFile ? `Photo selected (${value[0]?.name})` : 'Add photo'}</span>
+                        </Label>
+                        <FormControl>
+                          <Input
+                            id={fileInputId}
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            className="hidden"
+                            onChange={(e) => onChange(e.target.files)}
+                            onClick={(e) => e.stopPropagation()}
+                            value=""
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <span className="text-xs text-gray-400">Max 2MB</span>
               </div>
