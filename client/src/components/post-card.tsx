@@ -23,13 +23,13 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const [selectedImage, setSelectedImage] = useState(post.primaryPhotoUrl);
 
   // Get post stats
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{ likeCount: number; commentCount: number; shareCount: number }>({
     queryKey: [`/api/posts/${post.id}/stats`],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   // Check if user has liked this post
-  const { data: userLike } = useQuery({
+  const { data: userLike } = useQuery<boolean>({
     queryKey: [`/api/posts/${post.id}/like`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: isAuthenticated,

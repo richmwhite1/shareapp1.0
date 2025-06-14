@@ -66,7 +66,7 @@ export default function CategoryPage() {
           
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-              {category.firstPostImage ? (
+              {category?.firstPostImage ? (
                 <img 
                   src={category.firstPostImage} 
                   alt={category.name}
@@ -79,24 +79,24 @@ export default function CategoryPage() {
             
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground">{category.name}</h1>
-                {category.isPublic ? (
+                <h1 className="text-2xl font-bold text-foreground">{category?.name}</h1>
+                {category?.isPublic ? (
                   <Users className="h-4 w-4 text-green-400" />
                 ) : (
                   <Lock className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
               <p className="text-muted-foreground">
-                {category.description || `${posts.length} posts in this category`}
+                {category?.description || `${posts?.length || 0} posts in this category`}
               </p>
             </div>
           </div>
         </div>
 
         {/* Posts Grid */}
-        {posts.length > 0 ? (
+        {posts && posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {posts.map((post: any) => (
+            {posts.map((post: PostWithUser) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
