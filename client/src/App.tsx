@@ -9,6 +9,7 @@ import PostPage from "@/pages/post";
 import AuthPage from "@/pages/auth";
 import CreatePostPage from "@/pages/create-post-simple";
 import ProfilePage from "@/pages/profile";
+import CategoryPage from "@/pages/category";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/create" component={CreatePostPage} />
       <Route path="/profile" component={ProfilePage} />
+      <Route path="/category/:id" component={CategoryPage} />
       <Route component={NotFound} />
     </Switch>
   );

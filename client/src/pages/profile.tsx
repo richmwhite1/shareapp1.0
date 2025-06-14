@@ -115,22 +115,21 @@ export default function ProfilePage() {
           </div>
 
           {categories.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
               {/* General Category (Default) */}
               <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50">
-                <CardContent className="p-4">
-                  <div className="aspect-square rounded-lg bg-secondary flex items-center justify-center mb-3 relative overflow-hidden">
-                    <Folder className="h-3 w-3 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
-                    <div className="absolute top-2 right-2">
-                      <div className="w-6 h-6 bg-pinterest-red rounded-full flex items-center justify-center">
-                        <span className="text-xs text-white font-medium">
+                <CardContent className="p-2">
+                  <div className="aspect-square rounded bg-secondary flex items-center justify-center mb-1 relative overflow-hidden">
+                    <Folder className="h-2 w-2 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
+                    <div className="absolute top-1 right-1">
+                      <div className="w-3 h-3 bg-pinterest-red rounded-full flex items-center justify-center">
+                        <span className="text-[8px] text-white font-medium">
                           {userPosts.filter(p => !p.categoryId || p.categoryId === 1).length}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <h3 className="font-medium text-foreground mb-1">General</h3>
-                  <p className="text-xs text-muted-foreground">Default posts</p>
+                  <h3 className="text-xs font-medium text-foreground truncate">General</h3>
                 </CardContent>
               </Card>
 
@@ -139,9 +138,14 @@ export default function ProfilePage() {
                 <Card 
                   key={category.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50"
+                  onClick={() => {
+                    // Show posts in this category
+                    console.log(`Viewing category: ${category.name} (${category.postCount} posts)`);
+                    // TODO: Add navigation to category view
+                  }}
                 >
-                  <CardContent className="p-4">
-                    <div className="aspect-square rounded-lg bg-secondary flex items-center justify-center mb-3 relative overflow-hidden">
+                  <CardContent className="p-2">
+                    <div className="aspect-square rounded bg-secondary flex items-center justify-center mb-1 relative overflow-hidden">
                       {category.firstPostImage ? (
                         <img 
                           src={category.firstPostImage} 
@@ -149,34 +153,29 @@ export default function ProfilePage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Folder className="h-3 w-3 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
+                        <Folder className="h-2 w-2 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
                       )}
                       
                       {/* Post count badge */}
-                      <div className="absolute top-2 right-2">
-                        <div className="w-6 h-6 bg-pinterest-red rounded-full flex items-center justify-center">
-                          <span className="text-xs text-white font-medium">
+                      <div className="absolute top-1 right-1">
+                        <div className="w-3 h-3 bg-pinterest-red rounded-full flex items-center justify-center">
+                          <span className="text-[8px] text-white font-medium">
                             {category.postCount}
                           </span>
                         </div>
                       </div>
                       
                       {/* Privacy indicator */}
-                      <div className="absolute bottom-2 left-2">
-                        {category.isPublic ? (
-                          <Users className="h-3 w-3 text-green-400" />
-                        ) : (
-                          <Lock className="h-3 w-3 text-muted-foreground" />
-                        )}
-                      </div>
+                      {!category.isPublic && (
+                        <div className="absolute bottom-1 left-1">
+                          <Lock className="h-2 w-2 text-muted-foreground" />
+                        </div>
+                      )}
                     </div>
                     
-                    <h3 className="font-medium text-foreground mb-1 group-hover:text-pinterest-red transition-colors">
+                    <h3 className="text-xs font-medium text-foreground truncate group-hover:text-pinterest-red transition-colors">
                       {category.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {category.description || `${category.postCount} posts`}
-                    </p>
                   </CardContent>
                 </Card>
               ))}

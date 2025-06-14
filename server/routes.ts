@@ -286,6 +286,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/posts/category/:categoryId', async (req, res) => {
+    try {
+      const categoryId = parseInt(req.params.categoryId);
+      if (isNaN(categoryId)) {
+        return res.status(400).json({ message: 'Invalid category ID' });
+      }
+
+      const posts = await storage.getPostsByCategoryId(categoryId);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get current user's posts
   app.get('/api/posts/user', authenticateToken, async (req: any, res) => {
     try {
