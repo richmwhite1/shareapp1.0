@@ -89,12 +89,14 @@ export const insertPostSchema = createInsertSchema(posts).pick({
 export const createPostSchema = insertPostSchema.extend({
   primaryLink: z.string().url("Must be a valid URL"),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
+  discountCode: z.string().optional(),
   additionalPhotos: z.array(z.string()).optional(),
 });
 
 export const createPostRequestSchema = z.object({
   primaryLink: z.string().url("Must be a valid URL"),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
+  discountCode: z.string().optional(),
   categoryId: z.coerce.number().optional(),
 });
 

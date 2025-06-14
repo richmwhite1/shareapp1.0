@@ -202,10 +202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bodyData = {
         primaryLink: req.body.primaryLink,
         primaryDescription: req.body.primaryDescription,
+        discountCode: req.body.discountCode || undefined,
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1
       };
       
-      const { primaryLink, primaryDescription, categoryId } = createPostRequestSchema.parse(bodyData);
+      const { primaryLink, primaryDescription, discountCode, categoryId } = createPostRequestSchema.parse(bodyData);
 
       // Handle additional photos with enhanced data
       const additionalPhotos: string[] = [];

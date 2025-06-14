@@ -19,6 +19,7 @@ export default function CreatePostPage() {
   const [formData, setFormData] = useState({
     primaryLink: "",
     primaryDescription: "",
+    discountCode: "",
     categoryId: "" // Will be set when categories load
   });
   
@@ -232,6 +233,9 @@ export default function CreatePostPage() {
       const formDataToSend = new FormData();
       formDataToSend.append('primaryLink', formData.primaryLink);
       formDataToSend.append('primaryDescription', formData.primaryDescription);
+      if (formData.discountCode) {
+        formDataToSend.append('discountCode', formData.discountCode);
+      }
       formDataToSend.append('primaryPhoto', primaryPhoto);
       formDataToSend.append('categoryId', formData.categoryId);
       
@@ -381,6 +385,22 @@ export default function CreatePostPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
                   required
                 />
+              </div>
+
+              {/* Discount Code */}
+              <div>
+                <Label htmlFor="discountCode">Discount Code (Optional)</Label>
+                <Input
+                  id="discountCode"
+                  type="text"
+                  placeholder="Enter discount code (e.g., SAVE20)"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  value={formData.discountCode || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, discountCode: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Users can click to copy this code when viewing your post
+                </p>
               </div>
 
               {/* Category Selection */}
