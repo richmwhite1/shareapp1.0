@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -28,6 +28,7 @@ export const posts = pgTable("posts", {
   primaryLink: text("primary_link").notNull(),
   primaryDescription: text("primary_description").notNull(),
   additionalPhotos: text("additional_photos").array(),
+  additionalPhotoData: json("additional_photo_data"), // Array of {url, link, description} objects
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -80,6 +81,7 @@ export const insertPostSchema = createInsertSchema(posts).pick({
   primaryLink: true,
   primaryDescription: true,
   additionalPhotos: true,
+  additionalPhotoData: true,
 });
 
 export const createPostSchema = insertPostSchema.extend({
