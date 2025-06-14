@@ -19,7 +19,7 @@ export default function CreatePostPage() {
   const [formData, setFormData] = useState({
     primaryLink: "",
     primaryDescription: "",
-    categoryId: "1" // Default to General category
+    categoryId: "" // Will be set when categories load
   });
   
   const [newCategoryData, setNewCategoryData] = useState({
