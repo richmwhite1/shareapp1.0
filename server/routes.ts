@@ -411,6 +411,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Social feature routes
+  app.get('/api/posts/:id/stats', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const stats = await storage.getPostStats(postId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/like', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const hasLiked = await storage.getUserLike(postId, req.user.userId);
+      res.json(hasLiked);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/like', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.likePost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/posts/:id/like', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.unlikePost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/share', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.sharePost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

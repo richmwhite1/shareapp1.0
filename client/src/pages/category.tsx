@@ -7,18 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Folder, Lock, Users } from "lucide-react";
 import { Link } from "wouter";
+import type { CategoryWithPosts, PostWithUser } from "@shared/schema";
 
 export default function CategoryPage() {
   const [match, params] = useRoute('/category/:id');
   const categoryId = params?.id;
 
-  const { data: category, isLoading: categoryLoading } = useQuery({
+  const { data: category, isLoading: categoryLoading } = useQuery<CategoryWithPosts>({
     queryKey: [`/api/categories/${categoryId}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,
   });
 
-  const { data: posts = [], isLoading: postsLoading } = useQuery({
+  const { data: posts = [], isLoading: postsLoading } = useQuery<PostWithUser[]>({
     queryKey: [`/api/posts/category/${categoryId}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,

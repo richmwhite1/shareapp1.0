@@ -275,6 +275,35 @@ export class DatabaseStorage implements IStorage {
 
     return topLevelComments;
   }
+
+  async likePost(postId: number, userId: number): Promise<void> {
+    await db.insert(postLikes).values({ postId, userId });
+  }
+
+  async unlikePost(postId: number, userId: number): Promise<void> {
+    await db.delete(postLikes).where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+  }
+
+  async getUserLike(postId: number, userId: number): Promise<boolean> {
+    const [like] = await db.select().from(postLikes).where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+    return !!like;
+  }
+
+  async sharePost(postId: number, userId?: number): Promise<void> {
+    await db.insert(postShares).values({ postId, userId });
+  }
+
+  async getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number }> {
+    const [likeCount] = await db.select({ count: count() }).from(postLikes).where(eq(postLikes.postId, postId));
+    const [commentCount] = await db.select({ count: count() }).from(comments).where(eq(comments.postId, postId));
+    const [shareCount] = await db.select({ count: count() }).from(postShares).where(eq(postShares.postId, postId));
+
+    return {
+      likeCount: likeCount.count,
+      commentCount: commentCount.count,
+      shareCount: shareCount.count,
+    };
+  }
 }
 
 // Legacy MemStorage for reference - to be removed
