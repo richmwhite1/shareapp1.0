@@ -45,7 +45,7 @@ export default function CreatePostPage() {
   const queryClient = useQueryClient();
 
   // Fetch user's categories
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
@@ -332,9 +332,12 @@ export default function CreatePostPage() {
                         <FolderPlus className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-card border-border">
+                    <DialogContent className="bg-card border-border" aria-describedby="category-dialog-description">
                       <DialogHeader>
                         <DialogTitle className="text-foreground">Create New Category</DialogTitle>
+                        <p id="category-dialog-description" className="text-sm text-muted-foreground">
+                          Create a new category to organize your posts
+                        </p>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
