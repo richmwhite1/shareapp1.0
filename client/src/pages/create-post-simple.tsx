@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon } from "lucide-react";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,8 @@ export default function CreatePostPage() {
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
   
   const primaryFileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
@@ -209,6 +211,57 @@ export default function CreatePostPage() {
       setTimeout(() => {
         fetchImageForAdditionalPhoto(index, value);
       }, 500);
+    }
+  };
+
+  // Add photo by URL without file upload
+  const addPhotoByUrl = async (url: string) => {
+    if (!url.trim()) return;
+
+    try {
+      const response = await fetch('/api/scrape-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch image');
+      }
+
+      const data = await response.json();
+      
+      // Convert base64 to File
+      const response2 = await fetch(data.imageDataUrl);
+      const blob = await response2.blob();
+      const file = new File([blob], 'scraped-image.jpg', { type: 'image/jpeg' });
+      
+      // Create new photo data with the URL as the link
+      const newPhotoData = { file, link: url, description: '', discountCode: '' };
+      const updatedPhotos = [...additionalPhotos, newPhotoData];
+      setAdditionalPhotos(updatedPhotos);
+      
+      // Generate preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const newPreviews = [...additionalPhotoPreviews, e.target?.result as string];
+        setAdditionalPhotoPreviews(newPreviews);
+      };
+      reader.readAsDataURL(file);
+
+      toast({
+        title: "Image added!",
+        description: "The image has been fetched and added successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error fetching image",
+        description: "Could not fetch the image from the URL. Please check the URL and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -711,19 +764,76 @@ export default function CreatePostPage() {
 
                   {/* Add photo button */}
                   {additionalPhotos.length < 4 && (
-                    <div
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pinterest-red transition-colors cursor-pointer"
-                      onDragOver={handleDragOver}
-                      onDrop={handleAdditionalDrop}
-                      onClick={() => additionalFileRef.current?.click()}
-                    >
-                      <Plus className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                      <p className="text-gray-600">
-                        Add additional photo ({additionalPhotos.length}/4)
-                      </p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Click to upload or drag and drop
-                      </p>
+                    <div>
+                      <div
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-pinterest-red transition-colors cursor-pointer"
+                        onDragOver={handleDragOver}
+                        onDrop={handleAdditionalDrop}
+                        onClick={() => additionalFileRef.current?.click()}
+                      >
+                        <Plus className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-gray-600">
+                          Add additional photo ({additionalPhotos.length}/4)
+                        </p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Click to upload or drag and drop
+                        </p>
+                      </div>
+                      
+                      {/* Add by Link option */}
+                      <div className="mt-3 text-center">
+                        {!showUrlInput ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowUrlInput(true)}
+                            className="text-pinterest-red border-pinterest-red hover:bg-red-50"
+                          >
+                            <LinkIcon className="w-4 h-4 mr-2" />
+                            Add by Link
+                          </Button>
+                        ) : (
+                          <div className="flex gap-2 max-w-md mx-auto">
+                            <Input
+                              placeholder="Paste image URL here..."
+                              value={urlInput}
+                              onChange={(e) => setUrlInput(e.target.value)}
+                              className="flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addPhotoByUrl(urlInput);
+                                  setUrlInput('');
+                                  setShowUrlInput(false);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                addPhotoByUrl(urlInput);
+                                setUrlInput('');
+                                setShowUrlInput(false);
+                              }}
+                              disabled={!urlInput.trim()}
+                              className="bg-pinterest-red hover:bg-red-600"
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setShowUrlInput(false);
+                                setUrlInput('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
