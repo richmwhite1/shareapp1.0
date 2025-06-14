@@ -365,9 +365,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid post ID' });
       }
 
-      const { text, parentId } = createCommentSchema.parse({
-        ...req.body,
-        parentId: req.body.parentId ? parseInt(req.body.parentId) : undefined,
+      // Parse parentId separately to handle form data properly
+      const parentId = req.body.parentId ? parseInt(req.body.parentId) : undefined;
+      
+      const { text } = createCommentSchema.parse({
+        text: req.body.text,
+        parentId: parentId,
       });
 
       // Verify post exists

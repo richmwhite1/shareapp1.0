@@ -25,22 +25,22 @@ export default function Header() {
                 PinShare
               </h1>
             </Link>
-            <nav className="hidden md:flex items-center space-x-6">
+            <nav className="flex items-center space-x-4 md:space-x-6">
               <Link href="/">
-                <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-2 ${
+                <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-1 md:gap-2 ${
                   location === '/' ? 'text-pinterest-red font-medium' : ''
                 }`}>
                   <Home className="w-4 h-4" />
-                  Home
+                  <span className="hidden sm:block">Home</span>
                 </span>
               </Link>
               {isAuthenticated && (
                 <Link href="/profile">
-                  <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-2 ${
+                  <span className={`text-foreground hover:text-pinterest-red transition-colors cursor-pointer flex items-center gap-1 md:gap-2 ${
                     location === '/profile' ? 'text-pinterest-red font-medium' : ''
                   }`}>
                     <User className="w-4 h-4" />
-                    Profile
+                    <span className="hidden sm:block">Profile</span>
                   </span>
                 </Link>
               )}
@@ -52,8 +52,8 @@ export default function Header() {
               <>
                 <Link href="/create">
                   <Button className="bg-pinterest-red text-white hover:bg-red-700 transition-colors">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Post
+                    <Plus className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Create Post</span>
                   </Button>
                 </Link>
                 
