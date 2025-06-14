@@ -1,6 +1,6 @@
-import { users, posts, comments, categories, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts } from "@shared/schema";
+import { users, posts, comments, categories, postLikes, postShares, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -24,6 +24,17 @@ export interface IStorage {
   // Comment methods
   createComment(comment: InsertComment & { postId: number; userId: number }): Promise<Comment>;
   getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
+
+  // Like methods
+  likePost(postId: number, userId: number): Promise<void>;
+  unlikePost(postId: number, userId: number): Promise<void>;
+  getUserLike(postId: number, userId: number): Promise<boolean>;
+
+  // Share methods
+  sharePost(postId: number, userId?: number): Promise<void>;
+
+  // Stats methods
+  getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {

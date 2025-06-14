@@ -1,10 +1,14 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2 } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth.tsx";
+import { useState } from "react";
 import type { PostWithUser } from "@shared/schema";
 
 interface PostCardProps {
@@ -14,12 +18,54 @@ interface PostCardProps {
 
 export default function PostCard({ post, isDetailView = false }: PostCardProps) {
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedImage, setSelectedImage] = useState(post.primaryPhotoUrl);
+
+  // Get post stats
+  const { data: stats } = useQuery({
+    queryKey: [`/api/posts/${post.id}/stats`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+
+  // Check if user has liked this post
+  const { data: userLike } = useQuery({
+    queryKey: [`/api/posts/${post.id}/like`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: isAuthenticated,
+  });
+
+  // Like/unlike mutation
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      if (userLike) {
+        return apiRequest('DELETE', `/api/posts/${post.id}/like`);
+      } else {
+        return apiRequest('POST', `/api/posts/${post.id}/like`);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/stats`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/like`] });
+    },
+  });
+
+  // Share mutation
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', `/api/posts/${post.id}/share`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/stats`] });
+    },
+  });
 
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
     
     try {
       await navigator.clipboard.writeText(url);
+      shareMutation.mutate();
       toast({
         title: "Link copied!",
         description: "Post link copied to clipboard.",
@@ -31,6 +77,17 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         variant: "destructive",
       });
     }
+  };
+
+  const handleLike = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to like posts.",
+      });
+      return;
+    }
+    likeMutation.mutate();
   };
 
   const formatDate = (date: string | Date) => {
@@ -77,11 +134,53 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       {/* Primary Photo */}
       <div className="relative">
         <img
-          src={post.primaryPhotoUrl}
+          src={selectedImage}
           alt="Post image"
           className={`w-full object-cover ${isDetailView ? 'h-96' : 'h-64'}`}
         />
       </div>
+
+      {/* Social Actions Bar */}
+      <CardContent className="p-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            {/* Love/Heart Button */}
+            <Button
+              onClick={handleLike}
+              variant="ghost"
+              size="sm"
+              disabled={likeMutation.isPending}
+              className={`transition-colors ${
+                userLike 
+                  ? 'text-red-500 hover:text-red-600' 
+                  : 'text-gray-500 hover:text-red-500'
+              }`}
+            >
+              <Heart 
+                className={`w-5 h-5 mr-1 ${userLike ? 'fill-current' : ''}`} 
+              />
+              <span className="text-sm font-medium">
+                {stats?.likeCount || 0}
+              </span>
+            </Button>
+
+            {/* Comments Button */}
+            <Link href={`/post/${post.id}`}>
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+                <MessageCircle className="w-5 h-5 mr-1" />
+                <span className="text-sm font-medium">
+                  {stats?.commentCount || 0}
+                </span>
+              </Button>
+            </Link>
+          </div>
+
+          {/* Share Count */}
+          <div className="text-xs text-gray-500">
+            {stats?.shareCount > 0 && `${stats.shareCount} shares`}
+          </div>
+        </div>
+      </CardContent>
 
       {/* Post Content */}
       <CardContent className={isDetailView ? 'p-6' : 'p-4'}>
@@ -110,14 +209,27 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               More from this collection
             </h4>
             <div className="flex space-x-3 overflow-x-auto pb-2">
+              {/* Primary image thumbnail */}
+              <div className="flex-shrink-0">
+                <img
+                  src={post.primaryPhotoUrl}
+                  alt="Primary image"
+                  onClick={() => setSelectedImage(post.primaryPhotoUrl)}
+                  className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 ${
+                    selectedImage === post.primaryPhotoUrl ? 'border-pinterest-red' : 'border-transparent'
+                  } ${isDetailView ? 'w-48 h-32' : 'w-32 h-24'}`}
+                />
+              </div>
+              {/* Additional images */}
               {post.additionalPhotos.map((photo, index) => (
                 <div key={index} className="flex-shrink-0">
                   <img
                     src={photo}
                     alt={`Additional image ${index + 1}`}
-                    className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-                      isDetailView ? 'w-48 h-32' : 'w-32 h-24'
-                    }`}
+                    onClick={() => setSelectedImage(photo)}
+                    className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 ${
+                      selectedImage === photo ? 'border-pinterest-red' : 'border-transparent'
+                    } ${isDetailView ? 'w-48 h-32' : 'w-32 h-24'}`}
                   />
                 </div>
               ))}
