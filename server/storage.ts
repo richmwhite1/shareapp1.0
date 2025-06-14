@@ -35,6 +35,7 @@ export interface IStorage {
 
   // Stats methods
   getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number }>;
+  getUserTotalShares(userId: number): Promise<number>;
 
   // Delete methods
   deletePost(postId: number): Promise<void>;
@@ -318,6 +319,16 @@ export class DatabaseStorage implements IStorage {
       commentCount: commentCount.count,
       shareCount: shareCount.count,
     };
+  }
+
+  async getUserTotalShares(userId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(postShares)
+      .innerJoin(posts, eq(postShares.postId, posts.id))
+      .where(eq(posts.userId, userId));
+
+    return result?.count || 0;
   }
 
   async deletePost(postId: number): Promise<void> {

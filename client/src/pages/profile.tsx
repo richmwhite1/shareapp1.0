@@ -37,6 +37,13 @@ export default function ProfilePage() {
     enabled: isAuthenticated && !!user?.id,
   });
 
+  // Fetch total shares for all user posts
+  const { data: totalShares = 0 } = useQuery({
+    queryKey: ['/api/user/total-shares', user?.id],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: isAuthenticated && !!user?.id,
+  });
+
   // Delete category mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
@@ -143,23 +150,6 @@ export default function ProfilePage() {
 
           {categories.length > 0 ? (
             <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-              {/* General Category (Default) */}
-              <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50">
-                <CardContent className="p-2">
-                  <div className="aspect-square rounded bg-secondary flex items-center justify-center mb-1 relative overflow-hidden">
-                    <Folder className="h-2 w-2 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
-                    <div className="absolute top-1 right-1">
-                      <div className="w-3 h-3 bg-pinterest-red rounded-full flex items-center justify-center">
-                        <span className="text-[8px] text-white font-medium">
-                          {userPosts.filter(p => !p.categoryId || p.categoryId === 1).length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <h3 className="text-xs font-medium text-foreground truncate">General</h3>
-                </CardContent>
-              </Card>
-
               {/* User Categories */}
               {categories.filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => (
                 <Card 
