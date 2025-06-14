@@ -102,14 +102,25 @@ export class DatabaseStorage implements IStorage {
   async createPost(postData: InsertPost & { userId: number; categoryId?: number }): Promise<Post> {
     let categoryId = postData.categoryId;
     
-    // If no category specified, find user's "General" category
-    if (!categoryId) {
+    // If no category specified or category is 0, find user's "General" category
+    if (!categoryId || categoryId === 0) {
       const [generalCategory] = await db
         .select()
         .from(categories)
         .where(and(eq(categories.userId, postData.userId), eq(categories.name, 'General')));
       
-      categoryId = generalCategory?.id || 1; // Fallback to global general if user's doesn't exist
+      if (!generalCategory) {
+        // Create General category if it doesn't exist for this user
+        const [newGeneral] = await db.insert(categories).values({
+          userId: postData.userId,
+          name: 'General',
+          description: 'Default category for all posts',
+          isPublic: false,
+        }).returning();
+        categoryId = newGeneral.id;
+      } else {
+        categoryId = generalCategory.id;
+      }
     }
     
     const [post] = await db.insert(posts).values({ ...postData, categoryId }).returning();

@@ -222,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryLink,
         primaryDescription,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
-        categoryId: categoryId || 1, // Default to General category
+        categoryId: categoryId || undefined, // Let storage handle default category
       });
 
       // Get post with user data

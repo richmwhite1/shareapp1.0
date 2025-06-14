@@ -211,12 +211,18 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 </span>
               </Button>
             </Link>
+
+            {/* Share Count Button */}
+            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700 cursor-default">
+              <Share2 className="w-5 h-5 mr-1" />
+              <span className="text-sm font-medium">
+                {stats?.shareCount || 0}
+              </span>
+            </Button>
           </div>
 
-          {/* Share Count */}
-          <div className="text-xs text-gray-500">
-            {(stats?.shareCount || 0) > 0 && `${stats?.shareCount || 0} shares`}
-          </div>
+          {/* Empty div for spacing */}
+          <div></div>
         </div>
       </CardContent>
 

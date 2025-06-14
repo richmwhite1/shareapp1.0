@@ -97,7 +97,11 @@ export default function CategoryPage() {
         {posts && posts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {posts.map((post: PostWithUser) => (
-              <PostCard key={post.id} post={post} />
+              <div key={post.id} className="cursor-pointer">
+                <Link href={`/post/${post.id}`}>
+                  <PostCard post={post} />
+                </Link>
+              </div>
             ))}
           </div>
         ) : (
