@@ -13,13 +13,13 @@ export default function CategoryPage() {
   const categoryId = params?.id;
 
   const { data: category, isLoading: categoryLoading } = useQuery({
-    queryKey: ['/api/categories', categoryId],
+    queryKey: [`/api/categories/${categoryId}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,
   });
 
   const { data: posts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/posts/category', categoryId],
+    queryKey: [`/api/posts/category/${categoryId}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,
   });

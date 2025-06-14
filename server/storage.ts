@@ -1,6 +1,6 @@
 import { users, posts, comments, categories, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -53,11 +53,13 @@ export class DatabaseStorage implements IStorage {
     const categoriesWithPosts: CategoryWithPosts[] = [];
     for (const category of userCategories) {
       const categoryPosts = await this.getPostsByCategoryId(category.id);
+      // Get the most recent post's image (first item since posts are sorted by date desc)
+      const mostRecentImage = categoryPosts[0]?.primaryPhotoUrl;
       categoriesWithPosts.push({
         ...category,
         posts: categoryPosts,
         postCount: categoryPosts.length,
-        firstPostImage: categoryPosts[0]?.primaryPhotoUrl
+        firstPostImage: mostRecentImage
       });
     }
     
@@ -146,7 +148,7 @@ export class DatabaseStorage implements IStorage {
       .from(posts)
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
-      .orderBy(posts.createdAt);
+      .orderBy(desc(posts.createdAt));
 
     return result.map(r => ({
       ...r.post,
@@ -174,7 +176,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
       .where(eq(posts.userId, userId))
-      .orderBy(posts.createdAt);
+      .orderBy(desc(posts.createdAt));
 
     return result.map(r => ({
       ...r.post,
@@ -202,7 +204,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
       .where(eq(posts.categoryId, categoryId))
-      .orderBy(posts.createdAt);
+      .orderBy(desc(posts.createdAt));
 
     return result.map(r => ({
       ...r.post,
