@@ -63,7 +63,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCategoriesByUserId(userId: number): Promise<CategoryWithPosts[]> {
-    const userCategories = await db.select().from(categories).where(eq(categories.userId, userId));
+    const userCategories = await db.select().from(categories).where(eq(categories.userId, userId)).orderBy(categories.id);
     
     const categoriesWithPosts: CategoryWithPosts[] = [];
     for (const category of userCategories) {
