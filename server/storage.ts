@@ -308,6 +308,24 @@ export class DatabaseStorage implements IStorage {
       shareCount: shareCount.count,
     };
   }
+
+  async deletePost(postId: number): Promise<void> {
+    // Delete related data first
+    await db.delete(postLikes).where(eq(postLikes.postId, postId));
+    await db.delete(postShares).where(eq(postShares.postId, postId));
+    await db.delete(comments).where(eq(comments.postId, postId));
+    // Delete the post
+    await db.delete(posts).where(eq(posts.id, postId));
+  }
+
+  async deleteCategory(categoryId: number): Promise<void> {
+    // Move posts in this category to General category (id: 1)
+    await db.update(posts)
+      .set({ categoryId: 1 })
+      .where(eq(posts.categoryId, categoryId));
+    // Delete the category
+    await db.delete(categories).where(eq(categories.id, categoryId));
+  }
 }
 
 // Legacy MemStorage for reference - to be removed

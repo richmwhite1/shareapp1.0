@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -60,6 +60,21 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     },
   });
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('DELETE', `/api/posts/${post.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      toast({
+        title: "Post deleted",
+        description: "Your post has been successfully deleted.",
+      });
+    },
+  });
+
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
     
@@ -88,6 +103,29 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       return;
     }
     likeMutation.mutate();
+  };
+
+  const handleDelete = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to delete posts.",
+      });
+      return;
+    }
+    
+    if (post.user.id !== user?.id) {
+      toast({
+        title: "Not authorized",
+        description: "You can only delete your own posts.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
+      deleteMutation.mutate();
+    }
   };
 
   const formatDate = (date: string | Date) => {
@@ -177,7 +215,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
           {/* Share Count */}
           <div className="text-xs text-gray-500">
-            {stats?.shareCount > 0 && `${stats.shareCount} shares`}
+            {(stats?.shareCount || 0) > 0 && `${stats?.shareCount || 0} shares`}
           </div>
         </div>
       </CardContent>
@@ -244,6 +282,21 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               View Post & Comments
             </Button>
           </Link>
+        )}
+
+        {/* Delete Button - only show for post owner */}
+        {user && post.user.id === user.id && (
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={handleDelete}
+              variant="ghost"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

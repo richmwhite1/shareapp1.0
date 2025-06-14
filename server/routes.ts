@@ -471,12 +471,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const fetch = (await import('node-fetch')).default;
-      const cheerio = await import('cheerio');
+      const { load } = await import('cheerio');
 
       // Fetch the webpage
       const response = await fetch(url);
       const html = await response.text();
-      const $ = cheerio.load(html);
+      const $ = load(html);
 
       // Try to find the main image in order of preference
       let imageUrl = '';
