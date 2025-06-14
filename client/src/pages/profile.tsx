@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth.tsx";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Folder, Image, Plus, Users, Lock } from "lucide-react";
+import { Folder, Image, Plus, Users, Lock, Trash2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 interface CategoryWithPosts {
   id: number;
@@ -21,6 +22,8 @@ interface CategoryWithPosts {
 export default function ProfilePage() {
   const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
@@ -33,6 +36,29 @@ export default function ProfilePage() {
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated && !!user?.id,
   });
+
+  // Delete category mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (categoryId: number) => {
+      return apiRequest('DELETE', `/api/categories/${categoryId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/user'] });
+      toast({
+        title: "Category deleted",
+        description: "Category has been deleted and posts moved to General.",
+      });
+    },
+  });
+
+  const handleDeleteCategory = (categoryId: number, categoryName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation
+    
+    if (confirm(`Are you sure you want to delete the "${categoryName}" category? All posts will be moved to General.`)) {
+      deleteCategoryMutation.mutate(categoryId);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -168,6 +194,18 @@ export default function ProfilePage() {
                           <Lock className="h-2 w-2 text-muted-foreground" />
                         </div>
                       )}
+
+                      {/* Delete button */}
+                      <div className="absolute bottom-1 right-1">
+                        <Button
+                          onClick={(e) => handleDeleteCategory(category.id, category.name, e)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="h-2 w-2" />
+                        </Button>
+                      </div>
                     </div>
                     
                     <h3 className="text-xs font-medium text-foreground truncate group-hover:text-pinterest-red transition-colors">
