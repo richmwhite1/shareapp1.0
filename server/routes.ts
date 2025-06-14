@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema } from "@shared/schema";
+import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, type AdditionalPhotoData } from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -247,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             url: photoUrl,
             link,
             description,
-            discountCode
+            discountCode: discountCode || ''
           });
         }
       }

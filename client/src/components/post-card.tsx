@@ -345,7 +345,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    navigator.clipboard.writeText(photoData.discountCode);
+                                    navigator.clipboard.writeText(photoData.discountCode || '');
                                     toast({ title: "Copied!", description: "Discount code copied to clipboard" });
                                   }}
                                   variant="outline"

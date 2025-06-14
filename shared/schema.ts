@@ -149,7 +149,7 @@ export type AdditionalPhotoData = {
   url: string;
   link: string;
   description: string;
-  discountCode?: string;
+  discountCode: string;
 };
 
 // Extended types for API responses
