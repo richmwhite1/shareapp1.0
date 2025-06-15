@@ -7,7 +7,11 @@ import bcrypt from "bcryptjs";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, type AdditionalPhotoData } from "@shared/schema";
+import { 
+  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
+  createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
+  type AdditionalPhotoData 
+} from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -661,6 +665,290 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.sharePost(0, userId); // Use 0 as postId for profile shares
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Enhanced social features from artifact
+  
+  // Friends endpoints
+  app.get('/api/friends', authenticateToken, async (req: any, res) => {
+    try {
+      const friends = await storage.getFriends(req.user.userId);
+      res.json(friends);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/friend-requests', authenticateToken, async (req: any, res) => {
+    try {
+      const requests = await storage.getFriendRequests(req.user.userId);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-request', authenticateToken, async (req: any, res) => {
+    try {
+      const { friendId } = createFriendshipSchema.parse(req.body);
+      
+      if (friendId === req.user.userId) {
+        return res.status(400).json({ message: 'Cannot send friend request to yourself' });
+      }
+
+      const targetUser = await storage.getUser(friendId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      await storage.sendFriendRequest(req.user.userId, friendId);
+      res.json({ success: true });
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-request/:friendId/accept', authenticateToken, async (req: any, res) => {
+    try {
+      const friendId = parseInt(req.params.friendId);
+      await storage.acceptFriendRequest(req.user.userId, friendId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/friend-request/:friendId/reject', authenticateToken, async (req: any, res) => {
+    try {
+      const friendId = parseInt(req.params.friendId);
+      await storage.rejectFriendRequest(req.user.userId, friendId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/friends/posts', authenticateToken, async (req: any, res) => {
+    try {
+      const friendsPosts = await storage.getFriendsPosts(req.user.userId);
+      res.json(friendsPosts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Hashtag endpoints
+  app.get('/api/hashtags/trending', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const trendingHashtags = await storage.getTrendingHashtags(limit);
+      res.json(trendingHashtags);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/hashtags/:name/posts', async (req, res) => {
+    try {
+      const hashtagName = req.params.name;
+      const posts = await storage.getPostsByHashtag(hashtagName);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Tagged posts endpoint
+  app.get('/api/tagged-posts', authenticateToken, async (req: any, res) => {
+    try {
+      const taggedPosts = await storage.getTaggedPosts(req.user.userId);
+      res.json(taggedPosts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Privacy-based posts endpoint
+  app.get('/api/posts/privacy/:privacy', authenticateToken, async (req: any, res) => {
+    try {
+      const privacy = req.params.privacy;
+      const posts = await storage.getPostsByPrivacy(privacy, req.user.userId);
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Notifications endpoints
+  app.get('/api/notifications', authenticateToken, async (req: any, res) => {
+    try {
+      const notifications = await storage.getNotifications(req.user.userId);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/notifications/unread-count', authenticateToken, async (req: any, res) => {
+    try {
+      const count = await storage.getUnreadNotificationCount(req.user.userId);
+      res.json({ count });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/notifications/:id/viewed', authenticateToken, async (req: any, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      await storage.markNotificationAsViewed(notificationId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Report endpoints
+  app.post('/api/reports', authenticateToken, async (req: any, res) => {
+    try {
+      const reportData = createReportSchema.parse(req.body);
+      const report = await storage.createReport({ ...reportData, userId: req.user.userId });
+      res.json(report);
+    } catch (error: any) {
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: error.errors[0].message });
+      }
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // User search endpoint
+  app.get('/api/users/search', authenticateToken, async (req: any, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
+      }
+      
+      const users = await storage.searchUsers(query);
+      // Remove sensitive data
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        profilePictureUrl: user.profilePictureUrl,
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Admin endpoints
+  app.get('/api/admin/reports', authenticateToken, async (req: any, res) => {
+    try {
+      // Check if user is admin (you might want to add an isAdmin field to users)
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') { // Simple admin check
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const reports = await storage.getReports();
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/admin/reports/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const reportId = parseInt(req.params.id);
+      await storage.deleteReport(reportId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/admin/analytics', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const analytics = await storage.getAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/admin/blacklist', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const blacklist = await storage.getBlacklist();
+      res.json(blacklist);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/admin/blacklist', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const { type, value } = req.body;
+      await storage.addToBlacklist(type, value);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/admin/users/:userId/flag', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const userId = parseInt(req.params.userId);
+      await storage.flagUser(userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/admin/users/:userId/flag', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user || user.username !== 'stickles') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const userId = parseInt(req.params.userId);
+      await storage.unflagUser(userId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });

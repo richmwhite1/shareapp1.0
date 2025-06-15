@@ -59,10 +59,23 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
-    background: linear-gradient(135deg, hsl(220, 13%, 10%) 0%, hsl(220, 13%, 15%) 100%);
+    background-color: #1a202c;
+    color: #ffffff;
     min-height: 100vh;
+  }
+  
+  button {
+    @apply transition duration-200;
+  }
+  
+  button:hover {
+    @apply opacity-80;
+  }
+  
+  input, textarea {
+    @apply border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400;
   }
 }
 

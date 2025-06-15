@@ -350,10 +350,7 @@ export class DatabaseStorage implements IStorage {
     })) as PostWithUser[];
   }
 
-  async createComment(commentData: InsertComment & { postId: number; userId: number }): Promise<Comment> {
-    const [comment] = await db.insert(comments).values(commentData).returning();
-    return comment;
-  }
+
 
   async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
     const result = await db
