@@ -31,7 +31,7 @@ export default function Header() {
   // Fetch trending hashtags
   const { data: trendingHashtags } = useQuery({
     queryKey: ['/api/hashtags/trending'],
-    select: (data) => data?.slice(0, 5) || [],
+    select: (data: any) => data?.slice(0, 5) || [],
   });
 
   // Search users
@@ -65,7 +65,7 @@ export default function Header() {
               </div>
               
               {/* Search Results Dropdown */}
-              {searchResults && searchResults.length > 0 && (
+              {searchResults && Array.isArray(searchResults) && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-64 overflow-y-auto z-50">
                   {searchResults.map((user: any) => (
                     <Link key={user.id} href={`/profile/${user.id}`}>
@@ -101,7 +101,7 @@ export default function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-gray-800 border-gray-700">
-                    {trendingHashtags?.map((hashtag: any) => (
+                    {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
                       <Link key={hashtag.id} href={`/hashtag/${hashtag.name}`}>
                         <DropdownMenuItem className="text-white hover:bg-gray-700 cursor-pointer">
                           <Hash className="w-3 h-3 mr-2" />
@@ -125,9 +125,9 @@ export default function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="text-yellow-400 hover:bg-gray-800 relative">
                       <Bell className="w-4 h-4" />
-                      {unreadCount?.count > 0 && (
+                      {(unreadCount as any)?.count > 0 && (
                         <Badge className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-red-500 text-white rounded-full flex items-center justify-center">
-                          {unreadCount.count}
+                          {(unreadCount as any).count}
                         </Badge>
                       )}
                     </Button>
