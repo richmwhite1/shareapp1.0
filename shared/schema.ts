@@ -30,6 +30,8 @@ export const posts = pgTable("posts", {
   discountCode: text("discount_code"),
   additionalPhotos: text("additional_photos").array(),
   additionalPhotoData: json("additional_photo_data"), // Array of {url, link, description} objects
+  privacy: text("privacy").notNull().default("public"), // public, friends, private
+  engagement: integer("engagement").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -40,6 +42,7 @@ export const comments = pgTable("comments", {
   parentId: integer("parent_id"),
   text: text("text").notNull(),
   imageUrl: text("image_url"),
+  rating: integer("rating"), // 1-5 star rating
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -55,6 +58,79 @@ export const postShares = pgTable("post_shares", {
   postId: integer("post_id").notNull(),
   userId: integer("user_id"),
   sharedAt: timestamp("shared_at").notNull().defaultNow(),
+});
+
+// Friends system
+export const friendships = pgTable("friendships", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  friendId: integer("friend_id").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, blocked
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Hashtags
+export const hashtags = pgTable("hashtags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  count: integer("count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const postHashtags = pgTable("post_hashtags", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  hashtagId: integer("hashtag_id").notNull(),
+});
+
+// Tagged users in posts
+export const postTags = pgTable("post_tags", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+});
+
+// Comment tags
+export const commentTags = pgTable("comment_tags", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").notNull(),
+  userId: integer("user_id").notNull(),
+});
+
+// Comment hashtags
+export const commentHashtags = pgTable("comment_hashtags", {
+  id: serial("id").primaryKey(),
+  commentId: integer("comment_id").notNull(),
+  hashtagId: integer("hashtag_id").notNull(),
+});
+
+// Notifications
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // tag, friend_request, like, comment
+  postId: integer("post_id"),
+  fromUserId: integer("from_user_id"),
+  viewed: boolean("viewed").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Reports for admin
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  reason: text("reason").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Blacklist for admin
+export const blacklist = pgTable("blacklist", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // url, hashtag
+  value: text("value").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // User schemas
@@ -118,12 +194,41 @@ export const insertCommentSchema = createInsertSchema(comments).pick({
   text: true,
   imageUrl: true,
   parentId: true,
+  rating: true,
 });
 
 export const createCommentSchema = insertCommentSchema.extend({
   text: z.string().min(1).max(1000, "Comment must be between 1 and 1000 characters"),
   parentId: z.number().optional(),
   imageUrl: z.string().optional(),
+  rating: z.number().min(1).max(5).optional(),
+  hashtags: z.array(z.string()).optional(),
+  taggedFriends: z.array(z.number()).optional(),
+});
+
+// Friendship schemas
+export const createFriendshipSchema = z.object({
+  friendId: z.number(),
+});
+
+// Hashtag schemas
+export const createHashtagSchema = z.object({
+  name: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_]+$/, "Hashtag must be alphanumeric with underscores"),
+});
+
+// Report schemas
+export const createReportSchema = z.object({
+  postId: z.number(),
+  reason: z.string().min(1).max(100),
+  comment: z.string().max(500).optional(),
+});
+
+// Notification schemas
+export const createNotificationSchema = z.object({
+  userId: z.number(),
+  type: z.enum(["tag", "friend_request", "like", "comment"]),
+  postId: z.number().optional(),
+  fromUserId: z.number().optional(),
 });
 
 // Types
@@ -144,6 +249,26 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type CreateCommentData = z.infer<typeof createCommentSchema>;
 
+// New types for enhanced features
+export type Friendship = typeof friendships.$inferSelect;
+export type CreateFriendshipData = z.infer<typeof createFriendshipSchema>;
+
+export type Hashtag = typeof hashtags.$inferSelect;
+export type CreateHashtagData = z.infer<typeof createHashtagSchema>;
+
+export type PostTag = typeof postTags.$inferSelect;
+export type CommentTag = typeof commentTags.$inferSelect;
+export type PostHashtag = typeof postHashtags.$inferSelect;
+export type CommentHashtag = typeof commentHashtags.$inferSelect;
+
+export type Notification = typeof notifications.$inferSelect;
+export type CreateNotificationData = z.infer<typeof createNotificationSchema>;
+
+export type Report = typeof reports.$inferSelect;
+export type CreateReportData = z.infer<typeof createReportSchema>;
+
+export type BlacklistItem = typeof blacklist.$inferSelect;
+
 // Additional photo data type
 export type AdditionalPhotoData = {
   url: string;
@@ -157,6 +282,8 @@ export type PostWithUser = Post & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
   category?: Pick<Category, 'id' | 'name'>;
   additionalPhotoData?: AdditionalPhotoData[];
+  hashtags?: Hashtag[];
+  taggedUsers?: Pick<User, 'id' | 'username' | 'name'>[];
 };
 
 export type CategoryWithPosts = Category & {
@@ -168,4 +295,17 @@ export type CategoryWithPosts = Category & {
 export type CommentWithUser = Comment & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
   replies?: CommentWithUser[];
+  hashtags?: Hashtag[];
+  taggedUsers?: Pick<User, 'id' | 'username' | 'name'>[];
+};
+
+export type UserWithFriends = User & {
+  friends: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>[];
+  friendCount: number;
+  hasNewPosts?: boolean;
+};
+
+export type NotificationWithUser = Notification & {
+  fromUser?: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
+  post?: Pick<Post, 'id' | 'primaryDescription'>;
 };

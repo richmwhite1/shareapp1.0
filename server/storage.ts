@@ -1,6 +1,14 @@
-import { users, posts, comments, categories, postLikes, postShares, type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts } from "@shared/schema";
+import { 
+  users, posts, comments, categories, postLikes, postShares, friendships, hashtags, 
+  postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist,
+  type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
+  type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
+  type Friendship, type CreateFriendshipData, type Hashtag, type CreateHashtagData,
+  type Notification, type CreateNotificationData, type Report, type CreateReportData,
+  type BlacklistItem, type UserWithFriends, type NotificationWithUser
+} from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, or, inArray, sql, like } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
