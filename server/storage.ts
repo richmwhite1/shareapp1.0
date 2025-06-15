@@ -375,7 +375,17 @@ export class DatabaseStorage implements IStorage {
     for (const r of result) {
       const commentWithUser: CommentWithUser = {
         ...r.comment,
-        user: r.user,
+        user: r.user ? {
+          id: r.user.id,
+          username: r.user.username,
+          name: r.user.name,
+          profilePictureUrl: r.user.profilePictureUrl
+        } : {
+          id: 0,
+          username: 'deleted',
+          name: 'Deleted User',
+          profilePictureUrl: null
+        },
         replies: []
       };
       commentsMap.set(r.comment.id, commentWithUser);
