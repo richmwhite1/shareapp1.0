@@ -15,6 +15,8 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getUserWithFriends(id: number): Promise<UserWithFriends | undefined>;
+  searchUsers(query: string): Promise<User[]>;
 
   // Category methods
   createCategory(category: InsertCategory & { userId: number }): Promise<Category>;
@@ -23,14 +25,19 @@ export interface IStorage {
   getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; categoryId?: number }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
   getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]>;
+  getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]>;
+  getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
+  getFriendsPosts(userId: number): Promise<PostWithUser[]>;
+  getTaggedPosts(userId: number): Promise<PostWithUser[]>;
+  updatePostEngagement(postId: number, increment: number): Promise<void>;
 
   // Comment methods
-  createComment(comment: InsertComment & { postId: number; userId: number }): Promise<Comment>;
+  createComment(comment: InsertComment & { postId: number; userId: number; hashtags?: string[]; taggedUsers?: number[] }): Promise<Comment>;
   getCommentsByPostId(postId: number): Promise<CommentWithUser[]>;
 
   // Like methods
@@ -44,6 +51,41 @@ export interface IStorage {
   // Stats methods
   getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number }>;
   getUserTotalShares(userId: number): Promise<number>;
+
+  // Friends methods
+  sendFriendRequest(userId: number, friendId: number): Promise<void>;
+  acceptFriendRequest(userId: number, friendId: number): Promise<void>;
+  rejectFriendRequest(userId: number, friendId: number): Promise<void>;
+  getFriends(userId: number): Promise<UserWithFriends[]>;
+  getFriendRequests(userId: number): Promise<User[]>;
+  areFriends(userId: number, friendId: number): Promise<boolean>;
+
+  // Hashtag methods
+  createHashtag(name: string): Promise<Hashtag>;
+  getHashtag(name: string): Promise<Hashtag | undefined>;
+  getTrendingHashtags(limit?: number): Promise<Hashtag[]>;
+  incrementHashtagCount(name: string): Promise<void>;
+
+  // Notification methods
+  createNotification(notification: CreateNotificationData): Promise<Notification>;
+  getNotifications(userId: number): Promise<NotificationWithUser[]>;
+  markNotificationAsViewed(notificationId: number): Promise<void>;
+  getUnreadNotificationCount(userId: number): Promise<number>;
+
+  // Report methods
+  createReport(report: CreateReportData & { userId: number }): Promise<Report>;
+  getReports(): Promise<Report[]>;
+  deleteReport(reportId: number): Promise<void>;
+
+  // Blacklist methods
+  addToBlacklist(type: string, value: string): Promise<void>;
+  getBlacklist(): Promise<BlacklistItem[]>;
+  isBlacklisted(type: string, value: string): Promise<boolean>;
+
+  // Admin methods
+  getAnalytics(): Promise<{ userCount: number; postCount: number; trendingHashtags: Hashtag[] }>;
+  flagUser(userId: number): Promise<void>;
+  unflagUser(userId: number): Promise<void>;
 
   // Delete methods
   deletePost(postId: number): Promise<void>;
@@ -64,6 +106,30 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async getUserWithFriends(id: number): Promise<UserWithFriends | undefined> {
+    const user = await this.getUser(id);
+    if (!user) return undefined;
+
+    const friendsList = await this.getFriends(id);
+    return {
+      ...user,
+      friends: friendsList.map(f => ({ id: f.id, username: f.username, name: f.name, profilePictureUrl: f.profilePictureUrl })),
+      friendCount: friendsList.length,
+    };
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    const searchResults = await db
+      .select()
+      .from(users)
+      .where(or(
+        like(users.username, `%${query}%`),
+        like(users.name, `%${query}%`)
+      ))
+      .limit(20);
+    return searchResults;
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {
@@ -108,7 +174,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createPost(postData: InsertPost & { userId: number; categoryId?: number }): Promise<Post> {
+  async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string }): Promise<Post> {
     let categoryId = postData.categoryId;
     
     // If no category specified or category is 0, find user's "General" category
@@ -132,7 +198,43 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    const [post] = await db.insert(posts).values({ ...postData, categoryId }).returning();
+    const [post] = await db.insert(posts).values({ 
+      ...postData, 
+      categoryId,
+      privacy: postData.privacy || 'public',
+      engagement: 0,
+    }).returning();
+
+    // Handle hashtags
+    if (postData.hashtags && postData.hashtags.length > 0) {
+      for (const hashtagName of postData.hashtags) {
+        await this.incrementHashtagCount(hashtagName);
+        const hashtag = await this.getHashtag(hashtagName) || await this.createHashtag(hashtagName);
+        await db.insert(postHashtags).values({
+          postId: post.id,
+          hashtagId: hashtag.id,
+        });
+      }
+    }
+
+    // Handle tagged users
+    if (postData.taggedUsers && postData.taggedUsers.length > 0) {
+      for (const taggedUserId of postData.taggedUsers) {
+        await db.insert(postTags).values({
+          postId: post.id,
+          userId: taggedUserId,
+        });
+        
+        // Create notification for tagged user
+        await this.createNotification({
+          userId: taggedUserId,
+          type: 'tag',
+          postId: post.id,
+          fromUserId: postData.userId,
+        });
+      }
+    }
+
     return post;
   }
 
@@ -356,171 +458,404 @@ export class DatabaseStorage implements IStorage {
     // Delete the category
     await db.delete(categories).where(eq(categories.id, categoryId));
   }
-}
 
-// Legacy MemStorage for reference - to be removed
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private posts: Map<number, Post>;
-  private comments: Map<number, Comment>;
-  private categories: Map<number, Category>;
-  private currentUserId: number;
-  private currentPostId: number;
-  private currentCommentId: number;
-  private currentCategoryId: number;
+  // Enhanced post methods
+  async getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(hashtags.name, hashtagName))
+      .orderBy(desc(posts.engagement));
 
-  constructor() {
-    this.users = new Map();
-    this.posts = new Map();
-    this.comments = new Map();
-    this.currentUserId = 1;
-    this.currentPostId = 1;
-    this.currentCommentId = 1;
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      category: r.category || undefined
+    })) as PostWithUser[];
   }
 
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(posts.privacy, privacy))
+      .orderBy(desc(posts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      category: r.category || undefined
+    })) as PostWithUser[];
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getFriendsPosts(userId: number): Promise<PostWithUser[]> {
+    const friendIds = await db
+      .select({ friendId: friendships.friendId })
+      .from(friendships)
+      .where(and(eq(friendships.userId, userId), eq(friendships.status, 'accepted')));
+
+    if (friendIds.length === 0) return [];
+
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(inArray(posts.userId, friendIds.map(f => f.friendId)))
+      .orderBy(desc(posts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      category: r.category || undefined
+    })) as PostWithUser[];
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = {
-      ...insertUser,
-      id,
-      profilePictureUrl: insertUser.profilePictureUrl || null,
-      createdAt: new Date(),
-    };
-    this.users.set(id, user);
-    return user;
+  async getTaggedPosts(userId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .innerJoin(postTags, eq(posts.id, postTags.postId))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(postTags.userId, userId))
+      .orderBy(desc(posts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      category: r.category || undefined
+    })) as PostWithUser[];
   }
 
-  async createPost(postData: InsertPost & { userId: number }): Promise<Post> {
-    const id = this.currentPostId++;
-    const post: Post = {
-      ...postData,
-      id,
-      additionalPhotos: postData.additionalPhotos || null,
-      createdAt: new Date(),
-    };
-    this.posts.set(id, post);
-    return post;
+  async updatePostEngagement(postId: number, increment: number): Promise<void> {
+    await db
+      .update(posts)
+      .set({ engagement: sql`${posts.engagement} + ${increment}` })
+      .where(eq(posts.id, postId));
   }
 
-  async getPost(id: number): Promise<PostWithUser | undefined> {
-    const post = this.posts.get(id);
-    if (!post) return undefined;
+  // Enhanced comment methods
+  async createComment(commentData: InsertComment & { postId: number; userId: number; hashtags?: string[]; taggedUsers?: number[] }): Promise<Comment> {
+    const [comment] = await db.insert(comments).values({
+      ...commentData,
+      rating: commentData.rating || null,
+    }).returning();
 
-    const user = await this.getUser(post.userId);
-    if (!user) return undefined;
-
-    return {
-      ...post,
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        profilePictureUrl: user.profilePictureUrl,
-      },
-    };
-  }
-
-  async getAllPosts(): Promise<PostWithUser[]> {
-    const postsWithUsers: PostWithUser[] = [];
-    
-    for (const post of Array.from(this.posts.values())) {
-      const user = await this.getUser(post.userId);
-      if (user) {
-        postsWithUsers.push({
-          ...post,
-          user: {
-            id: user.id,
-            username: user.username,
-            name: user.name,
-            profilePictureUrl: user.profilePictureUrl,
-          },
+    // Handle hashtags
+    if (commentData.hashtags && commentData.hashtags.length > 0) {
+      for (const hashtagName of commentData.hashtags) {
+        await this.incrementHashtagCount(hashtagName);
+        const hashtag = await this.getHashtag(hashtagName) || await this.createHashtag(hashtagName);
+        await db.insert(commentHashtags).values({
+          commentId: comment.id,
+          hashtagId: hashtag.id,
         });
       }
     }
 
-    return postsWithUsers.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
+    // Handle tagged users
+    if (commentData.taggedUsers && commentData.taggedUsers.length > 0) {
+      for (const taggedUserId of commentData.taggedUsers) {
+        await db.insert(commentTags).values({
+          commentId: comment.id,
+          userId: taggedUserId,
+        });
+        
+        // Create notification for tagged user
+        await this.createNotification({
+          userId: taggedUserId,
+          type: 'comment',
+          postId: commentData.postId,
+          fromUserId: commentData.userId,
+        });
+      }
+    }
 
-  async createComment(commentData: InsertComment & { postId: number; userId: number }): Promise<Comment> {
-    const id = this.currentCommentId++;
-    const comment: Comment = {
-      ...commentData,
-      id,
-      parentId: commentData.parentId || null,
-      imageUrl: commentData.imageUrl || null,
-      createdAt: new Date(),
-    };
-    this.comments.set(id, comment);
+    // Update post engagement
+    await this.updatePostEngagement(commentData.postId, 1);
+
     return comment;
   }
 
-  async getCommentsByPostId(postId: number): Promise<CommentWithUser[]> {
-    const postComments = Array.from(this.comments.values())
-      .filter(comment => comment.postId === postId);
+  // Friends methods
+  async sendFriendRequest(userId: number, friendId: number): Promise<void> {
+    await db.insert(friendships).values({
+      userId,
+      friendId,
+      status: 'pending',
+    });
 
-    const commentsWithUsers: CommentWithUser[] = [];
+    // Create notification
+    await this.createNotification({
+      userId: friendId,
+      type: 'friend_request',
+      fromUserId: userId,
+    });
+  }
 
-    for (const comment of postComments) {
-      const user = await this.getUser(comment.userId);
-      if (user) {
-        commentsWithUsers.push({
-          ...comment,
-          user: {
-            id: user.id,
-            username: user.username,
-            name: user.name,
-            profilePictureUrl: user.profilePictureUrl,
-          },
-        });
-      }
+  async acceptFriendRequest(userId: number, friendId: number): Promise<void> {
+    // Update the friendship status
+    await db
+      .update(friendships)
+      .set({ status: 'accepted' })
+      .where(and(eq(friendships.userId, friendId), eq(friendships.friendId, userId)));
+
+    // Create reciprocal friendship
+    await db.insert(friendships).values({
+      userId,
+      friendId,
+      status: 'accepted',
+    });
+  }
+
+  async rejectFriendRequest(userId: number, friendId: number): Promise<void> {
+    await db
+      .delete(friendships)
+      .where(and(eq(friendships.userId, friendId), eq(friendships.friendId, userId)));
+  }
+
+  async getFriends(userId: number): Promise<UserWithFriends[]> {
+    const result = await db
+      .select({
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+          createdAt: users.createdAt,
+        }
+      })
+      .from(friendships)
+      .innerJoin(users, eq(friendships.friendId, users.id))
+      .where(and(eq(friendships.userId, userId), eq(friendships.status, 'accepted')));
+
+    return result.map(r => ({
+      ...r.user,
+      password: '', // Required by User type but not exposed
+      friends: [],
+      friendCount: 0,
+    })) as UserWithFriends[];
+  }
+
+  async getFriendRequests(userId: number): Promise<User[]> {
+    const result = await db
+      .select({
+        user: users
+      })
+      .from(friendships)
+      .innerJoin(users, eq(friendships.userId, users.id))
+      .where(and(eq(friendships.friendId, userId), eq(friendships.status, 'pending')));
+
+    return result.map(r => r.user);
+  }
+
+  async areFriends(userId: number, friendId: number): Promise<boolean> {
+    const [friendship] = await db
+      .select()
+      .from(friendships)
+      .where(and(
+        eq(friendships.userId, userId),
+        eq(friendships.friendId, friendId),
+        eq(friendships.status, 'accepted')
+      ));
+
+    return !!friendship;
+  }
+
+  // Hashtag methods
+  async createHashtag(name: string): Promise<Hashtag> {
+    const [hashtag] = await db.insert(hashtags).values({
+      name: name.toLowerCase(),
+      count: 1,
+    }).returning();
+    return hashtag;
+  }
+
+  async getHashtag(name: string): Promise<Hashtag | undefined> {
+    const [hashtag] = await db
+      .select()
+      .from(hashtags)
+      .where(eq(hashtags.name, name.toLowerCase()));
+    return hashtag || undefined;
+  }
+
+  async getTrendingHashtags(limit: number = 10): Promise<Hashtag[]> {
+    return await db
+      .select()
+      .from(hashtags)
+      .orderBy(desc(hashtags.count))
+      .limit(limit);
+  }
+
+  async incrementHashtagCount(name: string): Promise<void> {
+    const hashtag = await this.getHashtag(name);
+    if (hashtag) {
+      await db
+        .update(hashtags)
+        .set({ count: sql`${hashtags.count} + 1` })
+        .where(eq(hashtags.id, hashtag.id));
     }
+  }
 
-    // Build threaded structure
-    const commentMap = new Map<number, CommentWithUser>();
-    const rootComments: CommentWithUser[] = [];
+  // Notification methods
+  async createNotification(notification: CreateNotificationData): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
 
-    // First pass: create map and identify root comments
-    commentsWithUsers.forEach(comment => {
-      commentMap.set(comment.id, { ...comment, replies: [] });
-      if (!comment.parentId) {
-        rootComments.push(commentMap.get(comment.id)!);
-      }
-    });
-
-    // Second pass: build the tree structure
-    commentsWithUsers.forEach(comment => {
-      if (comment.parentId) {
-        const parent = commentMap.get(comment.parentId);
-        const child = commentMap.get(comment.id);
-        if (parent && child) {
-          parent.replies = parent.replies || [];
-          parent.replies.push(child);
+  async getNotifications(userId: number): Promise<NotificationWithUser[]> {
+    const result = await db
+      .select({
+        notification: notifications,
+        fromUser: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        post: {
+          id: posts.id,
+          primaryDescription: posts.primaryDescription,
         }
-      }
-    });
+      })
+      .from(notifications)
+      .leftJoin(users, eq(notifications.fromUserId, users.id))
+      .leftJoin(posts, eq(notifications.postId, posts.id))
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
 
-    // Sort by creation date
-    const sortComments = (comments: CommentWithUser[]) => {
-      comments.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      comments.forEach(comment => {
-        if (comment.replies && comment.replies.length > 0) {
-          sortComments(comment.replies);
-        }
-      });
+    return result.map(r => ({
+      ...r.notification,
+      fromUser: r.fromUser || undefined,
+      post: r.post || undefined,
+    })) as NotificationWithUser[];
+  }
+
+  async markNotificationAsViewed(notificationId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ viewed: true })
+      .where(eq(notifications.id, notificationId));
+  }
+
+  async getUnreadNotificationCount(userId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.viewed, false)));
+
+    return result?.count || 0;
+  }
+
+  // Report methods
+  async createReport(report: CreateReportData & { userId: number }): Promise<Report> {
+    const [newReport] = await db.insert(reports).values(report).returning();
+    return newReport;
+  }
+
+  async getReports(): Promise<Report[]> {
+    return await db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async deleteReport(reportId: number): Promise<void> {
+    await db.delete(reports).where(eq(reports.id, reportId));
+  }
+
+  // Blacklist methods
+  async addToBlacklist(type: string, value: string): Promise<void> {
+    await db.insert(blacklist).values({ type, value });
+  }
+
+  async getBlacklist(): Promise<BlacklistItem[]> {
+    return await db.select().from(blacklist);
+  }
+
+  async isBlacklisted(type: string, value: string): Promise<boolean> {
+    const [item] = await db
+      .select()
+      .from(blacklist)
+      .where(and(eq(blacklist.type, type), eq(blacklist.value, value)));
+    return !!item;
+  }
+
+  // Admin methods
+  async getAnalytics(): Promise<{ userCount: number; postCount: number; trendingHashtags: Hashtag[] }> {
+    const [userCount] = await db.select({ count: count() }).from(users);
+    const [postCount] = await db.select({ count: count() }).from(posts);
+    const trendingHashtags = await this.getTrendingHashtags(5);
+
+    return {
+      userCount: userCount.count,
+      postCount: postCount.count,
+      trendingHashtags,
     };
+  }
 
-    sortComments(rootComments);
-    return rootComments;
+  async flagUser(userId: number): Promise<void> {
+    // Add implementation for flagging users (could be a new field in users table)
+    // For now, we'll use a simple approach by creating a "flagged" category in blacklist
+    await this.addToBlacklist('user', userId.toString());
+  }
+
+  async unflagUser(userId: number): Promise<void> {
+    await db
+      .delete(blacklist)
+      .where(and(eq(blacklist.type, 'user'), eq(blacklist.value, userId.toString())));
   }
 }
 
