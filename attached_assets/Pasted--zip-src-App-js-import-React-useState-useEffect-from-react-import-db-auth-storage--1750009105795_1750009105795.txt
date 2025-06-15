@@ -1,0 +1,433 @@
+```zip
+// src/App.js
+import React, { useState, useEffect } from 'react';
+import { db, auth, storage } from './firebase';
+import { collection, query, orderBy, limit, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Post from './components/Post';
+import Profile from './components/Profile';
+import AdminDashboard from './components/AdminDashboard';
+import './index.css';
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [feedType, setFeedType] = useState('public');
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [hashtags, setHashtags] = useState([]);
+  const [taggedPosts, setTaggedPosts] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+      if (user) {
+        initializeUser(user);
+        fetchFriends(user.uid);
+        fetchTaggedPosts(user.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const initializeUser = async (user) => {
+    const publicFeed = { uid: 'public', username: 'public', displayName: 'Public' };
+    const ted = { uid: 'stickles', username: 'stickles', displayName: 'Ted', isAdmin: true };
+    const userRef = doc(db, 'users', user.uid);
+    await updateDoc(userRef, {
+      friends: [publicFeed, ted],
+      username: user.email.split('@')[0],
+      displayName: user.displayName || user.email.split('@')[0],
+    });
+  };
+
+  const fetchPosts = async (type, id) => {
+    let q;
+    if (type === 'public') {
+      q = query(collection(db, 'posts'), where('privacy', '==', 'public'), orderBy('createdAt', 'desc'), limit(10));
+    } else if (type === 'friend') {
+      q = query(collection(db, 'posts'), where('userId', '==', id), orderBy('createdAt', 'desc'), limit(10));
+    } else if (type === 'hashtag') {
+      q = query(collection(db, 'posts'), where('hashtags', 'array-contains-any', id), orderBy('engagement', 'desc'), limit(10));
+    }
+    const snapshot = await getDocs(q);
+    setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const fetchFriends = async (userId) => {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    const friendIds = userDoc.data().friends || [];
+    const friendPromises = friendIds.map(async (friend) => {
+      const friendDoc = await getDoc(doc(db, 'users', friend.uid));
+      const posts = await getDocs(query(collection(db, 'posts'), where('userId', '==', friend.uid), orderBy('createdAt', 'desc'), limit(1)));
+      return { ...friend, newPosts: posts.docs.length > 0 && posts.docs[0].data().createdAt > Date.now() - 3 * 24 * 60 * 60 * 1000 };
+    });
+    setFriends(await Promise.all(friendPromises));
+  };
+
+  const handlePost = async (content, images, links, privacy, hashtags, taggedFriends) => {
+    const compressedImages = await Promise.all(images.map(async (image) => {
+      const compressed = await compressImage(image);
+      const storageRef = ref(storage, `images/${Date.now()}_${image.name}`);
+      await uploadBytes(storageRef, compressed);
+      return getDownloadURL(storageRef);
+    }));
+
+    const post = {
+      userId: user.uid,
+      content,
+      images: compressedImages,
+      links: links.map(link => processLink(link)),
+      privacy,
+      hashtags: hashtags.slice(0, 10),
+      taggedFriends,
+      createdAt: Date.now(),
+      likes: 0,
+      shares: 0,
+      comments: [],
+      engagement: 0,
+    };
+    await addDoc(collection(db, 'posts'), post);
+    updateHashtags(hashtags);
+    notifyTaggedFriends(taggedFriends, post.id);
+  };
+
+  const compressImage = async (file) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise(resolve => img.onload = resolve);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.min(img.width, 1920);
+    canvas.height = Math.min(img.height, 1080);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.8));
+  };
+
+  const processLink = (link) => {
+    if (link.url.includes('youtube.com') || link.url.includes('youtu.be')) {
+      const videoId = link.url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i)?.[1];
+      return { ...link, type: 'youtube', embed: `https://www.youtube.com/embed/${videoId}` };
+    } else if (link.url.includes('spotify.com')) {
+      return { ...link, type: 'spotify', embed: `https://open.spotify.com/embed/track/${link.url.split('/track/')[1].split('?')[0]}` };
+    }
+    return link;
+  };
+
+  const updateHashtags = async (hashtags) => {
+    const hashtagRef = collection(db, 'hashtags');
+    for (const tag of hashtags) {
+      const tagDoc = doc(hashtagRef, tag);
+      await updateDoc(tagDoc, { count: increment(1) }, { merge: true });
+    }
+  };
+
+  const notifyTaggedFriends = async (friends, postId) => {
+    for (const friend of friends) {
+      const notificationRef = collection(db, 'users', friend.uid, 'notifications');
+      await addDoc(notificationRef, { postId, type: 'tag', viewed: false, createdAt: Date.now() });
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 text-white min-h-screen">
+      <header className="flex justify-between items-center p-4 bg-gray-800">
+        <h1 className="text-2xl font-bold text-yellow-400">Love</h1>
+        <input
+          type="text"
+          placeholder="Search friends or #hashtags"
+          className="p-2 rounded bg-gray-700 text-white"
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </header>
+      <div className="flex overflow-x-auto p-4">
+        {friends.map(friend => (
+          <div key={friend.uid} className="flex flex-col items-center mx-2" onClick={() => { setFeedType('friend'); setSelectedFriend(friend.uid); }}>
+            <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-12 h-12 rounded-full" />
+            {friend.newPosts && <span className="text-xs text-red-500">{friend.newPosts}</span>}
+            <span className="text-xs text-yellow-400">{friend.displayName}</span>
+          </div>
+        ))}
+      </div>
+      <main className="p-4">
+        {user && user.uid === 'stickles' && <a href="/admin" className="bg-yellow-400 text-gray-900 p-2 rounded">Admin</a>}
+        {feedType === 'public' && <PostList posts={posts} user={user} />}
+        {feedType === 'friend' && <FriendFeed userId={selectedFriend} />}
+        {feedType === 'hashtag' && <HashtagFeed hashtags={hashtags} />}
+        {feedType === 'tagged' && <TaggedFeed posts={taggedPosts} />}
+      </main>
+    </div>
+  );
+};
+
+export default App;
+
+// src/components/Post.js
+import React, { useState } from 'react';
+import { db } from '../firebase';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+
+const Post = ({ post, user }) => {
+  const [comment, setComment] = useState('');
+  const [commentImage, setCommentImage] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [hashtags, setHashtags] = useState([]);
+  const [taggedFriends, setTaggedFriends] = useState([]);
+
+  const handleLike = async () => {
+    if (!localStorage.getItem(`liked_${post.id}_${user?.uid || 'anon'}`)) {
+      await updateDoc(doc(db, 'posts', post.id), { likes: post.likes + 1, engagement: post.engagement + 1 });
+      localStorage.setItem(`liked_${post.id}_${user?.uid || 'anon'}`, Date.now());
+    }
+  };
+
+  const handleShare = async () => {
+    if (!localStorage.getItem(`shared_${post.id}_${user?.uid || 'anon'}`)) {
+      await updateDoc(doc(db, 'posts', post.id), { shares: post.shares + 1, engagement: post.engagement + 1 });
+      localStorage.setItem(`shared_${post.id}_${user?.uid || 'anon'}`, Date.now());
+    }
+  };
+
+  const handleComment = async () => {
+    if (!user) return alert('Sign in to comment');
+    const commentData = {
+      userId: user.uid,
+      content: comment,
+      image: commentImage ? await uploadCommentImage(commentImage) : null,
+      rating,
+      hashtags,
+      taggedFriends,
+      createdAt: Date.now(),
+    };
+    await updateDoc(doc(db, 'posts', post.id), { comments: arrayUnion(commentData) });
+    notifyTaggedFriends(taggedFriends, post.id);
+  };
+
+  const handleLinkTag = (link) => {
+    return (
+      <div className="relative">
+        <img src={link.thumbnail} alt="Link" className="w-full" />
+        {link.points.map(point => (
+          <div
+            key={point.id}
+            className="absolute rounded-full border-2 border-yellow-400 w-4 h-4"
+            style={{ left: `${point.x}%`, top: `${point.y}%` }}
+            onMouseEnter={() => showLinkTooltip(link.url)}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-gray-800 p-4 rounded mb-4">
+      {post.images.map(img => <img key={img} src={img} alt="Post" className="w-full mb-2" />)}
+      {post.links.map(link => link.type === 'youtube' || link.type === 'spotify' ? (
+        <iframe key={link.url} src={link.embed} className="w-full h-64" />
+      ) : handleLinkTag(link))}
+      <p className="text-white">{post.content}</p>
+      <div className="flex space-x-4">
+        <button onClick={handleLike} className="text-yellow-400">{post.likes} Likes</button>
+        <button onClick={handleShare} className="text-yellow-400">{post.shares} Shares</button>
+        <button onClick={() => setShowComment(!showComment)} className="text-yellow-400">Comment</button>
+        <button onClick={() => reportPost(post.id)} className="text-red-500">Flag</button>
+      </div>
+      {showComment && (
+        <div>
+          <textarea value={comment} onChange={e => setComment(e.target.value)} className="w-full p-2 bg-gray-700 text-white" />
+          <input type="file" onChange={e => setCommentImage(e.target.files[0])} />
+          <div className="flex">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button key={star} onClick={() => setRating(star)} className={rating >= star ? 'text-yellow-400' : 'text-gray-400'}>★</button>
+            ))}
+          </div>
+          <HashtagInput hashtags={hashtags} setHashtags={setHashtags} />
+          <FriendTagInput friends={taggedFriends} setFriends={setTaggedFriends} user={user} />
+          <button onClick={handleComment} className="bg-yellow-400 text-gray-900 p-2 rounded">Post Comment</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Post;
+
+// src/components/Profile.js
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+
+const Profile = ({ userId, currentUser }) => {
+  const [profile, setProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      setProfile(userDoc.data());
+      const postQuery = currentUser ? query(collection(db, 'posts'), where('userId', '==', userId)) : query(collection(db, 'posts'), where('userId', '==', userId), where('privacy', '==', 'public'));
+      const posts = await getDocs(postQuery);
+      setPosts(posts.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const catQuery = collection(db, 'categories');
+      const cats = await getDocs(query(catQuery, where('userId', '==', userId)));
+      setCategories(cats.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (currentUser) {
+        const notifQuery = collection(db, 'users', userId, 'notifications');
+        const notifs = await getDocs(notifQuery);
+        setNotifications(notifs.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }
+    };
+    fetchProfile();
+  }, [userId, currentUser]);
+
+  const handleFriendRequest = async (targetId) => {
+    await addDoc(collection(db, 'users', targetId, 'friendRequests'), { from: currentUser.uid });
+  };
+
+  const handleAcceptFriend = async (requestId) => {
+    const requestDoc = await getDoc(doc(db, 'users', userId, 'friendRequests', requestId));
+    await updateDoc(doc(db, 'users', userId), { friends: arrayUnion({ uid: requestDoc.data().from }) });
+    await updateDoc(doc(db, 'users', requestDoc.data().from), { friends: arrayUnion({ uid: userId }) });
+  };
+
+  return (
+    <div className="bg-gray-900 p-4">
+      <div className="flex items-center">
+        <img src={profile?.photoURL || '/default-avatar.png'} alt="Profile" className="w-16 h-16 rounded-full" />
+        <div>
+          <h2 className="text-xl text-yellow-400">{profile?.displayName}</h2>
+          <p className="text-white">{profile?.friends?.length} Friends</p>
+          {notifications.length > 0 && <span className="bg-red-500 text-white px-2 rounded">{notifications.length}</span>}
+        </div>
+      </div>
+      <input type="text" placeholder="Search users" className="w-full p-2 bg-gray-700 text-white mb-4" onChange={e => searchUsers(e.target.value)} />
+      <div className="grid grid-cols-5 gap-2">
+        {categories.map(cat => (
+          <div key={cat.id} className="bg-gray-800 p-2 rounded">
+            <img src={cat.thumbnail} alt={cat.name} className="w-full h-16 object-cover" />
+            <p className="text-white text-xs">{cat.name}</p>
+          </div>
+        ))}
+      </div>
+      <PostList posts={posts} user={currentUser} />
+    </div>
+  );
+};
+
+export default Profile;
+
+// src/components/AdminDashboard.js
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, query, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+
+const AdminDashboard = ({ user }) => {
+  const [reports, setReports] = useState([]);
+  const [blacklist, setBlacklist] = useState({ urls: [], hashtags: [] });
+  const [discountCodes, setDiscountCodes] = useState({});
+  const [analytics, setAnalytics] = useState({});
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const reportQuery = collection(db, 'reports');
+      const reports = await getDocs(reportQuery);
+      setReports(reports.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const analyticsQuery = collection(db, 'analytics');
+      const analyticsData = await getDocs(analyticsQuery);
+      setAnalytics(analyticsData.docs.reduce((acc, doc) => ({ ...acc, [doc.id]: doc.data() }), {}));
+    };
+    fetchData();
+  }, []);
+
+  const handleBlacklist = async (type, value) => {
+    await updateDoc(doc(db, 'blacklist', 'main'), { [type]: arrayUnion(value) });
+  };
+
+  const handleDiscountCode = async (url, code) => {
+    await updateDoc(doc(db, 'discounts', url), { code });
+    const posts = await getDocs(query(collection(db, 'posts'), where('links.url', 'array-contains', url)));
+    posts.forEach(async post => {
+      await updateDoc(doc(db, 'posts', post.id), { discountCode: code });
+    });
+  };
+
+  const handleBotDetection = async () => {
+    const users = await getDocs(collection(db, 'users'));
+    users.forEach(async user => {
+      const posts = await getDocs(query(collection(db, 'posts'), where('userId', '==', user.id), where('createdAt', '>', Date.now() - 60 * 1000)));
+      if (posts.docs.length > 5) {
+        await updateDoc(doc(db, 'users', user.id), { flagged: true });
+      }
+    });
+  };
+
+  return (
+    <div className="bg-gray-900 p-4">
+      <h2 className="text-2xl text-yellow-400">Admin Dashboard</h2>
+      <div>
+        <h3 className="text-xl text-white">Red Flag Reports</h3>
+        {reports.map(report => (
+          <div key={report.id} className="bg-gray-800 p-2 mb-2">
+            <p>{report.reason} - {report.comment}</p>
+            <button onClick={() => deleteDoc(doc(db, 'posts', report.postId))} className="bg-red-500 text-white p-1">Delete Post</button>
+          </div>
+        ))}
+      </div>
+      <div>
+        <h3 className="text-xl text-white">Blacklist</h3>
+        <input type="text" placeholder="Add URL" onChange={e => handleBlacklist('urls', e.target.value)} className="p-2 bg-gray-700 text-white" />
+        <input type="text" placeholder="Add Hashtag" onChange={e => handleBlacklist('hashtags', e.target.value)} className="p-2 bg-gray-700 text-white" />
+      </div>
+      <div>
+        <h3 className="text-xl text-white">Discount Codes</h3>
+        <input type="text" placeholder="URL" onChange={e => setDiscountCodes({ ...discountCodes, url: e.target.value })} className="p-2 bg-gray-700 text-white" />
+        <input type="text" placeholder="Code" onChange={e => setDiscountCodes({ ...discountCodes, code: e.target.value })} className="p-2 bg-gray-700 text-white" />
+        <button onClick={() => handleDiscountCode(discountCodes.url, discountCodes.code)} className="bg-yellow-400 text-gray-900 p-2">Add Code</button>
+      </div>
+      <div>
+        <h3 className="text-xl text-white">Analytics</h3>
+        <p>Active Users: {analytics.users?.count}</p>
+        <p>Popular Hashtags: {analytics.hashtags?.top.join(', ')}</p>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
+
+// src/index.css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #1a202c;
+  color: #ffffff;
+}
+
+button {
+  @apply transition duration-200;
+}
+
+button:hover {
+  @apply opacity-80;
+}
+
+input, textarea {
+  @apply border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400;
+}
+
+// Replit Upload Instructions
+1. Open your Replit project for 'Love'.
+2. Replace the contents of src/App.js, src/components/Post.js, src/components/Profile.js, and src/index.css with the provided code.
+3. Create a new file src/components/AdminDashboard.js and paste the provided code.
+4. Ensure Firebase is configured in src/firebase.js with your project credentials.
+5. Install dependencies: run `npm install firebase tailwindcss` in the Replit console.
+6. Add a default avatar image to public/default-avatar.png.
+7. Test in Replit’s preview window, keeping sessions short to avoid compute overages.
+8. Deploy to Render ($7 tier) by connecting your GitHub repo and setting environment variables for Firebase.
