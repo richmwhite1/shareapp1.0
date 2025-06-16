@@ -275,25 +275,50 @@ export default function CreatePostPage() {
   };
 
   // Handle additional photos selection
-  const handleAdditionalPhotosChange = (files: FileList | null) => {
+  const handleAdditionalPhotosChange = async (files: FileList | null) => {
     if (files) {
-      const newFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-      const newPhotoData = newFiles.map(file => ({ file, link: '', description: '', discountCode: '' }));
-      const combinedFiles = [...additionalPhotos, ...newPhotoData].slice(0, 4); // Max 4 additional photos
-      setAdditionalPhotos(combinedFiles);
+      const newFiles = Array.from(files);
       
-      // Generate previews
-      const previews: string[] = [];
-      combinedFiles.forEach(photoData => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previews.push(e.target?.result as string);
-          if (previews.length === combinedFiles.length) {
-            setAdditionalPhotoPreviews(previews);
+      for (const file of newFiles) {
+        if (additionalPhotos.length >= 4) break;
+        
+        try {
+          const processedFile = await processImageFile(file);
+          
+          const newPhoto = {
+            file: processedFile,
+            link: '',
+            description: '',
+            discountCode: ''
+          };
+          
+          setAdditionalPhotos(prev => [...prev, newPhoto]);
+          
+          // Generate preview
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setAdditionalPhotoPreviews(prev => [...prev, e.target?.result as string]);
+          };
+          reader.readAsDataURL(processedFile);
+
+          // Show success message if image was processed
+          const originalSizeMB = file.size / (1024 * 1024);
+          const processedSizeMB = processedFile.size / (1024 * 1024);
+          
+          if (originalSizeMB > 5 || file.name !== processedFile.name) {
+            toast({
+              title: "Image processed",
+              description: `Additional image optimized from ${originalSizeMB.toFixed(1)}MB to ${processedSizeMB.toFixed(1)}MB`,
+            });
           }
-        };
-        reader.readAsDataURL(photoData.file);
-      });
+        } catch (error: any) {
+          toast({
+            title: "Error processing image",
+            description: `Failed to process ${file.name}: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+      }
     }
   };
 
@@ -1087,7 +1112,7 @@ export default function CreatePostPage() {
                         Click to upload or drag and drop your primary photo
                       </p>
                       <p className="text-sm text-gray-400 mt-2">
-                        PNG, JPEG, GIF up to 5MB
+                        All image formats supported - automatically optimized if needed
                       </p>
                     </div>
                   )}
@@ -1203,7 +1228,7 @@ export default function CreatePostPage() {
                           Add additional photo ({additionalPhotos.length}/4)
                         </p>
                         <p className="text-sm text-gray-400 mt-1">
-                          Click to upload or drag and drop
+                          All formats supported - auto-optimized
                         </p>
                       </div>
                       
