@@ -1106,6 +1106,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/users/search', authenticateToken, async (req: any, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
+      }
+      
+      const users = await storage.searchUsers(query.trim());
+      // Filter out current user and existing friends
+      const currentUserId = req.user.userId;
+      const friends = await storage.getFriends(currentUserId);
+      const friendIds = friends.map(f => f.id);
+      
+      const filteredUsers = users.filter(user => 
+        user.id !== currentUserId && !friendIds.includes(user.id)
+      );
+      
+      res.json(filteredUsers);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Hashtag endpoints
   app.get('/api/hashtags/trending', async (req, res) => {
     try {

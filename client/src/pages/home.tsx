@@ -16,7 +16,7 @@ export default function Home() {
   const [friendsWithPosts, setFriendsWithPosts] = useState<any[]>([]);
 
   // Get friends with recent posts for navigation
-  const { data: friendsData = [] } = useQuery({
+  const { data: friendsData = [] } = useQuery<Array<{ user: any; hasRecentPosts: boolean }>>({
     queryKey: ['/api/friends/recent-posts'],
     enabled: isAuthenticated,
   });
@@ -134,12 +134,10 @@ export default function Home() {
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-8 text-center">
               <h2 className="text-xl font-semibold text-white mb-2">
-                {feedType === 'friends' ? 'No friend posts yet' : 
-                 feedType === 'tagged' ? 'No tagged posts yet' : 'No posts yet'}
+                {feedType === 'friend' ? 'No recent posts from this friend' : 'No posts yet'}
               </h2>
               <p className="text-gray-400 mb-4">
-                {feedType === 'friends' ? 'Connect with friends to see their amazing content!' :
-                 feedType === 'tagged' ? 'No one has tagged you in posts yet.' :
+                {feedType === 'friend' ? 'Your friend hasn\'t posted anything in the last 3 days.' :
                  'Be the first to share something amazing!'}
               </p>
             </CardContent>
