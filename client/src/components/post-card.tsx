@@ -156,11 +156,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   };
 
   return (
-    <Card className={`bg-gray-800 border-gray-700 overflow-hidden transition-all duration-300 ${
-      isDetailView ? 'rounded-2xl' : 'rounded-lg'
+    <div className={`bg-black overflow-hidden transition-all duration-300 ${
+      isDetailView ? 'rounded-none' : 'rounded-none border-none'
     }`}>
       {/* Post Header */}
-      <CardContent className={`${isDetailView ? 'p-6' : 'p-4'} border-b border-gray-700`}>
+      <div className={`${isDetailView ? 'p-6' : 'p-4'} bg-black`}>
         <div className="flex items-center justify-between">
           <Link href={`/profile/${post.user.id}`}>
             <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
@@ -242,7 +242,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             )}
           </div>
         </div>
-      </CardContent>
+      </div>
 
       {/* Primary Photo */}
       <div className="relative">

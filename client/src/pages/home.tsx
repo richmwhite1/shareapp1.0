@@ -63,7 +63,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-black">
       <Header />
       
       {/* Friends Feed Scroll */}
@@ -71,7 +71,7 @@ export default function Home() {
         <FriendsScrollFeed onFriendSelect={handleFriendSelect} />
       )}
       
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-lg mx-auto px-0">
         {/* Feed Type Selector */}
         {isAuthenticated && (
           <div className="flex space-x-2 mb-6">
@@ -126,7 +126,7 @@ export default function Home() {
             ))}
           </div>
         ) : posts && posts.length > 0 ? (
-          <div className="space-y-8">
+          <div className="space-y-0">
             {posts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}

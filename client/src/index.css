@@ -3,31 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(0, 0%, 8%);
+  --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 96%);
-  --muted: hsl(0, 0%, 15%);
+  --muted: hsl(0, 0%, 10%);
   --muted-foreground: hsl(0, 0%, 75%);
-  --popover: hsl(0, 0%, 10%);
+  --popover: hsl(0, 0%, 5%);
   --popover-foreground: hsl(0, 0%, 96%);
-  --card: hsl(0, 0%, 10%);
+  --card: hsl(0, 0%, 5%);
   --card-foreground: hsl(0, 0%, 96%);
-  --border: hsl(0, 0%, 22%);
-  --input: hsl(0, 0%, 14%);
-  --primary: hsl(347, 90%, 50%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(0, 0%, 16%);
+  --border: hsl(0, 0%, 15%);
+  --input: hsl(0, 0%, 10%);
+  --primary: hsl(35, 20%, 72%);
+  --primary-foreground: hsl(0, 0%, 0%);
+  --secondary: hsl(0, 0%, 10%);
   --secondary-foreground: hsl(0, 0%, 96%);
-  --accent: hsl(0, 0%, 20%);
+  --accent: hsl(0, 0%, 15%);
   --accent-foreground: hsl(0, 0%, 96%);
   --destructive: hsl(0, 62.8%, 50%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(347, 90%, 50%);
+  --ring: hsl(35, 20%, 72%);
   --radius: 0.5rem;
   
-  /* Dark masculine theme colors */
-  --pinterest-red: hsl(347, 90%, 50%);
-  --pinterest-gray: hsl(220, 9%, 65%);
-  --surface-gray: hsl(220, 13%, 12%);
+  /* Gold accent color */
+  --gold: #ba9971;
+  --gold-hover: #a8875f;
 }
 
 .dark {
@@ -61,7 +60,7 @@
   body {
     @apply font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
-    background-color: #1a202c;
+    background-color: #000000;
     color: #ffffff;
     min-height: 100vh;
   }
@@ -75,7 +74,8 @@
   }
   
   input, textarea {
-    @apply border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-yellow-400;
+    @apply border border-gray-600 rounded focus:outline-none focus:ring-2;
+    --tw-ring-color: var(--gold);
   }
 }
 
@@ -88,31 +88,48 @@
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   }
   
+  .text-gold {
+    color: var(--gold);
+  }
+  
+  .bg-gold {
+    background-color: var(--gold);
+  }
+  
+  .border-gold {
+    border-color: var(--gold);
+  }
+  
+  .hover\:bg-gold:hover {
+    background-color: var(--gold-hover);
+  }
+  
+  .hover\:text-gold:hover {
+    color: var(--gold);
+  }
+  
+  .focus\:ring-gold:focus {
+    --tw-ring-color: var(--gold);
+  }
+  
+  /* Keep Pinterest red for backwards compatibility */
   .text-pinterest-red {
-    color: var(--pinterest-red);
+    color: var(--gold);
   }
   
   .bg-pinterest-red {
-    background-color: var(--pinterest-red);
-  }
-  
-  .text-pinterest-gray {
-    color: var(--pinterest-gray);
+    background-color: var(--gold);
   }
   
   .border-pinterest-red {
-    border-color: var(--pinterest-red);
+    border-color: var(--gold);
   }
   
   .hover\:bg-pinterest-red:hover {
-    background-color: var(--pinterest-red);
+    background-color: var(--gold-hover);
   }
   
   .hover\:text-pinterest-red:hover {
-    color: var(--pinterest-red);
-  }
-  
-  .focus\:ring-pinterest-red:focus {
-    --tw-ring-color: var(--pinterest-red);
+    color: var(--gold);
   }
 }
