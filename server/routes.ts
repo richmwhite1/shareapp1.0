@@ -1113,7 +1113,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Search query must be at least 2 characters' });
       }
       
+      console.log('Searching for users with query:', query);
       const users = await storage.searchUsers(query.trim());
+      console.log('Found users:', users);
+      
       // Filter out current user and existing friends
       const currentUserId = req.user.userId;
       const friends = await storage.getFriends(currentUserId);
@@ -1123,9 +1126,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.id !== currentUserId && !friendIds.includes(user.id)
       );
       
+      console.log('Filtered users:', filteredUsers);
       res.json(filteredUsers);
     } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
+      console.error('Search error:', error);
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   });
 

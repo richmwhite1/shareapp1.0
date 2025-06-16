@@ -122,12 +122,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
+    const searchTerm = `%${query.toLowerCase()}%`;
     const searchResults = await db
       .select()
       .from(users)
       .where(or(
-        like(users.username, `%${query}%`),
-        like(users.name, `%${query}%`)
+        sql`LOWER(${users.username}) LIKE ${searchTerm}`,
+        sql`LOWER(${users.name}) LIKE ${searchTerm}`
       ))
       .limit(20);
     return searchResults;
