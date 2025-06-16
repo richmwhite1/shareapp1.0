@@ -1108,7 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/search', async (req: any, res) => {
+  app.get('/api/users/search', authenticateToken, async (req: any, res) => {
     try {
       const query = req.query.q as string;
       if (!query || query.trim().length < 2) {
@@ -1117,11 +1117,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Searching for users with query:', query);
       
-      // Use the existing storage method for user search
-      const searchResults = await storage.searchUsers(query.trim());
-      console.log('Search results:', searchResults);
+      // Use the storage interface for user search
+      const users = await storage.searchUsers(query.trim());
+      console.log('Found users:', users);
       
-      res.json(searchResults);
+      // Filter out current user and existing friends
+      const currentUserId = req.user.userId;
+      try {
+        const friends = await storage.getFriends(currentUserId);
+        const friendIds = friends.map(f => f.id);
+        
+        const filteredUsers = users.filter(user => 
+          user.id !== currentUserId && !friendIds.includes(user.id)
+        );
+        
+        res.json(filteredUsers);
+      } catch (friendsError) {
+        // If friends lookup fails, just filter out current user
+        const filteredUsers = users.filter(user => user.id !== currentUserId);
+        res.json(filteredUsers);
+      }
     } catch (error: any) {
       console.error('Search error:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });
