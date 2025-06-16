@@ -65,6 +65,98 @@ export default function CreatePostPage() {
       }
     });
   };
+
+  // Image processing utilities
+  const resizeImage = (file: File, maxSizeMB: number = 5): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas not supported'));
+        return;
+      }
+      const img = document.createElement('img');
+      
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        let { width, height } = img;
+        const maxDimension = 2048; // Maximum width or height
+        
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress the image
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Start with high quality and reduce if needed
+        let quality = 0.9;
+        const tryCompress = () => {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Failed to process image'));
+              return;
+            }
+            
+            const sizeMB = blob.size / (1024 * 1024);
+            
+            if (sizeMB <= maxSizeMB || quality <= 0.1) {
+              // Convert to appropriate format
+              const extension = file.name.split('.').pop()?.toLowerCase();
+              const outputFormat = ['jpg', 'jpeg', 'png', 'gif'].includes(extension || '') ? 
+                `image/${extension === 'jpg' ? 'jpeg' : extension}` : 'image/jpeg';
+              
+              const processedFile = new File([blob], 
+                file.name.replace(/\.[^/.]+$/, '') + (outputFormat === 'image/jpeg' ? '.jpg' : '.png'), 
+                { type: outputFormat }
+              );
+              
+              resolve(processedFile);
+            } else {
+              quality -= 0.1;
+              tryCompress();
+            }
+          }, 'image/jpeg', quality);
+        };
+        
+        tryCompress();
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const processImageFile = async (file: File): Promise<File> => {
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      // Try to process as image anyway for web images
+      try {
+        return await resizeImage(file);
+      } catch {
+        throw new Error('Please upload a valid image file (PNG, JPEG, GIF, WebP)');
+      }
+    }
+    
+    const sizeMB = file.size / (1024 * 1024);
+    
+    // If image is under 5MB and in a standard format, return as-is
+    if (sizeMB <= 5 && ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)) {
+      return file;
+    }
+    
+    // Resize/compress the image
+    return await resizeImage(file);
+  };
   
   const [newCategoryData, setNewCategoryData] = useState({
     name: "",
@@ -150,14 +242,35 @@ export default function CreatePostPage() {
   });
 
   // Handle primary photo selection
-  const handlePrimaryPhotoChange = (file: File | null) => {
-    if (file && file.type.startsWith('image/')) {
-      setPrimaryPhoto(file);
+  const handlePrimaryPhotoChange = async (file: File | null) => {
+    if (!file) return;
+
+    try {
+      const processedFile = await processImageFile(file);
+      setPrimaryPhoto(processedFile);
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         setPrimaryPhotoPreview(e.target?.result as string);
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processedFile);
+
+      // Show success message if image was processed
+      const originalSizeMB = file.size / (1024 * 1024);
+      const processedSizeMB = processedFile.size / (1024 * 1024);
+      
+      if (originalSizeMB > 5 || file.name !== processedFile.name) {
+        toast({
+          title: "Image processed",
+          description: `Image optimized from ${originalSizeMB.toFixed(1)}MB to ${processedSizeMB.toFixed(1)}MB`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error processing image",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -721,27 +834,10 @@ export default function CreatePostPage() {
                     </div>
                   )}
                   
-                  {/* Bulk Text Input */}
-                  <div className="pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const text = prompt("Enter multiple words to convert to hashtags (separated by spaces):");
-                        if (text) {
-                          parseHashtagsFromText(text);
-                        }
-                      }}
-                      className="text-xs"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add Multiple
-                    </Button>
-                  </div>
+
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Type hashtags individually (with or without #) and press Enter/Space, or click "Add Multiple" to convert words to hashtags
+                  Type hashtags individually (with or without #) and press Enter/Space to add them
                 </p>
               </div>
 
