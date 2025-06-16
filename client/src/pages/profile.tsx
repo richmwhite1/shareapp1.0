@@ -160,12 +160,10 @@ export default function ProfilePage() {
                       <Image className="h-4 w-4" />
                       <span>{totalPosts} posts</span>
                     </div>
-                    {isOwnProfile && (
-                      <div className="flex items-center gap-1">
-                        <Folder className="h-4 w-4" />
-                        <span>{categories?.length || 0} categories</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <Folder className="h-4 w-4" />
+                      <span>{categories?.length || 0} {isOwnProfile ? 'categories' : 'public categories'}</span>
+                    </div>
                     <div className="flex items-center gap-1">
                       <Share2 className="h-4 w-4" />
                       <span>{totalShares} shares</span>
@@ -269,24 +267,26 @@ export default function ProfilePage() {
                 </Card>
               ))}
               
-              {/* Create New Category Card */}
-              <Link href="/create">
-                <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border border-dashed hover:border-pinterest-red/50">
-                  <CardContent className="p-4">
-                    <div className="aspect-square rounded-lg bg-secondary/50 flex items-center justify-center mb-3 border-2 border-dashed border-muted">
-                      <Plus className="h-8 w-8 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
-                    </div>
-                    <h3 className="font-medium text-muted-foreground group-hover:text-pinterest-red transition-colors text-center">
-                      New Category
-                    </h3>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Create when posting
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
+              {/* Create New Category Card - only for own profile */}
+              {isOwnProfile && isAuthenticated && (
+                <Link href="/create">
+                  <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border border-dashed hover:border-pinterest-red/50">
+                    <CardContent className="p-4">
+                      <div className="aspect-square rounded-lg bg-secondary/50 flex items-center justify-center mb-3 border-2 border-dashed border-muted">
+                        <Plus className="h-8 w-8 text-muted-foreground group-hover:text-pinterest-red transition-colors" />
+                      </div>
+                      <h3 className="font-medium text-muted-foreground group-hover:text-pinterest-red transition-colors text-center">
+                        New Category
+                      </h3>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Create when posting
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
             </div>
-          ) : (
+          ) : isOwnProfile && isAuthenticated ? (
             <Card className="bg-card border-border border-dashed">
               <CardContent className="p-8 text-center">
                 <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                 </Link>
               </CardContent>
             </Card>
-          )}
+          ) : null}
           </div>
         )}
 
