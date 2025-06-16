@@ -284,20 +284,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           } else if (spotifyUrl) {
-            // Try to get album artwork from Spotify oEmbed API
+            // Extract album artwork from Spotify web page
             try {
-              const oembedResponse = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`);
-              if (oembedResponse.ok) {
-                const oembedData = await oembedResponse.json();
-                if (oembedData.thumbnail_url) {
-                  imageUrl = oembedData.thumbnail_url;
+              const { load } = await import('cheerio');
+              const spotifyResponse = await fetch(spotifyUrl, {
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+              });
+              
+              if (spotifyResponse.ok) {
+                const html = await spotifyResponse.text();
+                const $ = load(html);
+                
+                // Try multiple selectors for Spotify album artwork
+                const possibleSelectors = [
+                  'meta[property="og:image"]',
+                  'meta[name="twitter:image"]',
+                  'img[data-testid="cover-art"]',
+                  'img[alt*="Cover"]',
+                  '.cover-art img',
+                  '.track-info img'
+                ];
+                
+                for (const selector of possibleSelectors) {
+                  const imageElement = $(selector);
+                  if (imageElement.length) {
+                    const src = imageElement.attr('content') || imageElement.attr('src');
+                    if (src && src.includes('scdn.co')) {
+                      imageUrl = src;
+                      break;
+                    }
+                  }
                 }
               }
             } catch (error) {
-              console.log('Spotify oEmbed failed, using fallback');
+              console.log('Spotify scraping failed:', error);
             }
             
-            // Fallback to Spotify logo if oEmbed fails
+            // Fallback to Spotify logo if scraping fails
             if (!imageUrl) {
               imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
             }
@@ -753,6 +778,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                url.includes('img.youtube.com') ||
                                url.includes('i.scdn.co');
       
+      // Check if this is a Spotify URL that needs special handling
+      const isSpotifyUrl = url.includes('open.spotify.com');
+      
       if (isDirectImageUrl) {
         // Handle direct image URLs
         try {
@@ -771,15 +799,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(400).json({ message: 'URL does not point to a valid image' });
           }
           
-          const buffer = await imageResponse.buffer();
+          const buffer = await imageResponse.arrayBuffer();
           
           // Set appropriate headers for image response
           res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Length', buffer.length);
-          return res.send(buffer);
+          res.setHeader('Content-Length', buffer.byteLength);
+          return res.send(Buffer.from(buffer));
           
         } catch (error) {
           return res.status(404).json({ message: 'Failed to fetch image from URL' });
+        }
+      }
+
+      // Handle Spotify URLs with special scraping
+      if (isSpotifyUrl) {
+        try {
+          const { load } = await import('cheerio');
+          const spotifyResponse = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+          });
+          
+          if (!spotifyResponse.ok) {
+            return res.status(404).json({ message: 'Failed to fetch Spotify page' });
+          }
+          
+          const html = await spotifyResponse.text();
+          const $ = load(html);
+          
+          // Try multiple selectors for Spotify album artwork
+          let imageUrl = '';
+          const possibleSelectors = [
+            'meta[property="og:image"]',
+            'meta[name="twitter:image"]',
+            'img[data-testid="cover-art"]',
+            'img[alt*="Cover"]',
+            '.cover-art img',
+            '.track-info img'
+          ];
+          
+          for (const selector of possibleSelectors) {
+            const imageElement = $(selector);
+            if (imageElement.length) {
+              const src = imageElement.attr('content') || imageElement.attr('src');
+              if (src && (src.includes('scdn.co') || src.includes('spotify'))) {
+                imageUrl = src;
+                break;
+              }
+            }
+          }
+          
+          if (!imageUrl) {
+            // Fallback to Spotify logo
+            imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
+          }
+          
+          // Fetch the found image
+          const imageResponse = await fetch(imageUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          
+          if (!imageResponse.ok) {
+            return res.status(404).json({ message: 'Failed to fetch Spotify album artwork' });
+          }
+          
+          const buffer = await imageResponse.arrayBuffer();
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', buffer.byteLength);
+          return res.send(Buffer.from(buffer));
+          
+        } catch (error) {
+          return res.status(404).json({ message: 'Failed to extract Spotify album artwork' });
         }
       }
 

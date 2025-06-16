@@ -273,23 +273,9 @@ export default function CreatePostPage() {
           ];
         }
       } else if (type === 'spotify') {
-        // For Spotify, try to get album artwork through oEmbed API
-        try {
-          const oembedResponse = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
-          if (oembedResponse.ok) {
-            const oembedData = await oembedResponse.json();
-            if (oembedData.thumbnail_url) {
-              imageUrls = [oembedData.thumbnail_url];
-            }
-          }
-        } catch (e) {
-          console.log('oEmbed failed, using fallback');
-        }
-        
-        // Fallback to Spotify logo if oEmbed fails
-        if (imageUrls.length === 0) {
-          imageUrls = ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png'];
-        }
+        // For Spotify, use web scraping to get album artwork
+        // We'll let the backend handle this since it can bypass CORS
+        imageUrls = [url]; // Pass the Spotify URL directly to backend for scraping
       }
 
       if (imageUrls.length > 0) {
