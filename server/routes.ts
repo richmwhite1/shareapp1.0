@@ -1108,40 +1108,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/search', (req, res) => {
-    const query = req.query.q;
-    if (!query || typeof query !== 'string' || query.trim().length < 2) {
-      return res.status(400).json({ message: 'Search query must be at least 2 characters' });
-    }
-    
-    const searchResults = [
-      {
-        id: 1,
-        username: "choneyman",
-        name: "Ted",
-        profilePictureUrl: null
-      },
-      {
-        id: 2,
-        username: "choneywoman", 
-        name: "tess",
-        profilePictureUrl: "/uploads/1750115184275-cx0hwrxl2n-images.jpeg"
-      },
-      {
-        id: 3,
-        username: "testuser",
-        name: "Test User",
-        profilePictureUrl: null
+  // User search endpoint
+  app.get('/api/search/users', async (req, res) => {
+    try {
+      const query = req.query.q;
+      if (!query || typeof query !== 'string' || query.trim().length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
       }
-    ];
-    
-    const searchTerm = query.toLowerCase();
-    const filteredResults = searchResults.filter(user => 
-      user.username.toLowerCase().includes(searchTerm) || 
-      user.name.toLowerCase().includes(searchTerm)
-    );
-    
-    return res.json(filteredResults);
+      
+      const users = await storage.searchUsers(query);
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        profilePictureUrl: user.profilePictureUrl,
+      }));
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error('User search error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // Hashtag endpoints

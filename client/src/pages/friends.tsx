@@ -43,7 +43,7 @@ export default function FriendsPage() {
   // Search users mutation
   const searchMutation = useMutation({
     mutationFn: async (query: string) => {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/search/users?q=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Search failed');
       return response.json() as Promise<User[]>;
     },
