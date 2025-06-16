@@ -197,7 +197,7 @@ export const createPostRequestSchema = z.object({
   },
   {
     message: "At least one URL (Primary Link, Spotify, or YouTube) is required",
-    path: ["primaryLink"]
+    path: []
   }
 ).refine(
   (data) => {

@@ -257,52 +257,66 @@ export default function CreatePostPage() {
 
     setIsFetchingImage(true);
     try {
-      let imageUrl = '';
+      let imageUrls: string[] = [];
       
       if (type === 'youtube') {
         // Extract YouTube video ID and get thumbnail
         const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
         if (videoMatch) {
           // Try different YouTube thumbnail qualities
-          const thumbnails = [
+          imageUrls = [
             `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`,
             `https://img.youtube.com/vi/${videoMatch[1]}/hqdefault.jpg`,
             `https://img.youtube.com/vi/${videoMatch[1]}/mqdefault.jpg`,
             `https://img.youtube.com/vi/${videoMatch[1]}/default.jpg`
           ];
-          
-          setAvailableImages(thumbnails);
-          imageUrl = thumbnails[0];
         }
       } else if (type === 'spotify') {
-        // For Spotify, use a default logo (in production you'd use Spotify API)
-        imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
-        setAvailableImages([imageUrl]);
+        // For Spotify, use a default logo
+        imageUrls = ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png'];
       }
 
-      if (imageUrl) {
-        const response = await fetch('/api/scrape-image', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${getAuthToken()}`,
-          },
-          body: JSON.stringify({ url: imageUrl }),
-        });
+      if (imageUrls.length > 0) {
+        setAvailableImages(imageUrls);
+        setCurrentImageIndex(0);
+        
+        // Try to fetch the first working image
+        let successfulFetch = false;
+        for (const imageUrl of imageUrls) {
+          try {
+            const response = await fetch('/api/scrape-image', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`,
+              },
+              body: JSON.stringify({ url: imageUrl }),
+            });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch image from media URL');
+            if (response.ok) {
+              const blob = await response.blob();
+              const file = new File([blob], `${type}-thumbnail.jpg`, { type: blob.type });
+              
+              handlePrimaryPhotoChange(file);
+              
+              toast({
+                title: "Media thumbnail fetched",
+                description: `The ${type} thumbnail has been loaded as your primary image`,
+              });
+              successfulFetch = true;
+              break;
+            }
+          } catch (err) {
+            // Try next image URL
+            continue;
+          }
         }
-
-        const blob = await response.blob();
-        const file = new File([blob], `${type}-thumbnail.jpg`, { type: blob.type });
         
-        handlePrimaryPhotoChange(file);
-        
-        toast({
-          title: "Media thumbnail fetched",
-          description: `The ${type} thumbnail has been loaded as your primary image`,
-        });
+        if (!successfulFetch) {
+          throw new Error(`Could not fetch any thumbnail from ${type} URL`);
+        }
+      } else {
+        throw new Error(`Invalid ${type} URL format`);
       }
     } catch (error: any) {
       toast({

@@ -237,7 +237,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         youtubeUrl: req.body.youtubeUrl || undefined
       };
       
-      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl } = createPostRequestSchema.parse(bodyData);
+      let validatedData;
+      try {
+        validatedData = createPostRequestSchema.parse(bodyData);
+      } catch (error: any) {
+        if (error.errors && error.errors.length > 0) {
+          const firstError = error.errors[0];
+          return res.status(400).json({ 
+            message: firstError.message || "Validation failed",
+            errors: error.errors 
+          });
+        }
+        return res.status(400).json({ message: "Invalid request data" });
+      }
+      
+      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl } = validatedData;
 
       // Auto-fetch image from media URLs if no primary photo uploaded
       if (!primaryPhotoUrl && (spotifyUrl || youtubeUrl)) {
@@ -248,7 +262,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Extract YouTube video ID and get thumbnail
             const videoMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
             if (videoMatch) {
-              imageUrl = `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`;
+              const videoId = videoMatch[1];
+              // Try different thumbnail qualities until one works
+              const thumbnailUrls = [
+                `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                `https://img.youtube.com/vi/${videoId}/default.jpg`
+              ];
+              
+              for (const thumbnailUrl of thumbnailUrls) {
+                try {
+                  const testResponse = await fetch(thumbnailUrl, { method: 'HEAD' });
+                  if (testResponse.ok) {
+                    imageUrl = thumbnailUrl;
+                    break;
+                  }
+                } catch (e) {
+                  continue;
+                }
+              }
             }
           } else if (spotifyUrl) {
             // For Spotify, use a default Spotify logo image or try to extract from URL
