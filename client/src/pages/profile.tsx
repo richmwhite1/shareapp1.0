@@ -130,7 +130,7 @@ export default function ProfilePage() {
     );
   }
 
-  const totalPosts = userPosts.length;
+  const totalPosts = userPosts?.length || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -143,27 +143,29 @@ export default function ProfilePage() {
             <CardContent className="p-6">
               <div className="flex items-center gap-6">
                 <Avatar className="w-20 h-20">
-                  <AvatarImage src={user?.profilePictureUrl || ""} />
+                  <AvatarImage src={displayUser?.profilePictureUrl || ""} />
                   <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
-                    {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
+                    {displayUser?.name?.charAt(0) || displayUser?.username?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-foreground mb-1">
-                    {user?.name || user?.username}
+                    {displayUser?.name || displayUser?.username}
                   </h1>
-                  <p className="text-muted-foreground mb-3">@{user?.username}</p>
+                  <p className="text-muted-foreground mb-3">@{displayUser?.username}</p>
                   
                   <div className="flex items-center gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Image className="h-4 w-4" />
                       <span>{totalPosts} posts</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Folder className="h-4 w-4" />
-                      <span>{categories.length} categories</span>
-                    </div>
+                    {isOwnProfile && (
+                      <div className="flex items-center gap-1">
+                        <Folder className="h-4 w-4" />
+                        <span>{categories?.length || 0} categories</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <Share2 className="h-4 w-4" />
                       <span>{totalShares} shares</span>
@@ -171,42 +173,45 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleShareProfile}
-                    variant="outline"
-                    className="border-pinterest-red text-pinterest-red hover:bg-pinterest-red hover:text-white"
-                    disabled={shareProfileMutation.isPending}
-                  >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    {shareProfileMutation.isPending ? 'Sharing...' : 'Share Profile'}
-                  </Button>
-                  
-                  <Link href="/create">
-                    <Button className="bg-pinterest-red hover:bg-red-700 text-white">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Post
+                {isOwnProfile && isAuthenticated && (
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleShareProfile}
+                      variant="outline"
+                      className="border-pinterest-red text-pinterest-red hover:bg-pinterest-red hover:text-white"
+                      disabled={shareProfileMutation.isPending}
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      {shareProfileMutation.isPending ? 'Sharing...' : 'Share Profile'}
                     </Button>
-                  </Link>
-                </div>
+                    
+                    <Link href="/create">
+                      <Button className="bg-pinterest-red hover:bg-red-700 text-white">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Post
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Categories Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Your Categories</h2>
-            <span className="text-sm text-muted-foreground">
-              Organize your posts into collections
-            </span>
-          </div>
+        {/* Categories Section - Only show for own profile */}
+        {isOwnProfile && isAuthenticated && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-foreground">Your Categories</h2>
+              <span className="text-sm text-muted-foreground">
+                Organize your posts into collections
+              </span>
+            </div>
 
-          {categories.length > 0 ? (
+            {(categories?.length || 0) > 0 ? (
             <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
               {/* User Categories */}
-              {categories.filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => (
+              {(categories || []).filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => (
                 <Card 
                   key={category.id} 
                   className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border hover:border-pinterest-red/50"
@@ -294,10 +299,11 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Recent Posts Preview */}
-        {userPosts.length > 0 && (
+        {(userPosts?.length || 0) > 0 && (
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-foreground">Recent Posts</h2>
@@ -307,7 +313,7 @@ export default function ProfilePage() {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {userPosts.slice(0, 10).map((post: any) => (
+              {(userPosts || []).slice(0, 10).map((post: any) => (
                 <Link key={post.id} href={`/post/${post.id}`}>
                   <Card className="group cursor-pointer hover:shadow-lg transition-all duration-200 bg-card border-border">
                     <CardContent className="p-0">
