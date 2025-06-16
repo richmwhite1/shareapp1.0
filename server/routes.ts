@@ -234,7 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discountCode: req.body.discountCode || undefined,
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1,
         spotifyUrl: req.body.spotifyUrl || undefined,
-        youtubeUrl: req.body.youtubeUrl || undefined
+        youtubeUrl: req.body.youtubeUrl || undefined,
+        hashtags: req.body.hashtags || undefined
       };
       
       let validatedData;
@@ -251,7 +252,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data" });
       }
       
-      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl } = validatedData;
+      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl, hashtags } = validatedData;
+      
+      // Parse hashtags from the hashtags string
+      const parseHashtags = (input: string): string[] => {
+        if (!input) return [];
+        const tags = input
+          .match(/#[a-zA-Z0-9_]+/g)
+          ?.map((tag) => tag.substring(1).toLowerCase())
+          .slice(0, 10) || [];
+        return [...new Set(tags)]; // Remove duplicates
+      };
+      
+      const hashtagArray = parseHashtags(hashtags || '');
 
       // Auto-fetch image from media URLs if no primary photo uploaded
       if (!primaryPhotoUrl && (spotifyUrl || youtubeUrl)) {

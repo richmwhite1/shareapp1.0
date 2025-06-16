@@ -1,0 +1,577 @@
+Prompt 1: Update CreatePost.js for Hashtag Input
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace CreatePost.js to add hashtag input
+echo 'import React, { useState } from "react";
+import { db, storage } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getLinkPreview } from "link-preview-js";
+import youtubeUrl from "youtube-url";
+
+const CreatePost = ({ userId }) => {
+  const [text, setText] = useState("");
+  const [image, setImage] = useState(null);
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [hashtags, setHashtags] = useState("");
+  const [error, setError] = useState("");
+
+  const validateUrl = (url, type) => {
+    if (type === "spotify") return url.includes("spotify.com");
+    if (type === "youtube") {
+      return (
+        url.includes("youtube.com") ||
+        url.includes("youtu.be") ||
+        url.includes("youtube.com/shorts/")
+      );
+    }
+    return false;
+  };
+
+  const getYouTubeThumbnail = (url) => {
+    const videoId = youtubeUrl.parse(url)?.id;
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+    return null;
+  };
+
+  const parseHashtags = (input) => {
+    const tags = input
+      .match(/#[a-zA-Z0-9]+/g)
+      ?.map((tag) => tag.substring(1).toLowerCase())
+      .slice(0, 10) || [];
+    return [...new Set(tags)]; // Remove duplicates
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (spotifyUrl && !validateUrl(spotifyUrl, "spotify")) {
+      setError("Invalid Spotify URL");
+      return;
+    }
+    if (youtubeUrl && !validateUrl(youtubeUrl, "youtube")) {
+      setError("Invalid YouTube URL");
+      return;
+    }
+
+    const hashtagArray = parseHashtags(hashtags);
+    if (hashtagArray.length > 10) {
+      setError("Maximum 10 hashtags allowed");
+      return;
+    }
+
+    let imageUrl = "";
+    if (image) {
+      const imageRef = ref(storage, `posts/${Date.now()}`);
+      await uploadBytes(imageRef, image);
+      imageUrl = await getDownloadURL(imageRef);
+    }
+
+    let spotifyMetadata = null;
+    let youtubeMetadata = null;
+    let youtubeThumbnail = youtubeUrl ? getYouTubeThumbnail(youtubeUrl) : null;
+
+    if (spotifyUrl) {
+      try {
+        spotifyMetadata = await getLinkPreview(spotifyUrl);
+      } catch (err) {
+        console.error("Failed to fetch Spotify metadata", err);
+      }
+    }
+
+    if (youtubeUrl) {
+      try {
+        youtubeMetadata = await getLinkPreview(youtubeUrl);
+        if (!youtubeMetadata.images?.length && youtubeThumbnail) {
+          youtubeMetadata.images = [youtubeThumbnail];
+        }
+      } catch (err) {
+        console.error("Failed to fetch YouTube metadata", err);
+        youtubeMetadata = { images: youtubeThumbnail ? [youtubeThumbnail] : [] };
+      }
+    }
+
+    if (!text && !imageUrl && !spotifyUrl && !youtubeUrl && !hashtagArray.length) {
+      setError("Please provide text, an image, a link, or hashtags");
+      return;
+    }
+
+    try {
+      const postRef = await addDoc(collection(db, "posts"), {
+        text,
+        imageUrl: imageUrl || (youtubeMetadata?.images?.[0] || ""),
+        createdAt: new Date(),
+        userId,
+        hashtags: hashtagArray,
+        likes: 0,
+        links: {
+          spotifyUrl,
+          youtubeUrl,
+          spotifyMetadata,
+          youtubeMetadata,
+        },
+      });
+
+      // Index hashtags for search
+      for (const tag of hashtagArray) {
+        await addDoc(collection(db, `hashtags/${tag}/posts`), {
+          postId: postRef.id,
+          createdAt: new Date(),
+          likes: 0,
+        });
+      }
+
+      setText("");
+      setImage(null);
+      setSpotifyUrl("");
+      setYoutubeUrl("");
+      setHashtags("");
+    } catch (err) {
+      setError("Failed to create post. Please try again.");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="What\'s on your mind?"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setImage(e.target.files[0])}
+        className="mb-2 text-white"
+      />
+      <input
+        type="text"
+        value={spotifyUrl}
+        onChange={(e) => setSpotifyUrl(e.target.value)}
+        placeholder="Spotify URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="text"
+        value={youtubeUrl}
+        onChange={(e) => setYoutubeUrl(e.target.value)}
+        placeholder="YouTube URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="text"
+        value={hashtags}
+        onChange={(e) => setHashtags(e.target.value)}
+        placeholder="#hashtag1 #hashtag2 (up to 10)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      {error && <p className="text-red-500">{error}</p>}
+      <button onClick={handleSubmit} className="p-2 bg-gold text-navy rounded">
+        Post
+      </button>
+    </div>
+  );
+};
+
+export default CreatePost;' > src/components/CreatePost.js
+Prompt 2: Create SearchBar.js for Universal Search
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create SearchBar.js
+echo 'import React, { useState } from "react";
+import { db } from "../firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import Feed from "./Feed";
+
+const SearchBar = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [error, setError] = useState("");
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSearchResults([]);
+
+    if (!searchTerm.trim()) {
+      setError("Please enter a hashtag to search");
+      return;
+    }
+
+    const hashtag = searchTerm.replace("#", "").toLowerCase();
+    try {
+      const q = query(collection(db, "posts"), where("hashtags", "array-contains", hashtag));
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setSearchResults(results);
+      if (results.length === 0) {
+        setError("No posts found for this hashtag");
+      }
+    } catch (err) {
+      setError("Search failed. Please try again.");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <form onSubmit={handleSearch} className="flex items-center">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by hashtag (e.g., #music)"
+          className="w-full p-2 border border-gold rounded-l text-white bg-navy"
+        />
+        <button type="submit" className="p-2 bg-gold text-navy rounded-r">
+          Search
+        </button>
+      </form>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
+      {searchResults.length > 0 && <Feed posts={searchResults} />}
+    </div>
+  );
+};
+
+export default SearchBar;' > src/components/SearchBar.js
+Prompt 3: Create HashtagSection.js for Followed Hashtags
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create HashtagSection.js
+echo 'import React, { useState, useEffect } from "react";
+import { db } from "../firebase";
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, getDocs } from "firebase/firestore";
+import Feed from "./Feed";
+
+const HashtagSection = ({ userId }) => {
+  const [followedHashtags, setFollowedHashtags] = useState([]);
+  const [selectedHashtag, setSelectedHashtag] = useState(null);
+  const [hashtagPosts, setHashtagPosts] = useState([]);
+  const [sortBy, setSortBy] = useState("popularity");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, `users/${userId}/followedHashtags`), (snapshot) => {
+      setFollowedHashtags(snapshot.docs.map((doc) => doc.id));
+    });
+    return () => unsubscribe();
+  }, [userId]);
+
+  const followHashtag = async (hashtag) => {
+    try {
+      await setDoc(doc(db, `users/${userId}/followedHashtags`, hashtag.toLowerCase()), { followedAt: new Date() });
+    } catch (err) {
+      setError("Failed to follow hashtag");
+      console.error(err);
+    }
+  };
+
+  const unfollowHashtag = async (hashtag) => {
+    try {
+      await deleteDoc(doc(db, `users/${userId}/followedHashtags`, hashtag));
+      if (selectedHashtag === hashtag) {
+        setSelectedHashtag(null);
+        setHashtagPosts([]);
+      }
+    } catch (err) {
+      setError("Failed to unfollow hashtag");
+      console.error(err);
+    }
+  };
+
+  const fetchHashtagPosts = async (hashtag) => {
+    setError("");
+    setHashtagPosts([]);
+    try {
+      const q = query(
+        collection(db, `hashtags/${hashtag}/posts`),
+        orderBy(sortBy === "popularity" ? "likes" : "createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      const postIds = snapshot.docs.map((doc) => doc.data().postId);
+      const posts = [];
+      for (const postId of postIds) {
+        const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId)));
+        if (!postDoc.empty) {
+          posts.push({ id: postDoc.docs[0].id, ...postDoc.docs[0].data() });
+        }
+      }
+      setHashtagPosts(posts);
+      if (posts.length === 0) {
+        setError("No posts found for this hashtag");
+      }
+    } catch (err) {
+      setError("Failed to load hashtag posts");
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedHashtag) {
+      fetchHashtagPosts(selectedHashtag);
+    }
+  }, [selectedHashtag, sortBy]);
+
+  return (
+    <div className="p-4 bg-navy">
+      <h2 className="text-white text-lg mb-2">Followed Hashtags</h2>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {followedHashtags.map((hashtag) => (
+          <div key={hashtag} className="flex items-center">
+            <button
+              onClick={() => setSelectedHashtag(hashtag)}
+              className="text-gold hover:underline mr-2"
+            >
+              #{hashtag}
+            </button>
+            <button
+              onClick={() => unfollowHashtag(hashtag)}
+              className="text-red-500 text-sm"
+            >
+              Unfollow
+            </button>
+          </div>
+        ))}
+        <input
+          type="text"
+          placeholder="Follow hashtag (e.g., #music)"
+          onKeyPress={(e) => {
+            if (e.key === "Enter" && e.target.value) {
+              followHashtag(e.target.value.replace("#", ""));
+              e.target.value = "";
+            }
+          }}
+          className="p-2 border border-gold rounded text-white bg-navy"
+        />
+      </div>
+      {selectedHashtag && (
+        <div>
+          <div className="flex justify-between mb-2">
+            <h3 className="text-white">Posts for #{selectedHashtag}</h3>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="p-1 border border-gold rounded text-white bg-navy"
+            >
+              <option value="popularity">Sort by Popularity</option>
+              <option value="recent">Sort by Most Recent</option>
+            </select>
+          </div>
+          {error && <p className="text-red-500">{error}</p>}
+          <Feed posts={hashtagPosts} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default HashtagSection;' > src/components/HashtagSection.js
+Prompt 4: Update Feed.js to Support Custom Posts and Sorting
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace Feed.js to support custom posts and sorting
+echo 'import React, { useState } from "react";
+
+const Feed = ({ posts = [] }) => {
+  const [expandedPost, setExpandedPost] = useState(null);
+  const [playingVideo, setPlayingVideo] = useState(null);
+
+  const handleImageClick = (post) => {
+    if (post.links?.youtubeUrl) {
+      setPlayingVideo(post.id);
+    } else {
+      setExpandedPost(expandedPost === post.id ? null : post.id);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-0">
+      {posts.map((post) => (
+        <div key={post.id} className="relative">
+          {playingVideo === post.id && post.links?.youtubeUrl ? (
+            <iframe
+              className="w-full aspect-square"
+              src={`https://www.youtube.com/embed/${new URL(post.links.youtubeUrl).searchParams.get("v") || post.links.youtubeUrl.split("/").pop()}?autoplay=1`}
+              title="YouTube video"
+              allow="autoplay; encrypted-media"
+            />
+          ) : (
+            <img
+              src={post.imageUrl || (post.links?.youtubeMetadata?.images?.[0])}
+              alt="Post"
+              className="w-full aspect-square object-cover cursor-pointer"
+              onClick={() => handleImageClick(post)}
+            />
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 flex justify-between">
+            <span>{post.likes || 0} Likes</span>
+            <span>{post.comments?.length || 0} Comments</span>
+            <span>{post.shares || 0} Shares</span>
+            <span>Rating: {post.rating || 0}</span>
+          </div>
+          {expandedPost === post.id && (
+            <div className="p-4 bg-navy text-white">
+              <p>{post.text}</p>
+              {post.hashtags?.length > 0 && (
+                <p className="text-gold">
+                  {post.hashtags.map((tag) => `#${tag}`).join(" ")}
+                </p>
+              )}
+              {post.links?.spotifyUrl && (
+                <a href={post.links.spotifyUrl} target="_blank" rel="noopener noreferrer" className="text-gold">
+                  {post.links.spotifyMetadata?.title || "Spotify Link"}
+                </a>
+              )}
+              {post.links?.youtubeUrl && (
+                <a href={post.links.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gold">
+                  {post.links.youtubeMetadata?.title || "YouTube Link"}
+                </a>
+              )}
+              <button className="mt-2 p-2 bg-gold text-navy rounded">Share</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Feed;' > src/components/Feed.js
+Prompt 5: Update App.js to Include New Components
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace App.js to include SearchBar and HashtagSection
+echo 'import React, { useState, useEffect } from "react";
+import { auth } from "./firebase";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import CreatePost from "./components/CreatePost";
+import Feed from "./components/Feed";
+import FriendBar from "./components/FriendBar";
+import SearchBar from "./components/SearchBar";
+import HashtagSection from "./components/HashtagSection";
+
+const App = () => {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
+      }
+    });
+  }, []);
+
+  if (!user) return <div className="bg-navy text-white">Loading...</div>;
+
+  return (
+    <div className="bg-navy min-h-screen text-white">
+      <SearchBar />
+      <FriendBar currentUserId={user.uid} />
+      <HashtagSection userId={user.uid} />
+      <CreatePost userId={user.uid} />
+      <Feed />
+    </div>
+  );
+};
+
+export default App;' > src/App.js
+Prompt 6: Update Firestore Rules
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update Firestore rules (manually apply in Firebase Console)
+echo 'rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /posts/{postId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /users/{userId}/followedHashtags/{hashtag} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    match /hashtags/{hashtag}/posts/{postId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}' > firestore.rules
+Artifact
+HashtagImplementationGuide.md
+markdown
+Show inline
+Testing Instructions
+Setup:
+Apply the prompts in Replit’s console or update files manually.
+Ensure youtube-url and link-preview-js are installed (npm install youtube-url link-preview-js).
+Manually update Firestore rules in the Firebase Console.
+Test Hashtag Input:
+In the post creation form, enter hashtags (e.g., #music #art #fun).
+Submit a post with text and hashtags.
+Check Firestore’s posts collection for a hashtags array (e.g., ["music", "art", "fun"]) and hashtags/music/posts, hashtags/art/posts, etc., for the post ID.
+Try entering 11 hashtags and confirm an error message.
+Test Search Bar:
+Enter #music in the search bar and submit.
+Verify a feed appears with posts containing #music.
+Search an invalid hashtag and confirm an error message.
+Test Hashtag Section:
+In the “Followed Hashtags” section, enter #music and press Enter.
+Confirm #music appears as a clickable tag.
+Click #music and verify a feed of posts, sorted by likes (popularity).
+Switch to “Most Recent” and confirm sorting by createdAt.
+Click “Unfollow” and verify the tag disappears.
+Verify Styling:
+Ensure the search bar, hashtag section, and feeds use navy (#1E2A44) and gold (#ba9971) colors, matching the app’s theme.
+Test on mobile (resize preview) to confirm responsiveness.
+Additional Notes
+Firestore Structure:
+posts/{postId}: { text, imageUrl, userId, createdAt, hashtags: [], likes: 0, links: {...} }
+users/{userId}/followedHashtags/{hashtag}: { followedAt: Timestamp }
+hashtags/{hashtag}/posts/{postId}: { postId, createdAt, likes: 0 }
+Performance:
+The hashtags/{hashtag}/posts collection enables efficient querying, as recommended for Firebase social apps.
+Sorting by popularity uses the likes field; ensure posts have a likes: 0 default in Firestore.
+Memory Context:
+Your prior requests (e.g., June 13, 2025, for a social media app with public feeds and YouTube links) emphasize searchability and user engagement, which hashtags enhance.
+Search Results:
+Hashtag strategies from Instagram and Firebase guides suggest using niche tags and indexing for searchability, which this solution implements.
+Error Handling:
+If posts don’t appear in hashtag feeds, check Firestore rules and ensure hashtags/{tag}/posts is populated.
+If searches fail, verify Firebase authentication and console logs.

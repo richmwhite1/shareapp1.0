@@ -190,6 +190,7 @@ export const createPostRequestSchema = z.object({
   categoryId: z.coerce.number().optional(),
   spotifyUrl: z.string().optional(),
   youtubeUrl: z.string().optional(),
+  hashtags: z.string().optional(),
 }).refine(
   (data) => {
     // At least one of primaryLink, spotifyUrl, or youtubeUrl must be provided

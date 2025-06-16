@@ -22,7 +22,8 @@ export default function CreatePostPage() {
     discountCode: "",
     categoryId: "", // Will be set when categories load
     spotifyUrl: "",
-    youtubeUrl: ""
+    youtubeUrl: "",
+    hashtags: ""
   });
   
   const [newCategoryData, setNewCategoryData] = useState({
@@ -442,6 +443,9 @@ export default function CreatePostPage() {
       if (formData.youtubeUrl) {
         formDataToSend.append('youtubeUrl', formData.youtubeUrl);
       }
+      if (formData.hashtags) {
+        formDataToSend.append('hashtags', formData.hashtags);
+      }
       if (primaryPhoto) {
         formDataToSend.append('primaryPhoto', primaryPhoto);
       }
@@ -633,6 +637,22 @@ export default function CreatePostPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
                   required
                 />
+              </div>
+
+              {/* Hashtags */}
+              <div>
+                <Label htmlFor="hashtags">Hashtags (up to 10)</Label>
+                <Input
+                  id="hashtags"
+                  type="text"
+                  placeholder="#travel #food #style #inspiration"
+                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  value={formData.hashtags}
+                  onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add hashtags to make your post discoverable. Format: #hashtag1 #hashtag2
+                </p>
               </div>
 
               {/* Discount Code */}
