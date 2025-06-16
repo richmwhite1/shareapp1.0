@@ -10,8 +10,10 @@ import fs from "fs";
 import { 
   signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData 
+  type AdditionalPhotoData, users
 } from "@shared/schema";
+import { db } from "./db";
+import { or, like } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -1115,22 +1117,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Searching for users with query:', query);
       
-      // Direct database query to bypass storage layer issues
-      const searchTerm = `%${query.toLowerCase()}%`;
-      const users = await db
-        .select()
-        .from(users)
-        .where(or(
-          sql`LOWER(${users.username}) LIKE ${searchTerm}`,
-          sql`LOWER(COALESCE(${users.name}, '')) LIKE ${searchTerm}`
-        ))
-        .limit(20);
-      
-      console.log('Found users:', users);
+      const searchResults = await storage.searchUsers(query.trim());
+      console.log('Found users:', searchResults);
       
       // Filter out current user
       const currentUserId = req.user.userId;
-      const filteredUsers = users.filter(user => user.id !== currentUserId);
+      const filteredUsers = searchResults.filter((user: any) => user.id !== currentUserId);
       
       console.log('Filtered users:', filteredUsers);
       res.json(filteredUsers);
