@@ -259,8 +259,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let imageUrl = '';
           
           if (youtubeUrl) {
-            // Extract YouTube video ID and get thumbnail
-            const videoMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+            // Extract YouTube video ID from various formats including Shorts
+            const videoMatch = youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
             if (videoMatch) {
               const videoId = videoMatch[1];
               // Try different thumbnail qualities until one works
@@ -700,6 +700,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const fetch = (await import('node-fetch')).default;
+      
+      // Check if this is a direct image URL (like YouTube thumbnails)
+      const isDirectImageUrl = url.match(/\.(jpg|jpeg|png|gif|webp)$/i) || 
+                               url.includes('img.youtube.com') ||
+                               url.includes('i.scdn.co');
+      
+      if (isDirectImageUrl) {
+        // Handle direct image URLs
+        try {
+          const imageResponse = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          
+          if (!imageResponse.ok) {
+            return res.status(404).json({ message: 'Image not found at the provided URL' });
+          }
+          
+          const contentType = imageResponse.headers.get('content-type');
+          if (!contentType || !contentType.startsWith('image/')) {
+            return res.status(400).json({ message: 'URL does not point to a valid image' });
+          }
+          
+          const buffer = await imageResponse.buffer();
+          
+          // Set appropriate headers for image response
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', buffer.length);
+          return res.send(buffer);
+          
+        } catch (error) {
+          return res.status(404).json({ message: 'Failed to fetch image from URL' });
+        }
+      }
+
+      // Handle webpage scraping for non-direct image URLs
       const { load } = await import('cheerio');
 
       // Fetch the webpage

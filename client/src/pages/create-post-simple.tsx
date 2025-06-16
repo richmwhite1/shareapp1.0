@@ -260,15 +260,16 @@ export default function CreatePostPage() {
       let imageUrls: string[] = [];
       
       if (type === 'youtube') {
-        // Extract YouTube video ID and get thumbnail
-        const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+        // Extract YouTube video ID from various formats including Shorts
+        const videoMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
         if (videoMatch) {
+          const videoId = videoMatch[1];
           // Try different YouTube thumbnail qualities
           imageUrls = [
-            `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`,
-            `https://img.youtube.com/vi/${videoMatch[1]}/hqdefault.jpg`,
-            `https://img.youtube.com/vi/${videoMatch[1]}/mqdefault.jpg`,
-            `https://img.youtube.com/vi/${videoMatch[1]}/default.jpg`
+            `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+            `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+            `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            `https://img.youtube.com/vi/${videoId}/default.jpg`
           ];
         }
       } else if (type === 'spotify') {
