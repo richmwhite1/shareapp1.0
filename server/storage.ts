@@ -122,37 +122,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
-    console.log('Starting user search for:', query);
+    const searchTerm = `%${query.toLowerCase()}%`;
+    const foundUsers = await db.select().from(users).where(
+      or(
+        sql`LOWER(${users.username}) LIKE ${searchTerm}`,
+        sql`LOWER(${users.name}) LIKE ${searchTerm}`
+      )
+    ).limit(20);
     
-    // Return mock users for testing since database query is failing
-    const mockUsers: User[] = [
-      {
-        id: 1,
-        username: "choneyman",
-        name: "Ted",
-        profilePictureUrl: null,
-        password: "",
-        createdAt: new Date()
-      },
-      {
-        id: 2,
-        username: "choneywoman", 
-        name: "tess",
-        profilePictureUrl: "/uploads/1750115184275-cx0hwrxl2n-images.jpeg",
-        password: "",
-        createdAt: new Date()
-      }
-    ];
-    
-    const searchTerm = query.toLowerCase().trim();
-    const filteredUsers = mockUsers.filter(user => {
-      const username = (user.username || '').toLowerCase();
-      const name = (user.name || '').toLowerCase();
-      return username.includes(searchTerm) || name.includes(searchTerm);
-    });
-    
-    console.log('Filtered users found:', filteredUsers.length);
-    return filteredUsers.slice(0, 20);
+    return foundUsers;
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {
