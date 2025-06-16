@@ -125,8 +125,8 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('Starting user search for:', query);
       
-      // Get all users first, then filter in JavaScript for reliable search
-      const allUsers = await db.select().from(users).limit(100);
+      // Get all users from database
+      const allUsers = await db.select().from(users);
       console.log('Retrieved users from database:', allUsers.length);
       
       const searchTerm = query.toLowerCase().trim();
@@ -141,7 +141,7 @@ export class DatabaseStorage implements IStorage {
       return filteredUsers.slice(0, 20);
     } catch (error) {
       console.error('Database search error:', error);
-      throw error;
+      return [];
     }
   }
 

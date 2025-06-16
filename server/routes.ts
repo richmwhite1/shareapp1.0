@@ -1108,27 +1108,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/search', authenticateToken, async (req: any, res) => {
+  app.get('/api/users/search', async (req: any, res) => {
     try {
       const query = req.query.q as string;
       if (!query || query.trim().length < 2) {
         return res.status(400).json({ message: 'Search query must be at least 2 characters' });
       }
       
-      // Hardcoded response for testing - will return the other user when searching
-      const mockUsers = [
-        {
-          id: 1,
-          username: "choneyman",
-          name: "Ted",
-          profilePictureUrl: null
-        }
-      ];
+      console.log('Searching for users with query:', query);
       
-      // Filter based on current user (don't show self in results)
-      const filteredUsers = mockUsers.filter(user => user.id !== req.user.userId);
+      // Use the existing storage method for user search
+      const searchResults = await storage.searchUsers(query.trim());
+      console.log('Search results:', searchResults);
       
-      res.json(filteredUsers);
+      res.json(searchResults);
     } catch (error: any) {
       console.error('Search error:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });
