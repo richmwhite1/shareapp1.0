@@ -424,7 +424,7 @@ export default function CreatePostPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Primary Link */}
               <div>
-                <Label htmlFor="primaryLink">Link URL *</Label>
+                <Label htmlFor="primaryLink">Link URL (Optional if Spotify/YouTube provided)</Label>
                 <div className="relative">
                   <ExternalLink className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -434,7 +434,6 @@ export default function CreatePostPage() {
                     className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                     value={formData.primaryLink}
                     onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
-                    required
                   />
                   <Button
                     type="button"

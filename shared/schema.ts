@@ -184,13 +184,42 @@ export const createPostSchema = insertPostSchema.extend({
 });
 
 export const createPostRequestSchema = z.object({
-  primaryLink: z.string().url("Must be a valid URL"),
+  primaryLink: z.string().optional(),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
   discountCode: z.string().optional(),
   categoryId: z.coerce.number().optional(),
   spotifyUrl: z.string().optional(),
   youtubeUrl: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // At least one of primaryLink, spotifyUrl, or youtubeUrl must be provided
+    return data.primaryLink || data.spotifyUrl || data.youtubeUrl;
+  },
+  {
+    message: "At least one URL (Primary Link, Spotify, or YouTube) is required",
+    path: ["primaryLink"]
+  }
+).refine(
+  (data) => {
+    // Validate URLs if provided
+    if (data.primaryLink && !z.string().url().safeParse(data.primaryLink).success) {
+      return false;
+    }
+    if (data.spotifyUrl && (!z.string().url().safeParse(data.spotifyUrl).success || 
+        !(data.spotifyUrl.includes("spotify.com") || data.spotifyUrl.includes("open.spotify.com")))) {
+      return false;
+    }
+    if (data.youtubeUrl && (!z.string().url().safeParse(data.youtubeUrl).success || 
+        !(data.youtubeUrl.includes("youtube.com") || data.youtubeUrl.includes("youtu.be")))) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Invalid URL format",
+    path: ["primaryLink"]
+  }
+);
 
 // Category schemas
 export const insertCategorySchema = createInsertSchema(categories).pick({

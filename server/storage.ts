@@ -201,6 +201,7 @@ export class DatabaseStorage implements IStorage {
     const [post] = await db.insert(posts).values({ 
       ...postData, 
       categoryId,
+      primaryLink: postData.primaryLink || (postData.spotifyUrl || postData.youtubeUrl || ''),
       privacy: postData.privacy || 'public',
       engagement: 0,
       spotifyUrl: postData.spotifyUrl || null,

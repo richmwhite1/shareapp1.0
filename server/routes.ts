@@ -219,13 +219,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: 'additionalPhotos', maxCount: 4 }
   ]), async (req: any, res) => {
     try {
-      // Handle primary photo upload (required)
-      if (!req.files || !req.files['primaryPhoto'] || !req.files['primaryPhoto'][0]) {
-        return res.status(400).json({ message: 'Primary photo is required' });
+      let primaryPhotoUrl = '';
+      
+      // Handle primary photo upload (optional if media URLs are provided)
+      if (req.files && req.files['primaryPhoto'] && req.files['primaryPhoto'][0]) {
+        const primaryPhotoFile = req.files['primaryPhoto'][0];
+        primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
       }
-
-      const primaryPhotoFile = req.files['primaryPhoto'][0];
-      const primaryPhotoUrl = saveUploadedFile(primaryPhotoFile);
 
       // Parse and validate the request body
       const bodyData = {
@@ -238,6 +238,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl } = createPostRequestSchema.parse(bodyData);
+
+      // Auto-fetch image from media URLs if no primary photo uploaded
+      if (!primaryPhotoUrl && (spotifyUrl || youtubeUrl)) {
+        try {
+          let imageUrl = '';
+          
+          if (youtubeUrl) {
+            // Extract YouTube video ID and get thumbnail
+            const videoMatch = youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+            if (videoMatch) {
+              imageUrl = `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`;
+            }
+          } else if (spotifyUrl) {
+            // For Spotify, use a default Spotify logo image or try to extract from URL
+            const trackMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
+            const albumMatch = spotifyUrl.match(/album\/([a-zA-Z0-9]+)/);
+            
+            if (trackMatch || albumMatch) {
+              // Use Spotify's default green logo as placeholder for now
+              // In a real app, you'd use Spotify API to get actual artwork
+              imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
+            }
+          }
+          
+          if (imageUrl) {
+            // Fetch and save the image
+            const response = await fetch(imageUrl);
+            if (response.ok) {
+              const buffer = await response.arrayBuffer();
+              const blob = new Blob([buffer]);
+              const file = new File([blob], 'media-thumbnail.jpg', { type: 'image/jpeg' });
+              
+              // Save the file using the same logic as uploaded files
+              const timestamp = Date.now();
+              const filename = `${timestamp}-media-thumbnail.jpg`;
+              const fs = await import('fs');
+              const path = await import('path');
+              const uploadsDir = path.join(process.cwd(), 'uploads');
+              
+              if (!fs.existsSync(uploadsDir)) {
+                fs.mkdirSync(uploadsDir, { recursive: true });
+              }
+              
+              const filepath = path.join(uploadsDir, filename);
+              fs.writeFileSync(filepath, Buffer.from(buffer));
+              primaryPhotoUrl = `/uploads/${filename}`;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch media thumbnail:', error);
+        }
+      }
+
+      // Ensure we have a primary photo or generate a default
+      if (!primaryPhotoUrl) {
+        return res.status(400).json({ message: 'Primary photo is required or could not be fetched from media URL' });
+      }
 
       // Handle additional photos with enhanced data
       const additionalPhotos: string[] = [];
@@ -299,8 +356,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create post
       const post = await storage.createPost({
         userId: req.user.userId,
-        primaryPhotoUrl,
-        primaryLink,
+        primaryPhotoUrl: primaryPhotoUrl || '/placeholder-image.svg',
+        primaryLink: primaryLink || '',
         primaryDescription,
         discountCode,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
