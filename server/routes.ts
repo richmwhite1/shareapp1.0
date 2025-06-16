@@ -284,13 +284,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           } else if (spotifyUrl) {
-            // For Spotify, use a default Spotify logo image or try to extract from URL
-            const trackMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
-            const albumMatch = spotifyUrl.match(/album\/([a-zA-Z0-9]+)/);
+            // Try to get album artwork from Spotify oEmbed API
+            try {
+              const oembedResponse = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl)}`);
+              if (oembedResponse.ok) {
+                const oembedData = await oembedResponse.json();
+                if (oembedData.thumbnail_url) {
+                  imageUrl = oembedData.thumbnail_url;
+                }
+              }
+            } catch (error) {
+              console.log('Spotify oEmbed failed, using fallback');
+            }
             
-            if (trackMatch || albumMatch) {
-              // Use Spotify's default green logo as placeholder for now
-              // In a real app, you'd use Spotify API to get actual artwork
+            // Fallback to Spotify logo if oEmbed fails
+            if (!imageUrl) {
               imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
             }
           }

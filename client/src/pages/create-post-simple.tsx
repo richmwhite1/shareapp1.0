@@ -273,8 +273,23 @@ export default function CreatePostPage() {
           ];
         }
       } else if (type === 'spotify') {
-        // For Spotify, use a default logo
-        imageUrls = ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png'];
+        // For Spotify, try to get album artwork through oEmbed API
+        try {
+          const oembedResponse = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
+          if (oembedResponse.ok) {
+            const oembedData = await oembedResponse.json();
+            if (oembedData.thumbnail_url) {
+              imageUrls = [oembedData.thumbnail_url];
+            }
+          }
+        } catch (e) {
+          console.log('oEmbed failed, using fallback');
+        }
+        
+        // Fallback to Spotify logo if oEmbed fails
+        if (imageUrls.length === 0) {
+          imageUrls = ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png'];
+        }
       }
 
       if (imageUrls.length > 0) {
@@ -590,15 +605,30 @@ export default function CreatePostPage() {
                     value={formData.primaryLink}
                     onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
                   />
-                  <Button
-                    type="button"
-                    onClick={fetchImageFromUrl}
-                    disabled={isFetchingImage || !formData.primaryLink.trim()}
-                    className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-pinterest-red hover:bg-red-600"
-                    title="Fetch image from URL"
-                  >
-                    <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
-                  </Button>
+                  <div className="absolute right-2 top-1.5 flex space-x-1">
+                    <Button
+                      type="button"
+                      onClick={fetchImageFromUrl}
+                      disabled={isFetchingImage || !formData.primaryLink.trim()}
+                      className="h-8 w-8 p-0 bg-pinterest-red hover:bg-red-600"
+                      title="Fetch image from URL"
+                    >
+                      <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                    </Button>
+                    {availableImages.length > 1 && (
+                      <Button
+                        type="button"
+                        onClick={cycleToNextImage}
+                        disabled={isFetchingImage}
+                        className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+                        title={`Next image (${currentImageIndex + 1}/${availableImages.length})`}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Click the download icon to automatically fetch the main image from the URL
@@ -652,14 +682,30 @@ export default function CreatePostPage() {
                       value={formData.spotifyUrl}
                       onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
                     />
-                    <Button
-                      type="button"
-                      onClick={() => fetchImageFromMediaUrl(formData.spotifyUrl, 'spotify')}
-                      disabled={isFetchingImage || !formData.spotifyUrl.trim()}
-                      className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="absolute right-2 top-1.5 flex space-x-1">
+                      <Button
+                        type="button"
+                        onClick={() => fetchImageFromMediaUrl(formData.spotifyUrl, 'spotify')}
+                        disabled={isFetchingImage || !formData.spotifyUrl.trim()}
+                        className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                        title="Fetch Spotify thumbnail"
+                      >
+                        <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                      </Button>
+                      {availableImages.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={cycleToNextImage}
+                          disabled={isFetchingImage}
+                          className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+                          title={`Next image (${currentImageIndex + 1}/${availableImages.length})`}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Share a Spotify track, album, or playlist
@@ -681,14 +727,30 @@ export default function CreatePostPage() {
                       value={formData.youtubeUrl}
                       onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
                     />
-                    <Button
-                      type="button"
-                      onClick={() => fetchImageFromMediaUrl(formData.youtubeUrl, 'youtube')}
-                      disabled={isFetchingImage || !formData.youtubeUrl.trim()}
-                      className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-red-600 hover:bg-red-700"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="absolute right-2 top-1.5 flex space-x-1">
+                      <Button
+                        type="button"
+                        onClick={() => fetchImageFromMediaUrl(formData.youtubeUrl, 'youtube')}
+                        disabled={isFetchingImage || !formData.youtubeUrl.trim()}
+                        className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700"
+                        title="Fetch YouTube thumbnail"
+                      >
+                        <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                      </Button>
+                      {availableImages.length > 1 && (
+                        <Button
+                          type="button"
+                          onClick={cycleToNextImage}
+                          disabled={isFetchingImage}
+                          className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700"
+                          title={`Next image (${currentImageIndex + 1}/${availableImages.length})`}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Share a YouTube video or music
