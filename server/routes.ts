@@ -232,10 +232,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryLink: req.body.primaryLink,
         primaryDescription: req.body.primaryDescription,
         discountCode: req.body.discountCode || undefined,
-        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1
+        categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1,
+        spotifyUrl: req.body.spotifyUrl || undefined,
+        youtubeUrl: req.body.youtubeUrl || undefined
       };
       
-      const { primaryLink, primaryDescription, discountCode, categoryId } = createPostRequestSchema.parse(bodyData);
+      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl } = createPostRequestSchema.parse(bodyData);
 
       // Handle additional photos with enhanced data
       const additionalPhotos: string[] = [];
@@ -269,6 +271,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Fetch metadata for Spotify and YouTube URLs
+      let mediaMetadata: Record<string, any> | null = null;
+      if (spotifyUrl || youtubeUrl) {
+        const { getLinkPreview } = await import('link-preview-js');
+        mediaMetadata = {} as Record<string, any>;
+        
+        if (spotifyUrl) {
+          try {
+            (mediaMetadata as any).spotify = await getLinkPreview(spotifyUrl);
+          } catch (error) {
+            console.error('Failed to fetch Spotify metadata:', error);
+            (mediaMetadata as any).spotify = null;
+          }
+        }
+        
+        if (youtubeUrl) {
+          try {
+            (mediaMetadata as any).youtube = await getLinkPreview(youtubeUrl);
+          } catch (error) {
+            console.error('Failed to fetch YouTube metadata:', error);
+            (mediaMetadata as any).youtube = null;
+          }
+        }
+      }
+
       // Create post
       const post = await storage.createPost({
         userId: req.user.userId,
@@ -279,6 +306,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
         additionalPhotoData: additionalPhotoData.length > 0 ? additionalPhotoData : null,
         categoryId: categoryId || undefined, // Let storage handle default category
+        spotifyUrl,
+        youtubeUrl,
+        mediaMetadata,
       });
 
       // Get post with user data

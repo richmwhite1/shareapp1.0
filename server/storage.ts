@@ -174,7 +174,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string }): Promise<Post> {
+  async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any }): Promise<Post> {
     let categoryId = postData.categoryId;
     
     // If no category specified or category is 0, find user's "General" category
@@ -203,6 +203,9 @@ export class DatabaseStorage implements IStorage {
       categoryId,
       privacy: postData.privacy || 'public',
       engagement: 0,
+      spotifyUrl: postData.spotifyUrl || null,
+      youtubeUrl: postData.youtubeUrl || null,
+      mediaMetadata: postData.mediaMetadata || null,
     }).returning();
 
     // Handle hashtags
