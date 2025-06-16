@@ -373,6 +373,121 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 </div>
               </div>
             )}
+
+            {/* Media Players */}
+            {(post.spotifyUrl || post.youtubeUrl) && (
+              <div className="mt-6 space-y-4">
+                {/* Spotify Player */}
+                {post.spotifyUrl && (
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.84-.179-.84-.599 0-.36.24-.66.54-.78 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.242 1.019zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.32 11.28-1.08 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                      </svg>
+                      <span className="text-green-400 font-medium">Spotify</span>
+                    </div>
+                    {(() => {
+                      // Extract Spotify track ID from URL
+                      const trackMatch = post.spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
+                      const albumMatch = post.spotifyUrl.match(/album\/([a-zA-Z0-9]+)/);
+                      const playlistMatch = post.spotifyUrl.match(/playlist\/([a-zA-Z0-9]+)/);
+                      
+                      if (trackMatch) {
+                        return (
+                          <iframe
+                            src={`https://open.spotify.com/embed/track/${trackMatch[1]}?utm_source=generator&theme=0`}
+                            width="100%"
+                            height="152"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            className="rounded"
+                          />
+                        );
+                      } else if (albumMatch) {
+                        return (
+                          <iframe
+                            src={`https://open.spotify.com/embed/album/${albumMatch[1]}?utm_source=generator&theme=0`}
+                            width="100%"
+                            height="352"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            className="rounded"
+                          />
+                        );
+                      } else if (playlistMatch) {
+                        return (
+                          <iframe
+                            src={`https://open.spotify.com/embed/playlist/${playlistMatch[1]}?utm_source=generator&theme=0`}
+                            width="100%"
+                            height="352"
+                            frameBorder="0"
+                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            loading="lazy"
+                            className="rounded"
+                          />
+                        );
+                      } else {
+                        return (
+                          <a
+                            href={post.spotifyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-yellow-400 hover:text-yellow-300 inline-flex items-center space-x-1"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>Open in Spotify</span>
+                          </a>
+                        );
+                      }
+                    })()}
+                  </div>
+                )}
+
+                {/* YouTube Player */}
+                {post.youtubeUrl && (
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                      </svg>
+                      <span className="text-red-500 font-medium">YouTube</span>
+                    </div>
+                    {(() => {
+                      // Extract YouTube video ID from URL
+                      const videoMatch = post.youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+                      
+                      if (videoMatch) {
+                        return (
+                          <iframe
+                            src={`https://www.youtube.com/embed/${videoMatch[1]}`}
+                            width="100%"
+                            height="315"
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="rounded"
+                          />
+                        );
+                      } else {
+                        return (
+                          <a
+                            href={post.youtubeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-yellow-400 hover:text-yellow-300 inline-flex items-center space-x-1"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>Watch on YouTube</span>
+                          </a>
+                        );
+                      }
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Additional Photos Gallery */}
