@@ -491,25 +491,50 @@ export default function CreatePostPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.primaryLink || !formData.primaryDescription || !primaryPhoto) {
+    // Check if at least one URL type is provided
+    const hasAnyUrl = formData.primaryLink || formData.spotifyUrl || formData.youtubeUrl;
+    
+    if (!hasAnyUrl) {
       toast({
         title: "Missing Required Fields",
-        description: "Please fill in all required fields and upload a primary photo.",
+        description: "At least one URL (Primary Link, Spotify, or YouTube) is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!formData.primaryDescription) {
+      toast({
+        title: "Missing Required Fields",
+        description: "Please provide a description for your post.",
         variant: "destructive",
       });
       return;
     }
 
-    // Basic URL validation
-    try {
-      new URL(formData.primaryLink);
-    } catch {
+    // For media-only posts (Spotify/YouTube), photo will be auto-fetched by backend
+    // For primary link posts, require either uploaded photo or auto-fetch
+    if (formData.primaryLink && !primaryPhoto && !formData.spotifyUrl && !formData.youtubeUrl) {
       toast({
-        title: "Invalid URL",
-        description: "Please enter a valid URL for the primary link.",
+        title: "Missing Required Fields",
+        description: "Please upload a primary photo or use the fetch button for your link.",
         variant: "destructive",
       });
       return;
+    }
+
+    // Basic URL validation for primary link if provided
+    if (formData.primaryLink) {
+      try {
+        new URL(formData.primaryLink);
+      } catch {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid URL for the primary link.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
