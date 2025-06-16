@@ -3,7 +3,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,6 +61,30 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/stats`] });
+      toast({
+        title: "Shared!",
+        description: "Post has been shared successfully.",
+      });
+    },
+  });
+
+  // Report mutation
+  const reportMutation = useMutation({
+    mutationFn: async (data: { reason: string; description: string }) => {
+      return apiRequest('POST', '/api/reports', {
+        type: 'post',
+        targetId: post.id,
+        reason: data.reason,
+        description: data.description,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Report submitted",
+        description: "Thank you for helping keep our community safe.",
+      });
+      setReportReason("");
+      setReportDescription("");
     },
   });
 
@@ -72,71 +95,43 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
       toast({
         title: "Post deleted",
-        description: "Your post has been successfully deleted.",
+        description: "Your post has been deleted successfully.",
       });
     },
   });
-
-  // Report post mutation
-  const reportMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/reports', {
-      postId: post.id,
-      reason: reportReason,
-      description: reportDescription
-    }),
-    onSuccess: () => {
-      setReportReason("");
-      setReportDescription("");
-      toast({
-        title: "Report submitted",
-        description: "Thank you for helping keep our community safe.",
-      });
-    },
-  });
-
-  const handleShare = async () => {
-    const url = `${window.location.origin}/post/${post.id}`;
-    
-    try {
-      await navigator.clipboard.writeText(url);
-      shareMutation.mutate();
-      toast({
-        title: "Link copied!",
-        description: "Post link copied to clipboard.",
-      });
-    } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy link to clipboard.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleLike = () => {
     if (!isAuthenticated) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to like posts.",
+        title: "Login required",
+        description: "Please log in to like posts.",
+        variant: "destructive",
       });
       return;
     }
     likeMutation.mutate();
   };
 
-  const handleDelete = () => {
-    if (!isAuthenticated) {
+  const handleShare = () => {
+    shareMutation.mutate();
+  };
+
+  const handleReport = () => {
+    if (!reportReason.trim()) {
       toast({
-        title: "Sign in required",
-        description: "Please sign in to delete posts.",
+        title: "Reason required",
+        description: "Please select a reason for reporting.",
+        variant: "destructive",
       });
       return;
     }
-    
-    if (post.user.id !== user?.id) {
+    reportMutation.mutate({ reason: reportReason, description: reportDescription });
+  };
+
+  const handleDelete = () => {
+    if (!user || post.user.id !== user.id) {
       toast({
         title: "Not authorized",
         description: "You can only delete your own posts.",
@@ -156,9 +151,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   };
 
   return (
-    <div className={`bg-black overflow-hidden transition-all duration-300 ${
-      isDetailView ? 'rounded-none' : 'rounded-none border-none'
-    }`}>
+    <div className="bg-black overflow-hidden transition-all duration-300">
       {/* Post Header */}
       <div className={`${isDetailView ? 'p-6' : 'p-4'} bg-black`}>
         <div className="flex items-center justify-between">
@@ -209,36 +202,65 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                     <DialogTitle className="text-white">Report Post</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <Select value={reportReason} onValueChange={setReportReason}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select a reason" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        <SelectItem value="spam">Spam</SelectItem>
-                        <SelectItem value="inappropriate">Inappropriate Content</SelectItem>
-                        <SelectItem value="harassment">Harassment</SelectItem>
-                        <SelectItem value="copyright">Copyright Violation</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Textarea
-                      placeholder="Additional details (optional)"
-                      value={reportDescription}
-                      onChange={(e) => setReportDescription(e.target.value)}
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                    />
-                    
-                    <Button
-                      onClick={() => reportMutation.mutate()}
-                      disabled={!reportReason || reportMutation.isPending}
-                      className="w-full bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      {reportMutation.isPending ? 'Submitting...' : 'Submit Report'}
-                    </Button>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Reason for reporting
+                      </label>
+                      <Select value={reportReason} onValueChange={setReportReason}>
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                          <SelectValue placeholder="Select a reason" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-700 border-gray-600">
+                          <SelectItem value="spam">Spam</SelectItem>
+                          <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                          <SelectItem value="harassment">Harassment</SelectItem>
+                          <SelectItem value="fake">Fake or misleading</SelectItem>
+                          <SelectItem value="copyright">Copyright violation</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Additional details (optional)
+                      </label>
+                      <Textarea
+                        value={reportDescription}
+                        onChange={(e) => setReportDescription(e.target.value)}
+                        placeholder="Provide more details about the issue..."
+                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                          Cancel
+                        </Button>
+                      </DialogTrigger>
+                      <Button
+                        onClick={handleReport}
+                        disabled={reportMutation.isPending}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {reportMutation.isPending ? "Submitting..." : "Submit Report"}
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
+            )}
+            
+            {user && post.user.id === user.id && !isDetailView && (
+              <Button
+                onClick={handleDelete}
+                variant="ghost"
+                size="sm"
+                disabled={deleteMutation.isPending}
+                className="text-red-400 hover:text-red-600 hover:bg-gray-700"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
             )}
           </div>
         </div>
@@ -249,14 +271,14 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         {isDetailView ? (
           <img
             src={selectedImage}
-            alt="Post image"
-            className="w-full h-96 object-cover"
+            alt={post.primaryDescription}
+            className="w-full max-h-96 object-cover"
           />
         ) : (
           <Link href={`/post/${post.id}`}>
             <img
-              src={selectedImage}
-              alt="Post image"
+              src={post.primaryPhotoUrl}
+              alt={post.primaryDescription}
               className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
             />
           </Link>
@@ -264,7 +286,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       </div>
 
       {/* Social Actions Bar */}
-      <CardContent className="p-3 border-b border-gray-700">
+      <div className="p-3 bg-black">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {/* Love/Heart Button */}
@@ -279,9 +301,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   : 'text-gray-400 hover:text-red-500 hover:bg-gray-700'
               }`}
             >
-              <Heart 
-                className={`w-5 h-5 mr-1 ${userLike ? 'fill-current' : ''}`} 
-              />
+              <Heart className={`w-5 h-5 mr-1 ${userLike ? 'fill-current' : ''}`} />
               <span className="text-sm font-medium">
                 {stats?.likeCount || 0}
               </span>
@@ -289,40 +309,30 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
             {/* Comments Button */}
             <Link href={`/post/${post.id}`}>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-700">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
+              >
                 <MessageCircle className="w-5 h-5 mr-1" />
                 <span className="text-sm font-medium">
                   {stats?.commentCount || 0}
                 </span>
               </Button>
             </Link>
-
-            {/* Share Count Button */}
-            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white hover:bg-gray-700 cursor-default">
-              <Share2 className="w-5 h-5 mr-1" />
-              <span className="text-sm font-medium">
-                {stats?.shareCount || 0}
-              </span>
-            </Button>
           </div>
 
-          {/* Delete button (only for post owner) */}
-          {isAuthenticated && user?.id === post.user.id && (
-            <Button
-              onClick={handleDelete}
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-red-500 hover:bg-gray-700"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          {/* Share Count */}
+          <div className="flex items-center text-gray-400 text-sm">
+            <Share2 className="w-4 h-4 mr-1" />
+            <span>{stats?.shareCount || 0}</span>
+          </div>
         </div>
-      </CardContent>
+      </div>
 
       {/* Post Content - Only show in detail view */}
       {isDetailView && (
-        <CardContent className="p-6">
+        <div className="p-6">
           {/* Primary Link and Description */}
           <div className="mb-6">
             <a
@@ -368,7 +378,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           {/* Additional Photos Gallery */}
           {post.additionalPhotos && post.additionalPhotos.length > 0 && (
             <div className="mb-8">
-              <h4 className="font-semibold text-gray-900 mb-3 text-lg">
+              <h4 className="font-semibold text-white mb-3 text-lg">
                 More from this collection
               </h4>
               <div className="space-y-4">
@@ -378,24 +388,25 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                     src={post.primaryPhotoUrl}
                     alt="Primary image"
                     onClick={() => setSelectedImage(post.primaryPhotoUrl)}
-                    className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 w-48 h-32 ${
-                      selectedImage === post.primaryPhotoUrl ? 'border-pinterest-red' : 'border-transparent'
+                    className={`w-20 h-20 object-cover rounded cursor-pointer transition-all ${
+                      selectedImage === post.primaryPhotoUrl ? 'ring-2 ring-yellow-400 opacity-100' : 'opacity-70 hover:opacity-100'
                     }`}
                   />
                 </div>
-                {/* Additional images with metadata */}
+                
+                {/* Additional photos */}
                 {post.additionalPhotos.map((photo, index) => {
-                  const photoData = Array.isArray(post.additionalPhotoData) ? post.additionalPhotoData[index] : undefined;
+                  const photoData = post.additionalPhotoData?.[index];
                   return (
-                    <div key={index} className="border rounded-lg p-3 bg-gray-50">
-                      <div className="flex gap-3">
+                    <div key={index} className="border-b border-gray-700 pb-4 last:border-b-0">
+                      <div className="flex space-x-4">
                         <div className="flex-shrink-0">
                           <img
                             src={photo}
-                            alt={`Additional image ${index + 1}`}
+                            alt={photoData?.description || `Additional photo ${index + 1}`}
                             onClick={() => setSelectedImage(photo)}
-                            className={`object-cover rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer border-2 w-24 h-24 ${
-                              selectedImage === photo ? 'border-pinterest-red' : 'border-transparent'
+                            className={`w-20 h-20 object-cover rounded cursor-pointer transition-all ${
+                              selectedImage === photo ? 'ring-2 ring-yellow-400 opacity-100' : 'opacity-70 hover:opacity-100'
                             }`}
                           />
                         </div>
@@ -405,23 +416,23 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                               href={photoData.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-pinterest-red hover:text-red-700 font-medium transition-colors inline-flex items-center space-x-1 text-sm"
+                              className="text-yellow-400 hover:text-yellow-300 font-medium transition-colors inline-flex items-center space-x-1 text-sm"
                             >
                               <ExternalLink className="w-3 h-3" />
                               <span className="truncate">{photoData.link}</span>
                             </a>
                           )}
                           {photoData?.description && (
-                            <p className="text-gray-600 text-sm mt-1 leading-relaxed">
+                            <p className="text-gray-300 text-sm mt-1 leading-relaxed">
                               {photoData.description}
                             </p>
                           )}
                           {photoData?.discountCode && (
-                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                            <div className="mt-2 p-2 bg-green-900/20 border border-green-700 rounded text-xs">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <span className="text-green-800 font-medium">Code:</span>
-                                  <span className="ml-1 font-mono text-green-700 font-bold">{photoData.discountCode}</span>
+                                  <span className="text-green-400 font-medium">Code:</span>
+                                  <span className="ml-1 font-mono text-green-300 font-bold">{photoData.discountCode}</span>
                                 </div>
                                 <Button
                                   onClick={(e) => {
@@ -432,9 +443,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                                   }}
                                   variant="outline"
                                   size="sm"
-                                  className="h-6 px-2 text-green-700 border-green-300 hover:bg-green-100"
+                                  className="h-6 px-2 text-green-400 border-green-600 hover:bg-green-800/20"
                                 >
-                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  <Copy className="w-3 h-3 mr-1" />
                                   Copy
                                 </Button>
                               </div>
@@ -448,12 +459,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               </div>
             </div>
           )}
-        </CardContent>
+        </div>
       )}
 
       {/* Delete Button - only show for post owner in detail view */}
       {isDetailView && user && post.user.id === user.id && (
-        <CardContent className="px-6 pb-6">
+        <div className="px-6 pb-6">
           <div className="flex justify-end">
             <Button
               onClick={handleDelete}
@@ -465,8 +476,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
