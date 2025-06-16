@@ -27,6 +27,10 @@
   /* Gold accent color */
   --gold: #ba9971;
   --gold-hover: #a8875f;
+  
+  /* Pinterest red for hashtags and accents */
+  --pinterest-red: #e60023;
+  --pinterest-red-hover: #d50020;
 }
 
 .dark {

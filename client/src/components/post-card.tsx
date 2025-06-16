@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -328,6 +328,27 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <span>{stats?.shareCount || 0}</span>
           </div>
         </div>
+
+        {/* Hashtags in feed view */}
+        {!isDetailView && post.hashtags && post.hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
+            {post.hashtags.slice(0, 5).map((hashtag) => (
+              <Link key={hashtag.id} href={`/search?hashtag=${hashtag.name}`}>
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-pinterest-red/10 hover:bg-pinterest-red/20 border border-pinterest-red/30 rounded-full text-xs text-pinterest-red hover:text-pinterest-red/80 transition-colors cursor-pointer">
+                  <Hash className="h-2.5 w-2.5" />
+                  <span>{hashtag.name}</span>
+                </div>
+              </Link>
+            ))}
+            {post.hashtags.length > 5 && (
+              <Link href={`/post/${post.id}`}>
+                <div className="inline-flex items-center px-2 py-1 text-xs text-gray-400 hover:text-gray-300 cursor-pointer">
+                  +{post.hashtags.length - 5} more
+                </div>
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Post Content - Only show in detail view */}
@@ -347,6 +368,20 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <p className="text-gray-300 leading-relaxed mt-3">
               {post.primaryDescription}
             </p>
+
+            {/* Hashtags */}
+            {post.hashtags && post.hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {post.hashtags.map((hashtag) => (
+                  <Link key={hashtag.id} href={`/search?hashtag=${hashtag.name}`}>
+                    <div className="inline-flex items-center gap-1 px-2 py-1 bg-pinterest-red/10 hover:bg-pinterest-red/20 border border-pinterest-red/30 rounded-full text-sm text-pinterest-red hover:text-pinterest-red/80 transition-colors cursor-pointer">
+                      <Hash className="h-3 w-3" />
+                      <span>{hashtag.name}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
             
             {/* Discount Code */}
             {post.discountCode && (
