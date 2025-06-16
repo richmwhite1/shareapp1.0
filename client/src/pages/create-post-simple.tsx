@@ -39,6 +39,8 @@ export default function CreatePostPage() {
   const [additionalPhotoPreviews, setAdditionalPhotoPreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [availableImages, setAvailableImages] = useState<string[]>([]);
   
   const primaryFileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
@@ -249,6 +251,112 @@ export default function CreatePostPage() {
     }
   };
 
+  // Auto-fetch image from media URLs
+  const fetchImageFromMediaUrl = async (url: string, type: 'spotify' | 'youtube') => {
+    if (!url.trim()) return;
+
+    setIsFetchingImage(true);
+    try {
+      let imageUrl = '';
+      
+      if (type === 'youtube') {
+        // Extract YouTube video ID and get thumbnail
+        const videoMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+        if (videoMatch) {
+          // Try different YouTube thumbnail qualities
+          const thumbnails = [
+            `https://img.youtube.com/vi/${videoMatch[1]}/maxresdefault.jpg`,
+            `https://img.youtube.com/vi/${videoMatch[1]}/hqdefault.jpg`,
+            `https://img.youtube.com/vi/${videoMatch[1]}/mqdefault.jpg`,
+            `https://img.youtube.com/vi/${videoMatch[1]}/default.jpg`
+          ];
+          
+          setAvailableImages(thumbnails);
+          imageUrl = thumbnails[0];
+        }
+      } else if (type === 'spotify') {
+        // For Spotify, use a default logo (in production you'd use Spotify API)
+        imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Spotify_logo_without_text.svg/512px-Spotify_logo_without_text.svg.png';
+        setAvailableImages([imageUrl]);
+      }
+
+      if (imageUrl) {
+        const response = await fetch('/api/scrape-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${getAuthToken()}`,
+          },
+          body: JSON.stringify({ url: imageUrl }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch image from media URL');
+        }
+
+        const blob = await response.blob();
+        const file = new File([blob], `${type}-thumbnail.jpg`, { type: blob.type });
+        
+        handlePrimaryPhotoChange(file);
+        
+        toast({
+          title: "Media thumbnail fetched",
+          description: `The ${type} thumbnail has been loaded as your primary image`,
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch media thumbnail",
+        description: error.message || `Could not fetch thumbnail from ${type} URL`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
+
+  // Cycle through available images for current URL
+  const cycleToNextImage = async () => {
+    if (availableImages.length <= 1) return;
+    
+    const nextIndex = (currentImageIndex + 1) % availableImages.length;
+    setCurrentImageIndex(nextIndex);
+    
+    setIsFetchingImage(true);
+    try {
+      const response = await fetch('/api/scrape-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url: availableImages[nextIndex] }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch next image');
+      }
+
+      const blob = await response.blob();
+      const file = new File([blob], 'cycled-image.jpg', { type: blob.type });
+      
+      handlePrimaryPhotoChange(file);
+      
+      toast({
+        title: "Image updated",
+        description: `Showing image ${nextIndex + 1} of ${availableImages.length}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch next image",
+        description: error.message || "Could not fetch the next available image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
+
   // URL scraping functionality
   const fetchImageFromUrl = async () => {
     if (!formData.primaryLink.trim()) {
@@ -297,12 +405,17 @@ export default function CreatePostPage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      if (!primaryPhoto) {
-        throw new Error("Primary photo is required");
+      // Validate that at least one URL is provided
+      if (!formData.primaryLink && !formData.spotifyUrl && !formData.youtubeUrl) {
+        throw new Error("At least one URL (Primary Link, Spotify, or YouTube) is required");
       }
 
+      // The backend will auto-fetch media thumbnails if no primary photo is uploaded
+
       const formDataToSend = new FormData();
-      formDataToSend.append('primaryLink', formData.primaryLink);
+      if (formData.primaryLink) {
+        formDataToSend.append('primaryLink', formData.primaryLink);
+      }
       formDataToSend.append('primaryDescription', formData.primaryDescription);
       if (formData.discountCode) {
         formDataToSend.append('discountCode', formData.discountCode);
@@ -313,7 +426,9 @@ export default function CreatePostPage() {
       if (formData.youtubeUrl) {
         formDataToSend.append('youtubeUrl', formData.youtubeUrl);
       }
-      formDataToSend.append('primaryPhoto', primaryPhoto);
+      if (primaryPhoto) {
+        formDataToSend.append('primaryPhoto', primaryPhoto);
+      }
       formDataToSend.append('categoryId', formData.categoryId);
       
       additionalPhotos.forEach((photoData, index) => {
@@ -493,10 +608,18 @@ export default function CreatePostPage() {
                       id="spotifyUrl"
                       type="url"
                       placeholder="https://open.spotify.com/track/..."
-                      className="pl-10 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                      className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                       value={formData.spotifyUrl}
                       onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
                     />
+                    <Button
+                      type="button"
+                      onClick={() => fetchImageFromMediaUrl(formData.spotifyUrl, 'spotify')}
+                      disabled={isFetchingImage || !formData.spotifyUrl.trim()}
+                      className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Share a Spotify track, album, or playlist
@@ -514,10 +637,18 @@ export default function CreatePostPage() {
                       id="youtubeUrl"
                       type="url"
                       placeholder="https://youtube.com/watch?v=..."
-                      className="pl-10 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                      className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                       value={formData.youtubeUrl}
                       onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
                     />
+                    <Button
+                      type="button"
+                      onClick={() => fetchImageFromMediaUrl(formData.youtubeUrl, 'youtube')}
+                      disabled={isFetchingImage || !formData.youtubeUrl.trim()}
+                      className="absolute right-2 top-1.5 h-8 w-8 p-0 bg-red-600 hover:bg-red-700"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Share a YouTube video or music
