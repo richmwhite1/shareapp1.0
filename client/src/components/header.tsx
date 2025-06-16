@@ -67,7 +67,7 @@ export default function Header() {
               {/* Search Results Dropdown */}
               {searchResults && Array.isArray(searchResults) && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-64 overflow-y-auto z-50">
-                  {searchResults.map((user: any) => (
+                  {(searchResults as any[]).map((user: any) => (
                     <Link key={user.id} href={`/profile/${user.id}`}>
                       <div className="flex items-center p-3 hover:bg-gray-700 cursor-pointer">
                         <Avatar className="w-8 h-8 mr-3">
@@ -92,6 +92,14 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                {/* Search */}
+                <Link href="/search">
+                  <Button variant="ghost" className="text-yellow-400 hover:bg-gray-800">
+                    <Search className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">Search</span>
+                  </Button>
+                </Link>
+
                 {/* Trending Hashtags */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -102,7 +110,7 @@ export default function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="bg-gray-800 border-gray-700">
                     {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
-                      <Link key={hashtag.id} href={`/hashtag/${hashtag.name}`}>
+                      <Link key={hashtag.id} href={`/search?hashtag=${hashtag.name}`}>
                         <DropdownMenuItem className="text-white hover:bg-gray-700 cursor-pointer">
                           <Hash className="w-3 h-3 mr-2" />
                           {hashtag.name} ({hashtag.count})

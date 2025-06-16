@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search as SearchIcon, Hash, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth.tsx";
 import PostCard from "@/components/post-card";
 import Header from "@/components/header";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { isAuthenticated } = useAuth();
+  const [location] = useLocation();
+
+  // Handle URL parameters for direct hashtag navigation
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const hashtagParam = params.get('hashtag');
+    if (hashtagParam) {
+      setSearchTerm(`#${hashtagParam}`);
+      setSearchQuery(hashtagParam);
+    }
+  }, [location]);
 
   // Search posts by hashtag
   const { data: searchResults, isLoading: isSearching } = useQuery({
@@ -121,18 +132,19 @@ export default function SearchPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
-                <Badge
-                  key={hashtag.id}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-pinterest-red hover:text-white transition-colors"
-                  onClick={() => handleHashtagClick(hashtag.name)}
-                >
-                  <Hash className="h-3 w-3 mr-1" />
-                  {hashtag.name} ({hashtag.count})
-                </Badge>
-              ))}
-              {(!trendingHashtags || trendingHashtags.length === 0) && (
+              {Array.isArray(trendingHashtags) && trendingHashtags.length > 0 ? (
+                trendingHashtags.map((hashtag: any) => (
+                  <Badge
+                    key={hashtag.id}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-pinterest-red hover:text-white transition-colors"
+                    onClick={() => handleHashtagClick(hashtag.name)}
+                  >
+                    <Hash className="h-3 w-3 mr-1" />
+                    {hashtag.name} ({hashtag.count})
+                  </Badge>
+                ))
+              ) : (
                 <p className="text-muted-foreground">No trending hashtags yet</p>
               )}
             </div>
