@@ -25,7 +25,7 @@ export interface IStorage {
   getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;

@@ -1,0 +1,116 @@
+# Install link-preview-js for metadata fetching
+npm install link-preview-js
+
+# Replace CreatePost.js with enhanced version
+echo 'import React, { useState } from "react";
+import { db, storage } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getLinkPreview } from "link-preview-js";
+
+const CreatePost = ({ userId }) => {
+  const [text, setText] = useState("");
+  const [image, setImage] = useState(null);
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [error, setError] = useState("");
+
+  const validateUrl = (url, type) => {
+    if (type === "spotify") return url.includes("spotify.com");
+    if (type === "youtube") return url.includes("youtube.com") || url.includes("youtu.be");
+    return false;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (spotifyUrl && !validateUrl(spotifyUrl, "spotify")) {
+      setError("Invalid Spotify URL");
+      return;
+    }
+    if (youtubeUrl && !validateUrl(youtubeUrl, "youtube")) {
+      setError("Invalid YouTube URL");
+      return;
+    }
+
+    let imageUrl = "";
+    if (image) {
+      const imageRef = ref(storage, `posts/${Date.now()}`);
+      await uploadBytes(imageRef, image);
+      imageUrl = await getDownloadURL(imageRef);
+    }
+
+    let spotifyMetadata = null;
+    let youtubeMetadata = null;
+    if (spotifyUrl) {
+      try {
+        spotifyMetadata = await getLinkPreview(spotifyUrl);
+      } catch (err) {
+        console.error("Failed to fetch Spotify metadata", err);
+      }
+    }
+    if (youtubeUrl) {
+      try {
+        youtubeMetadata = await getLinkPreview(youtubeUrl);
+      } catch (err) {
+        console.error("Failed to fetch YouTube metadata", err);
+      }
+    }
+
+    await addDoc(collection(db, "posts"), {
+      text,
+      imageUrl,
+      createdAt: new Date(),
+      userId,
+      hashtags: [],
+      links: {
+        spotifyUrl,
+        youtubeUrl,
+        spotifyMetadata,
+        youtubeMetadata,
+      },
+    });
+
+    setText("");
+    setImage(null);
+    setSpotifyUrl("");
+    setYoutubeUrl("");
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="What\'s on your mind?"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="file"
+        onChange={(e) => setImage(e.target.files[0])}
+        className="mb-2 text-white"
+      />
+      <input
+        type="text"
+        value={spotifyUrl}
+        onChange={(e) => setSpotifyUrl(e.target.value)}
+        placeholder="Spotify URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="text"
+        value={youtubeUrl}
+        onChange={(e) => setYoutubeUrl(e.target.value)}
+        placeholder="YouTube URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      {error && <p className="text-red-500">{error}</p>}
+      <button onClick={handleSubmit} className="p-2 bg-gold text-navy rounded">
+        Post
+      </button>
+    </div>
+  );
+};
+
+export default CreatePost;' > src/components/CreatePost.js

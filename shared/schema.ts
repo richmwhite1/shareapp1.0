@@ -30,6 +30,9 @@ export const posts = pgTable("posts", {
   discountCode: text("discount_code"),
   additionalPhotos: text("additional_photos").array(),
   additionalPhotoData: json("additional_photo_data"), // Array of {url, link, description} objects
+  spotifyUrl: text("spotify_url"),
+  youtubeUrl: text("youtube_url"),
+  mediaMetadata: json("media_metadata"), // Stores metadata from link previews
   privacy: text("privacy").notNull().default("public"), // public, friends, private
   engagement: integer("engagement").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -160,6 +163,9 @@ export const insertPostSchema = createInsertSchema(posts).pick({
   discountCode: true,
   additionalPhotos: true,
   additionalPhotoData: true,
+  spotifyUrl: true,
+  youtubeUrl: true,
+  mediaMetadata: true,
 });
 
 export const createPostSchema = insertPostSchema.extend({
@@ -167,6 +173,14 @@ export const createPostSchema = insertPostSchema.extend({
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
   discountCode: z.string().optional(),
   additionalPhotos: z.array(z.string()).optional(),
+  spotifyUrl: z.string().url("Must be a valid Spotify URL").optional().refine(
+    (url) => !url || url.includes("spotify.com") || url.includes("open.spotify.com"),
+    "Must be a valid Spotify URL"
+  ),
+  youtubeUrl: z.string().url("Must be a valid YouTube URL").optional().refine(
+    (url) => !url || url.includes("youtube.com") || url.includes("youtu.be"),
+    "Must be a valid YouTube URL"
+  ),
 });
 
 export const createPostRequestSchema = z.object({
@@ -174,6 +188,8 @@ export const createPostRequestSchema = z.object({
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
   discountCode: z.string().optional(),
   categoryId: z.coerce.number().optional(),
+  spotifyUrl: z.string().optional(),
+  youtubeUrl: z.string().optional(),
 });
 
 // Category schemas
