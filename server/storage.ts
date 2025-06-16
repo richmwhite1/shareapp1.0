@@ -122,17 +122,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
-    // Get all users first, then filter in JavaScript for reliable search
-    const allUsers = await db.select().from(users).limit(100);
-    const searchTerm = query.toLowerCase().trim();
-    
-    const filteredUsers = allUsers.filter(user => {
-      const username = (user.username || '').toLowerCase();
-      const name = (user.name || '').toLowerCase();
-      return username.includes(searchTerm) || name.includes(searchTerm);
-    });
-    
-    return filteredUsers.slice(0, 20);
+    try {
+      console.log('Starting user search for:', query);
+      
+      // Get all users first, then filter in JavaScript for reliable search
+      const allUsers = await db.select().from(users).limit(100);
+      console.log('Retrieved users from database:', allUsers.length);
+      
+      const searchTerm = query.toLowerCase().trim();
+      
+      const filteredUsers = allUsers.filter(user => {
+        const username = (user.username || '').toLowerCase();
+        const name = (user.name || '').toLowerCase();
+        return username.includes(searchTerm) || name.includes(searchTerm);
+      });
+      
+      console.log('Filtered users found:', filteredUsers.length);
+      return filteredUsers.slice(0, 20);
+    } catch (error) {
+      console.error('Database search error:', error);
+      throw error;
+    }
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {

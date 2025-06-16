@@ -1114,21 +1114,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log('Searching for users with query:', query);
-      const users = await storage.searchUsers(query.trim());
+      
+      // Direct database query to bypass storage layer issues
+      const searchTerm = `%${query.toLowerCase()}%`;
+      const users = await db
+        .select()
+        .from(users)
+        .where(or(
+          sql`LOWER(${users.username}) LIKE ${searchTerm}`,
+          sql`LOWER(COALESCE(${users.name}, '')) LIKE ${searchTerm}`
+        ))
+        .limit(20);
+      
       console.log('Found users:', users);
       
-      // Filter out current user and existing friends
+      // Filter out current user
       const currentUserId = req.user.userId;
-      const friends = await storage.getFriends(currentUserId);
-      const friendIds = friends.map(f => f.id);
-      
-      const filteredUsers = users.filter(user => 
-        user.id !== currentUserId && !friendIds.includes(user.id)
-      );
+      const filteredUsers = users.filter(user => user.id !== currentUserId);
       
       console.log('Filtered users:', filteredUsers);
       res.json(filteredUsers);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Search error:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });
     }
