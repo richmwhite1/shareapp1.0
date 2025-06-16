@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash } from "lucide-react";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,46 @@ export default function CreatePostPage() {
     youtubeUrl: "",
     hashtags: ""
   });
+
+  const [hashtags, setHashtags] = useState<string[]>([]);
+  const [hashtagInput, setHashtagInput] = useState("");
+
+  // Hashtag handling functions
+  const addHashtag = (tag: string) => {
+    const cleanTag = tag.replace(/^#/, '').toLowerCase().trim();
+    if (cleanTag && !hashtags.includes(cleanTag) && hashtags.length < 10) {
+      setHashtags(prev => [...prev, cleanTag]);
+    }
+  };
+
+  const removeHashtag = (tag: string) => {
+    setHashtags(prev => prev.filter(t => t !== tag));
+  };
+
+  const handleHashtagInputChange = (value: string) => {
+    setHashtagInput(value);
+  };
+
+  const handleHashtagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (hashtagInput.trim()) {
+        addHashtag(hashtagInput.trim());
+        setHashtagInput('');
+      }
+    }
+  };
+
+  const parseHashtagsFromText = (text: string) => {
+    // Auto-recognize hashtags from a string of words
+    const words = text.split(/\s+/).filter(word => word.length > 0);
+    words.forEach(word => {
+      const cleanWord = word.replace(/[^\w]/g, '').toLowerCase();
+      if (cleanWord && !hashtags.includes(cleanWord) && hashtags.length < 10) {
+        addHashtag(cleanWord);
+      }
+    });
+  };
   
   const [newCategoryData, setNewCategoryData] = useState({
     name: "",
@@ -443,8 +483,10 @@ export default function CreatePostPage() {
       if (formData.youtubeUrl) {
         formDataToSend.append('youtubeUrl', formData.youtubeUrl);
       }
-      if (formData.hashtags) {
-        formDataToSend.append('hashtags', formData.hashtags);
+      // Add hashtags as a formatted string
+      if (hashtags.length > 0) {
+        const hashtagString = hashtags.map(tag => `#${tag}`).join(' ');
+        formDataToSend.append('hashtags', hashtagString);
       }
       if (primaryPhoto) {
         formDataToSend.append('primaryPhoto', primaryPhoto);
@@ -641,17 +683,65 @@ export default function CreatePostPage() {
 
               {/* Hashtags */}
               <div>
-                <Label htmlFor="hashtags">Hashtags (up to 10)</Label>
-                <Input
-                  id="hashtags"
-                  type="text"
-                  placeholder="#travel #food #style #inspiration"
-                  className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                  value={formData.hashtags}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
-                />
+                <Label htmlFor="hashtags">Hashtags ({hashtags.length}/10)</Label>
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="hashtags"
+                      type="text"
+                      placeholder="Type hashtags and press Enter or Space (travel food style)"
+                      className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent pl-10"
+                      value={hashtagInput}
+                      onChange={(e) => handleHashtagInputChange(e.target.value)}
+                      onKeyDown={handleHashtagKeyDown}
+                      disabled={hashtags.length >= 10}
+                    />
+                  </div>
+                  
+                  {/* Hashtag Chips */}
+                  {hashtags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg">
+                      {hashtags.map((tag, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 bg-pinterest-red text-white px-2 py-1 rounded-full text-sm"
+                        >
+                          <Hash className="h-3 w-3" />
+                          <span>{tag}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeHashtag(tag)}
+                            className="ml-1 hover:bg-red-700 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Bulk Text Input */}
+                  <div className="pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const text = prompt("Enter multiple words to convert to hashtags (separated by spaces):");
+                        if (text) {
+                          parseHashtagsFromText(text);
+                        }
+                      }}
+                      className="text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Multiple
+                    </Button>
+                  </div>
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Add hashtags to make your post discoverable. Format: #hashtag1 #hashtag2
+                  Type hashtags individually (with or without #) and press Enter/Space, or click "Add Multiple" to convert words to hashtags
                 </p>
               </div>
 
