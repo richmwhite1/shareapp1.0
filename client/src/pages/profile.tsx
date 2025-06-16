@@ -8,15 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Folder, Image, Plus, Users, Lock, Trash2, Share2 } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import type { User, PostWithUser, CategoryWithPosts } from "@shared/schema";
 
-interface CategoryWithPosts {
+interface UserResponse {
   id: number;
+  username: string;
   name: string;
-  description: string;
-  isPublic: boolean;
-  postCount: number;
-  firstPostImage?: string;
-  posts: any[];
+  profilePictureUrl?: string;
 }
 
 export default function ProfilePage() {
@@ -31,30 +29,30 @@ export default function ProfilePage() {
   const isOwnProfile = !params.id || (user && parseInt(params.id) === user.id);
 
   // Fetch profile user data if viewing another user's profile
-  const { data: profileUser } = useQuery({
+  const { data: profileUser } = useQuery<UserResponse>({
     queryKey: ['/api/users', profileUserId],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !isOwnProfile && !!profileUserId,
   });
 
   const displayUser = isOwnProfile ? user : profileUser;
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<CategoryWithPosts[]>({
     queryKey: ['/api/categories', profileUserId],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: isOwnProfile && isAuthenticated,
+    enabled: Boolean(isOwnProfile && isAuthenticated),
   });
 
-  const { data: userPosts = [], isLoading: postsLoading } = useQuery({
+  const { data: userPosts = [], isLoading: postsLoading } = useQuery<PostWithUser[]>({
     queryKey: ['/api/posts/user', profileUserId],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!profileUserId,
   });
 
   // Fetch total shares for all user posts
-  const { data: totalShares = 0 } = useQuery({
+  const { data: totalShares = 0 } = useQuery<number>({
     queryKey: [`/api/user/total-shares/${profileUserId}`],
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!profileUserId,
   });
 
@@ -107,7 +105,8 @@ export default function ProfilePage() {
     shareProfileMutation.mutate();
   };
 
-  if (!isAuthenticated) {
+  // Only require authentication when viewing your own profile (no ID parameter)
+  if (isOwnProfile && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
