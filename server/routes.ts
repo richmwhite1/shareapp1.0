@@ -1072,23 +1072,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/friend-request/:friendId/accept', authenticateToken, async (req: any, res) => {
+  app.post('/api/friend-request/:requestId/respond', authenticateToken, async (req: any, res) => {
     try {
-      const friendId = parseInt(req.params.friendId);
-      await storage.acceptFriendRequest(req.user.userId, friendId);
+      const requestId = parseInt(req.params.requestId);
+      const { action } = req.body;
+      
+      if (!['accept', 'reject'].includes(action)) {
+        return res.status(400).json({ message: 'Invalid action' });
+      }
+      
+      await storage.respondToFriendRequest(requestId, action);
       res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
-  app.post('/api/friend-request/:friendId/reject', authenticateToken, async (req: any, res) => {
-    try {
-      const friendId = parseInt(req.params.friendId);
-      await storage.rejectFriendRequest(req.user.userId, friendId);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || 'Internal server error' });
     }
   });
 
@@ -1096,6 +1092,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const friendsPosts = await storage.getFriendsPosts(req.user.userId);
       res.json(friendsPosts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/friends/recent-posts', authenticateToken, async (req: any, res) => {
+    try {
+      const friendsWithRecentPosts = await storage.getFriendsWithRecentPosts(req.user.userId);
+      res.json(friendsWithRecentPosts);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
