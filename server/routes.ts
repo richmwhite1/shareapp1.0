@@ -261,7 +261,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .match(/#[a-zA-Z0-9_]+/g)
           ?.map((tag) => tag.substring(1).toLowerCase())
           .slice(0, 10) || [];
-        return [...new Set(tags)]; // Remove duplicates
+        // Remove duplicates manually
+        const uniqueTags: string[] = [];
+        for (const tag of tags) {
+          if (!uniqueTags.includes(tag)) {
+            uniqueTags.push(tag);
+          }
+        }
+        return uniqueTags;
       };
       
       const hashtagArray = parseHashtags(hashtags || '');
@@ -484,6 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spotifyUrl,
         youtubeUrl,
         mediaMetadata,
+        hashtags: hashtagArray
       });
 
       // Get post with user data
