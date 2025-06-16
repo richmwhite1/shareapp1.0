@@ -53,12 +53,13 @@ export interface IStorage {
   getUserTotalShares(userId: number): Promise<number>;
 
   // Friends methods
-  sendFriendRequest(userId: number, friendId: number): Promise<void>;
-  acceptFriendRequest(userId: number, friendId: number): Promise<void>;
-  rejectFriendRequest(userId: number, friendId: number): Promise<void>;
+  sendFriendRequest(fromUserId: number, toUserId: number): Promise<void>;
+  getFriendRequests(userId: number): Promise<Array<{ id: number; fromUser: User; createdAt: Date }>>;
+  respondToFriendRequest(requestId: number, action: 'accept' | 'reject'): Promise<void>;
   getFriends(userId: number): Promise<UserWithFriends[]>;
-  getFriendRequests(userId: number): Promise<User[]>;
+  getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>>;
   areFriends(userId: number, friendId: number): Promise<boolean>;
+  removeFriend(userId: number, friendId: number): Promise<void>;
 
   // Hashtag methods
   createHashtag(name: string): Promise<Hashtag>;

@@ -66,10 +66,19 @@ export const postShares = pgTable("post_shares", {
 // Friends system
 export const friendships = pgTable("friendships", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  friendId: integer("friend_id").notNull(),
-  status: text("status").notNull().default("pending"), // pending, accepted, blocked
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  friendId: integer("friend_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("accepted"), // accepted, blocked
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const friendRequests = pgTable("friend_requests", {
+  id: serial("id").primaryKey(),
+  fromUserId: integer("from_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  toUserId: integer("to_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Hashtags
@@ -257,6 +266,15 @@ export const createFriendshipSchema = z.object({
   friendId: z.number(),
 });
 
+export const createFriendRequestSchema = z.object({
+  toUserId: z.number(),
+});
+
+export const respondFriendRequestSchema = z.object({
+  requestId: z.number(),
+  action: z.enum(["accept", "reject"]),
+});
+
 // Hashtag schemas
 export const createHashtagSchema = z.object({
   name: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_]+$/, "Hashtag must be alphanumeric with underscores"),
@@ -298,6 +316,10 @@ export type CreateCommentData = z.infer<typeof createCommentSchema>;
 // New types for enhanced features
 export type Friendship = typeof friendships.$inferSelect;
 export type CreateFriendshipData = z.infer<typeof createFriendshipSchema>;
+
+export type FriendRequest = typeof friendRequests.$inferSelect;
+export type CreateFriendRequestData = z.infer<typeof createFriendRequestSchema>;
+export type RespondFriendRequestData = z.infer<typeof respondFriendRequestSchema>;
 
 export type Hashtag = typeof hashtags.$inferSelect;
 export type CreateHashtagData = z.infer<typeof createHashtagSchema>;
