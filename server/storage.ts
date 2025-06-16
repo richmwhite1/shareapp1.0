@@ -122,16 +122,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
-    const searchTerm = `%${query.toLowerCase()}%`;
-    const searchResults = await db
-      .select()
-      .from(users)
-      .where(or(
-        sql`LOWER(${users.username}) LIKE ${searchTerm}`,
-        sql`LOWER(${users.name}) LIKE ${searchTerm}`
-      ))
-      .limit(20);
-    return searchResults;
+    // Get all users first, then filter in JavaScript for reliable search
+    const allUsers = await db.select().from(users).limit(100);
+    const searchTerm = query.toLowerCase().trim();
+    
+    const filteredUsers = allUsers.filter(user => {
+      const username = (user.username || '').toLowerCase();
+      const name = (user.name || '').toLowerCase();
+      return username.includes(searchTerm) || name.includes(searchTerm);
+    });
+    
+    return filteredUsers.slice(0, 20);
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {
