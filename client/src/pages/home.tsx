@@ -1,18 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/header";
 import PostCard from "@/components/post-card";
-import FriendsScrollFeed from "@/components/friends-feed";
+import FriendsStoriesBar from "@/components/friends-stories-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth.tsx";
 import type { PostWithUser } from "@shared/schema";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
-  const [feedType, setFeedType] = useState<'public' | 'friends' | 'tagged'>('public');
+  const [feedType, setFeedType] = useState<'public' | 'friend'>('public');
   const [selectedFriend, setSelectedFriend] = useState<number | null>(null);
+  const [currentFriendIndex, setCurrentFriendIndex] = useState(0);
+  const [friendsWithPosts, setFriendsWithPosts] = useState<any[]>([]);
+
+  // Get friends with recent posts for navigation
+  const { data: friendsData = [] } = useQuery({
+    queryKey: ['/api/friends/recent-posts'],
+    enabled: isAuthenticated,
+  });
 
   // Dynamic query based on feed type
   const { data: posts, isLoading, error } = useQuery({
@@ -20,12 +27,11 @@ export default function Home() {
     queryFn: async () => {
       let url = '/api/posts';
       
-      if (feedType === 'friends' && selectedFriend) {
-        url = `/api/posts/user/${selectedFriend}`;
-      } else if (feedType === 'friends' && !selectedFriend) {
-        url = '/api/friends/posts';
-      } else if (feedType === 'tagged') {
-        url = '/api/tagged-posts';
+      if (feedType === 'friend' && selectedFriend) {
+        // Get posts from specific friend within last 3 days
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        url = `/api/posts/user/${selectedFriend}?since=${threeDaysAgo.toISOString()}`;
       }
       
       const response = await fetch(url);
@@ -34,12 +40,34 @@ export default function Home() {
       }
       return response.json() as Promise<PostWithUser[]>;
     },
-    enabled: feedType !== 'friends' || isAuthenticated,
   });
 
-  const handleFriendSelect = (friendId: number) => {
-    setSelectedFriend(friendId === 0 ? null : friendId);
-    setFeedType(friendId === 0 ? 'public' : 'friends');
+  const handleSelectFeed = (type: 'public' | 'friend', friendId?: number) => {
+    setFeedType(type);
+    setSelectedFriend(friendId || null);
+    
+    if (type === 'friend' && friendId && friendsData.length > 0) {
+      const friendIndex = friendsData.findIndex((f: any) => f.user.id === friendId);
+      setCurrentFriendIndex(friendIndex);
+    } else {
+      setCurrentFriendIndex(0);
+    }
+  };
+
+  const handleNextFriend = () => {
+    const friendsWithRecentPosts = friendsData.filter((f: any) => f.hasRecentPosts);
+    
+    if (currentFriendIndex < friendsWithRecentPosts.length - 1) {
+      const nextIndex = currentFriendIndex + 1;
+      const nextFriend = friendsWithRecentPosts[nextIndex];
+      setCurrentFriendIndex(nextIndex);
+      setSelectedFriend(nextFriend.user.id);
+    } else {
+      // Return to public feed when we've seen all friends
+      setFeedType('public');
+      setSelectedFriend(null);
+      setCurrentFriendIndex(0);
+    }
   };
 
   if (error) {
@@ -66,44 +94,15 @@ export default function Home() {
     <div className="min-h-screen bg-black">
       <Header />
       
-      {/* Friends Feed Scroll */}
-      {isAuthenticated && (
-        <FriendsScrollFeed onFriendSelect={handleFriendSelect} />
-      )}
+      {/* Friends Stories Bar */}
+      <FriendsStoriesBar
+        onSelectFeed={handleSelectFeed}
+        activeFeed={feedType === 'public' ? 'public' : selectedFriend?.toString() || 'public'}
+        currentFriendIndex={currentFriendIndex}
+        onNextFriend={handleNextFriend}
+      />
       
       <main className="max-w-lg mx-auto px-0">
-        {/* Feed Type Selector */}
-        {isAuthenticated && (
-          <div className="flex space-x-2 mb-6">
-            <Button
-              variant={feedType === 'public' ? 'default' : 'outline'}
-              onClick={() => {
-                setFeedType('public');
-                setSelectedFriend(null);
-              }}
-              className={feedType === 'public' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-800 text-white border-gray-600'}
-            >
-              Public Feed
-            </Button>
-            <Button
-              variant={feedType === 'friends' ? 'default' : 'outline'}
-              onClick={() => {
-                setFeedType('friends');
-                setSelectedFriend(null);
-              }}
-              className={feedType === 'friends' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-800 text-white border-gray-600'}
-            >
-              Friends
-            </Button>
-            <Button
-              variant={feedType === 'tagged' ? 'default' : 'outline'}
-              onClick={() => setFeedType('tagged')}
-              className={feedType === 'tagged' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-800 text-white border-gray-600'}
-            >
-              Tagged Posts
-            </Button>
-          </div>
-        )}
 
         {/* Content */}
         {isLoading ? (

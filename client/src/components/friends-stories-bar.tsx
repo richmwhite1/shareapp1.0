@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Users, ChevronRight } from "lucide-react";
 import { getQueryFn } from "@/lib/queryClient";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth.tsx";
 import type { User } from "@shared/schema";
 
 interface FriendsStoriesBarProps {
