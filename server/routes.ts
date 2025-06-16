@@ -333,6 +333,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get categories by user ID (public categories only for unauthenticated users)
+  app.get('/api/categories/user/:userId', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+
+      const categories = await storage.getCategoriesByUserId(userId);
+      
+      // Filter only public categories for unauthenticated requests
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        const publicCategories = categories.filter(cat => cat.isPublic);
+        return res.json(publicCategories);
+      }
+
+      // For authenticated users viewing their own profile, return all categories
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        if (decoded.userId === userId) {
+          return res.json(categories);
+        } else {
+          // Authenticated user viewing another's profile - show only public categories
+          const publicCategories = categories.filter(cat => cat.isPublic);
+          return res.json(publicCategories);
+        }
+      } catch {
+        // Invalid token - show only public categories
+        const publicCategories = categories.filter(cat => cat.isPublic);
+        return res.json(publicCategories);
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/posts', async (req, res) => {
     try {
       const posts = await storage.getAllPosts();
@@ -524,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/user/total-shares/:userId', authenticateToken, async (req: any, res) => {
+  app.get('/api/user/total-shares/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const totalShares = await storage.getUserTotalShares(userId);

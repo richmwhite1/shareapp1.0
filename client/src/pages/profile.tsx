@@ -38,13 +38,13 @@ export default function ProfilePage() {
   const displayUser = isOwnProfile ? user : profileUser;
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<CategoryWithPosts[]>({
-    queryKey: ['/api/categories', profileUserId],
-    queryFn: getQueryFn({ on401: "throw" }),
-    enabled: Boolean(isOwnProfile && isAuthenticated),
+    queryKey: [`/api/categories/user/${profileUserId}`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!profileUserId,
   });
 
   const { data: userPosts = [], isLoading: postsLoading } = useQuery<PostWithUser[]>({
-    queryKey: ['/api/posts/user', profileUserId],
+    queryKey: [`/api/posts/user/${profileUserId}`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!profileUserId,
   });
@@ -198,13 +198,15 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Categories Section - Only show for own profile */}
-        {isOwnProfile && isAuthenticated && (
+        {/* Categories Section - Show public categories for all users */}
+        {(categories?.length || 0) > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-foreground">Your Categories</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                {isOwnProfile ? "Your Categories" : `${displayUser?.name || displayUser?.username}'s Categories`}
+              </h2>
               <span className="text-sm text-muted-foreground">
-                Organize your posts into collections
+                {isOwnProfile ? "Organize your posts into collections" : "Public collections"}
               </span>
             </div>
 
@@ -245,17 +247,19 @@ export default function ProfilePage() {
                         </div>
                       )}
 
-                      {/* Delete button */}
-                      <div className="absolute bottom-1 right-1">
-                        <Button
-                          onClick={(e) => handleDeleteCategory(category.id, category.name, e)}
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="h-2 w-2" />
-                        </Button>
-                      </div>
+                      {/* Delete button - only for own profile */}
+                      {isOwnProfile && isAuthenticated && (
+                        <div className="absolute bottom-1 right-1">
+                          <Button
+                            onClick={(e) => handleDeleteCategory(category.id, category.name, e)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 w-4 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-2 w-2" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     
                     <h3 className="text-xs font-medium text-foreground truncate group-hover:text-pinterest-red transition-colors">
