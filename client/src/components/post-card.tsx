@@ -12,6 +12,7 @@ import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth.tsx";
 import { useState } from "react";
 import type { PostWithUser } from "@shared/schema";
+import ImageGallery from "@/components/image-gallery";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -269,10 +270,10 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       {/* Primary Photo */}
       <div className="relative">
         {isDetailView ? (
-          <img
-            src={selectedImage}
-            alt={post.primaryDescription}
-            className="w-full max-h-96 object-cover"
+          <ImageGallery 
+            post={post} 
+            selectedImage={selectedImage} 
+            onImageChange={setSelectedImage} 
           />
         ) : (
           <Link href={`/post/${post.id}`}>
@@ -525,90 +526,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             )}
           </div>
 
-          {/* Additional Photos Gallery */}
-          {post.additionalPhotos && post.additionalPhotos.length > 0 && (
-            <div className="mb-8">
-              <h4 className="font-semibold text-white mb-3 text-lg">
-                More from this collection
-              </h4>
-              <div className="space-y-4">
-                {/* Primary image thumbnail */}
-                <div className="flex-shrink-0">
-                  <img
-                    src={post.primaryPhotoUrl}
-                    alt="Primary image"
-                    onClick={() => setSelectedImage(post.primaryPhotoUrl)}
-                    className={`w-20 h-20 object-cover rounded cursor-pointer transition-all ${
-                      selectedImage === post.primaryPhotoUrl ? 'ring-2 ring-yellow-400 opacity-100' : 'opacity-70 hover:opacity-100'
-                    }`}
-                  />
-                </div>
-                
-                {/* Additional photos */}
-                {post.additionalPhotos.map((photo, index) => {
-                  const photoData = post.additionalPhotoData?.[index];
-                  return (
-                    <div key={index} className="border-b border-gray-700 pb-4 last:border-b-0">
-                      <div className="flex space-x-4">
-                        <div className="flex-shrink-0">
-                          <img
-                            src={photo}
-                            alt={photoData?.description || `Additional photo ${index + 1}`}
-                            onClick={() => setSelectedImage(photo)}
-                            className={`w-20 h-20 object-cover rounded cursor-pointer transition-all ${
-                              selectedImage === photo ? 'ring-2 ring-yellow-400 opacity-100' : 'opacity-70 hover:opacity-100'
-                            }`}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {photoData?.link && (
-                            <a
-                              href={photoData.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-yellow-400 hover:text-yellow-300 font-medium transition-colors inline-flex items-center space-x-1 text-sm"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              <span className="truncate">{photoData.link}</span>
-                            </a>
-                          )}
-                          {photoData?.description && (
-                            <p className="text-gray-300 text-sm mt-1 leading-relaxed">
-                              {photoData.description}
-                            </p>
-                          )}
-                          {photoData?.discountCode && (
-                            <div className="mt-2 p-2 bg-green-900/20 border border-green-700 rounded text-xs">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-green-400 font-medium">Code:</span>
-                                  <span className="ml-1 font-mono text-green-300 font-bold">{photoData.discountCode}</span>
-                                </div>
-                                <Button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    navigator.clipboard.writeText(photoData.discountCode || '');
-                                    toast({ title: "Copied!", description: "Discount code copied to clipboard" });
-                                  }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 px-2 text-green-400 border-green-600 hover:bg-green-800/20"
-                                >
-                                  <Copy className="w-3 h-3 mr-1" />
-                                  Copy
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+
         </div>
       )}
 

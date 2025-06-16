@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash } from "lucide-react";
 import Header from "@/components/header";
+import MediaProcessor from "@/components/media-processor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

@@ -31,6 +31,10 @@
   /* Pinterest red for hashtags and accents */
   --pinterest-red: #e60023;
   --pinterest-red-hover: #d50020;
+  
+  /* Enhanced spacing and typography */
+  --post-gap: 0px;
+  --card-radius: 0px;
 }
 
 .dark {
