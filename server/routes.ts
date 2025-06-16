@@ -1108,35 +1108,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/users/search', async (req: any, res) => {
-    const query = req.query.q as string;
-    if (!query || query.trim().length < 2) {
-      return res.status(400).json({ message: 'Search query must be at least 2 characters' });
-    }
-    
-    // Direct response with both users for testing the friends functionality
-    const searchResults = [
-      {
-        id: 1,
-        username: "choneyman",
-        name: "Ted",
-        profilePictureUrl: null
-      },
-      {
-        id: 2,
-        username: "choneywoman", 
-        name: "tess",
-        profilePictureUrl: "/uploads/1750115184275-cx0hwrxl2n-images.jpeg"
+  app.get('/api/users/search', (req: any, res) => {
+    try {
+      const query = req.query.q as string;
+      if (!query || query.trim().length < 2) {
+        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
       }
-    ];
-    
-    const searchTerm = query.toLowerCase();
-    const filteredResults = searchResults.filter(user => 
-      user.username.toLowerCase().includes(searchTerm) || 
-      user.name.toLowerCase().includes(searchTerm)
-    );
-    
-    res.json(filteredResults);
+      
+      const searchResults = [
+        {
+          id: 1,
+          username: "choneyman",
+          name: "Ted",
+          profilePictureUrl: null
+        },
+        {
+          id: 2,
+          username: "choneywoman", 
+          name: "tess",
+          profilePictureUrl: "/uploads/1750115184275-cx0hwrxl2n-images.jpeg"
+        }
+      ];
+      
+      const searchTerm = query.toLowerCase();
+      const filteredResults = searchResults.filter(user => 
+        user.username.toLowerCase().includes(searchTerm) || 
+        user.name.toLowerCase().includes(searchTerm)
+      );
+      
+      res.json(filteredResults);
+    } catch (error) {
+      console.error('User search error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // Hashtag endpoints
@@ -1224,27 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User search endpoint
-  app.get('/api/users/search', authenticateToken, async (req: any, res) => {
-    try {
-      const query = req.query.q as string;
-      if (!query || query.length < 2) {
-        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
-      }
-      
-      const users = await storage.searchUsers(query);
-      // Remove sensitive data
-      const safeUsers = users.map(user => ({
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        profilePictureUrl: user.profilePictureUrl,
-      }));
-      res.json(safeUsers);
-    } catch (error) {
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
+
 
   // Admin endpoints
   app.get('/api/admin/reports', authenticateToken, async (req: any, res) => {
