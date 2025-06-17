@@ -1605,8 +1605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user's aura rating from users table
       const [userResult] = await db.select({
-        auraRating: sql<number>`aura_rating`,
-        ratingCount: sql<number>`rating_count`
+        auraRating: users.auraRating,
+        ratingCount: users.ratingCount
       }).from(users).where(eq(users.id, profileId));
 
       if (!userResult) {
@@ -1614,7 +1614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        average: userResult.auraRating || 4.0, 
+        average: userResult.auraRating || 4, 
         count: userResult.ratingCount || 0 
       });
     } catch (error) {
