@@ -788,20 +788,20 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Cannot send friend request to yourself");
     }
 
-    // Check if friendship already exists
-    const existingFriendship = await db
+    // Check if already following this user
+    const existingFollow = await db
       .select()
       .from(friendships)
       .where(
-        or(
-          and(eq(friendships.userId, fromUserId), eq(friendships.friendId, toUserId)),
-          and(eq(friendships.userId, toUserId), eq(friendships.friendId, fromUserId))
+        and(
+          eq(friendships.userId, fromUserId), 
+          eq(friendships.friendId, toUserId)
         )
       )
       .limit(1);
 
-    if (existingFriendship.length > 0) {
-      throw new Error("Friendship already exists");
+    if (existingFollow.length > 0) {
+      throw new Error("Already following this user");
     }
 
     // Check if friend request already exists
@@ -821,14 +821,38 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Friend request already sent");
     }
 
-    // Create friend request
-    await db.insert(friendRequests).values({
-      fromUserId,
-      toUserId,
-      status: "pending"
+    // Create one-way follow relationship immediately
+    await db.insert(friendships).values({
+      userId: fromUserId,
+      friendId: toUserId,
+      status: "following"
     });
 
-    // Create notification
+    // Check if the target user is already following back
+    const reverseFollow = await db
+      .select()
+      .from(friendships)
+      .where(
+        and(
+          eq(friendships.userId, toUserId),
+          eq(friendships.friendId, fromUserId)
+        )
+      )
+      .limit(1);
+
+    // If mutual follow, upgrade both to connected status
+    if (reverseFollow.length > 0) {
+      await db.update(friendships)
+        .set({ status: "connected" })
+        .where(
+          or(
+            and(eq(friendships.userId, fromUserId), eq(friendships.friendId, toUserId)),
+            and(eq(friendships.userId, toUserId), eq(friendships.friendId, fromUserId))
+          )
+        );
+    }
+
+    // Create notification for the follow
     await this.createNotification({
       userId: toUserId,
       type: "friend_request",
@@ -925,18 +949,20 @@ export class DatabaseStorage implements IStorage {
           name: users.name,
           profilePictureUrl: users.profilePictureUrl,
           createdAt: users.createdAt,
-        }
+        },
+        status: friendships.status
       })
       .from(friendships)
       .innerJoin(users, eq(friendships.friendId, users.id))
-      .where(and(eq(friendships.userId, userId), eq(friendships.status, 'accepted')));
+      .where(eq(friendships.userId, userId));
 
     return result.map(r => ({
       ...r.user,
       password: '', // Required by User type but not exposed
       friends: [],
       friendCount: 0,
-    })) as UserWithFriends[];
+      relationshipStatus: r.status // Add relationship status
+    })) as any;
   }
 
   async getFriendsOrderedByRecentTags(userId: number): Promise<User[]> {

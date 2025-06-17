@@ -251,7 +251,9 @@ export default function ConnectionsPage() {
                         </div>
                       ) : (
                         filteredUsers.map((searchUser) => {
-                          const isAlreadyFriend = friends.some(f => f.id === searchUser.id);
+                          const friendship = friends.find((f: any) => f.id === searchUser.id);
+                          const isFollowing = !!friendship;
+                          const isConnected = friendship?.relationshipStatus === 'connected';
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
                           
                           return (
@@ -276,9 +278,14 @@ export default function ConnectionsPage() {
                                   <p className="text-sm text-gray-600 dark:text-gray-400">
                                     @{searchUser.username}
                                   </p>
-                                  {isAlreadyFriend && (
+                                  {isConnected && (
                                     <p className="text-xs text-green-600 dark:text-green-400">
                                       Connected
+                                    </p>
+                                  )}
+                                  {isFollowing && !isConnected && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                                      Following
                                     </p>
                                   )}
                                   {hasPendingRequest && (
@@ -288,7 +295,7 @@ export default function ConnectionsPage() {
                                   )}
                                 </div>
                               </div>
-                              {isAlreadyFriend ? (
+                              {isConnected ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -297,6 +304,16 @@ export default function ConnectionsPage() {
                                 >
                                   <Check className="h-4 w-4" />
                                   Connected
+                                </Button>
+                              ) : isFollowing ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  className="flex items-center gap-2"
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Following
                                 </Button>
                               ) : hasPendingRequest ? (
                                 <Button
