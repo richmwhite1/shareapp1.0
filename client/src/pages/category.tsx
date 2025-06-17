@@ -52,7 +52,6 @@ export default function CategoryPage() {
   if (categoryLoading || postsLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">Loading category...</div>
         </div>
@@ -63,7 +62,6 @@ export default function CategoryPage() {
   if (!category) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">Category not found</div>
         </div>
@@ -73,7 +71,6 @@ export default function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
