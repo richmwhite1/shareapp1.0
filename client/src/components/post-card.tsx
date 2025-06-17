@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play, Eye } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play, Eye, Users, Repeat2, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,6 +21,7 @@ import { PostActionsMenu } from "@/components/post-actions-menu";
 import ProfileIconWithAura from "@/components/profile-icon-with-aura";
 import FeedLikeButton from "@/components/feed-like-button";
 import FeedShareButton from "@/components/feed-share-button";
+import EventTaskList from "@/components/event-task-list";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -168,13 +169,93 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           className="w-full h-96 object-cover"
         />
         
+        {/* Individual Action Icons - Top Right */}
+        <div className="absolute top-4 right-4 flex flex-row gap-2">
+          {/* Tag Friends */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
+            onClick={() => {/* Tag dialog logic */}}
+          >
+            <Users className="h-4 w-4" />
+          </Button>
+          
+          {/* Repost */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
+            onClick={() => {/* Repost logic */}}
+          >
+            <Repeat2 className="h-4 w-4" />
+          </Button>
+          
+          {/* Save */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
+            onClick={() => {/* Save dialog logic */}}
+          >
+            <Bookmark className="h-4 w-4" />
+          </Button>
+          
+          {/* Flag */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
+            onClick={() => {/* Flag dialog logic */}}
+          >
+            <Flag className="h-4 w-4" />
+          </Button>
+          
+          {/* Delete button for post owner */}
+          {user?.id === post.userId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this post?')) {
+                  deleteMutation.mutate();
+                }
+              }}
+              className="bg-red-600/80 hover:bg-red-700/80 text-white backdrop-blur-sm h-8 w-8 p-0"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        
         {/* Event Date Overlay */}
         {post.isEvent && post.eventDate && (
-          <div className="absolute top-4 right-4 bg-purple-600/90 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 backdrop-blur-sm">
+          <div className="absolute top-4 left-4 bg-purple-600/90 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 backdrop-blur-sm">
             <Calendar className="w-4 h-4" />
             <span>{new Date(post.eventDate).toLocaleDateString()}</span>
           </div>
         )}
+      </div>
+
+      {/* Post Actions - Right under the picture */}
+      <div className="px-6 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <FeedLikeButton postId={post.id} />
+            <Link href={`/post/${post.id}`}>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                <MessageCircle className="h-5 w-5 mr-2" />
+                <span>{stats?.commentCount || 0}</span>
+              </Button>
+            </Link>
+            <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
+          </div>
+          
+          <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <Eye className="h-4 w-4" />
+            <span>{viewData?.viewCount || 0} views</span>
+          </div>
+        </div>
       </div>
 
       {/* Post Content */}
@@ -209,44 +290,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           )}
         </div>
 
-        {/* Post Actions - Like, Comment, Share buttons */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
-          <div className="flex items-center space-x-6">
-            <FeedLikeButton postId={post.id} />
-            <Link href={`/post/${post.id}`}>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                <MessageCircle className="h-5 w-5 mr-2" />
-                <span>{stats?.commentCount || 0}</span>
-              </Button>
-            </Link>
-            <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {/* Post Actions Menu */}
-            <PostActionsMenu 
-              postId={post.id} 
-              postTitle={post.primaryDescription || ""} 
-              postUserId={post.userId}
-            />
-            
-            {/* Delete button for post owner */}
-            {user?.id === post.userId && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this post?')) {
-                    deleteMutation.mutate();
-                  }
-                }}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
+
 
         {/* Energy Rating Component */}
         <div className="mt-6">
@@ -256,6 +300,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* RSVP Component - Only show for events */}
       {post.isEvent && <EventRsvp post={post} />}
+      
+      {/* Event Task List */}
+      {post.isEvent && <EventTaskList post={post} />}
     </div>
   );
 }
