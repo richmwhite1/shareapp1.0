@@ -42,6 +42,7 @@ export const posts = pgTable("posts", {
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurringType: text("recurring_type"), // "weekly", "monthly", "annually"
   taskList: json("task_list"), // Array of {id, text, completed, completedBy: userId}
+  allowRsvp: boolean("allow_rsvp").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -152,6 +153,16 @@ export const hashtagFollows = pgTable("hashtag_follows", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// RSVP responses for events
+export const rsvps = pgTable("rsvps", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  status: text("status").notNull(), // "going", "maybe", "not_going"
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Blacklist for admin
 export const blacklist = pgTable("blacklist", {
   id: serial("id").primaryKey(),
@@ -217,6 +228,7 @@ export const createPostSchema = insertPostSchema.extend({
     completed: z.boolean().default(false),
     completedBy: z.number().optional(),
   })).optional(),
+  allowRsvp: z.boolean().optional(),
 });
 
 export const createPostRequestSchema = z.object({
@@ -236,6 +248,7 @@ export const createPostRequestSchema = z.object({
   isRecurring: z.string().optional(), // "true" or "false" as string from form
   recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
   taskList: z.string().optional(), // JSON string of task array
+  allowRsvp: z.string().optional(), // "true" or "false" as string from form
 }).refine(
   (data) => {
     // At least one of primaryLink, spotifyUrl, or youtubeUrl must be provided
@@ -323,6 +336,12 @@ export const createReportSchema = z.object({
   comment: z.string().max(500).optional(),
 });
 
+// RSVP schemas
+export const createRsvpSchema = z.object({
+  postId: z.number(),
+  status: z.enum(["going", "maybe", "not_going"]),
+});
+
 // Notification schemas
 export const createNotificationSchema = z.object({
   userId: z.number(),
@@ -374,6 +393,9 @@ export type CreateReportData = z.infer<typeof createReportSchema>;
 export type HashtagFollow = typeof hashtagFollows.$inferSelect;
 
 export type BlacklistItem = typeof blacklist.$inferSelect;
+
+export type Rsvp = typeof rsvps.$inferSelect;
+export type CreateRsvpData = z.infer<typeof createRsvpSchema>;
 
 // Additional photo data type
 export type AdditionalPhotoData = {
