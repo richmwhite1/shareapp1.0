@@ -25,6 +25,16 @@ const CHAKRA_NAMES = [
   'Root', 'Sacral', 'Solar Plexus', 'Heart', 'Throat', 'Third Eye', 'Crown'
 ];
 
+const CHAKRA_COLORS = [
+  '#FF0000', // 1 - Root Chakra (Red)
+  '#FF8C00', // 2 - Sacral Chakra (Orange)
+  '#FFD700', // 3 - Solar Plexus (Yellow)
+  '#00FF00', // 4 - Heart Chakra (Green)
+  '#00BFFF', // 5 - Throat Chakra (Blue)
+  '#4B0082', // 6 - Third Eye (Indigo)
+  '#8A2BE2'  // 7 - Crown Chakra (Violet)
+];
+
 export default function EnergyRating({ postId, profileId, className = "" }: EnergyRatingProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -70,7 +80,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       queryClient.invalidateQueries({ queryKey: [endpoint, 'stats'] });
       toast({
         title: "Aura rating submitted",
-        description: `You rated this ${AURA_LEVELS[currentRating - 1]} aura`,
+        description: `You rated this ${CHAKRA_NAMES[currentRating - 1]} chakra level`,
       });
     },
     onError: () => {

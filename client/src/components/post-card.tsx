@@ -20,6 +20,9 @@ import AuricField from "@/components/auric-field";
 import AuricPhotoBorder from "@/components/auric-photo-border";
 import { ViewTracker } from "@/components/view-tracker";
 import { PostActionsMenu } from "@/components/post-actions-menu";
+import ProfileIconWithAura from "@/components/profile-icon-with-aura";
+import FeedLikeButton from "@/components/feed-like-button";
+import FeedShareButton from "@/components/feed-share-button";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -50,15 +53,18 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   if (!isDetailView) {
     return (
       <ViewTracker postId={post.id} viewType="feed" className="relative bg-black">
-        <AuricPhotoBorder postId={post.id}>
-          <Link href={`/post/${post.id}`}>
-            <img
-              src={post.primaryPhotoUrl}
-              alt={post.primaryDescription}
-              className="w-full h-96 object-cover cursor-pointer"
-            />
-          </Link>
-        </AuricPhotoBorder>
+        <Link href={`/post/${post.id}`}>
+          <img
+            src={post.primaryPhotoUrl}
+            alt={post.primaryDescription}
+            className="w-full h-96 object-cover cursor-pointer"
+          />
+        </Link>
+        
+        {/* Profile icon with aura circle - top left corner */}
+        <div className="absolute top-3 left-3">
+          <ProfileIconWithAura userId={post.userId} userName={post.user.name} profilePicture={post.user.profilePictureUrl} />
+        </div>
         
         {/* Event date overlay - top left corner */}
         {post.isEvent && post.eventDate && (
@@ -160,22 +166,16 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         )}
         
-        {/* Overlaid stats at bottom */}
+        {/* Interactive stats at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
           <div className="flex items-center justify-between text-white">
             <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center space-x-1">
-                <Heart className="w-4 h-4" />
-                <span>{stats?.likeCount || 0}</span>
-              </div>
+              <FeedLikeButton postId={post.id} />
               <div className="flex items-center space-x-1">
                 <MessageCircle className="w-4 h-4" />
                 <span>{stats?.commentCount || 0}</span>
               </div>
-              <div className="flex items-center space-x-1">
-                <Share2 className="w-4 h-4" />
-                <span>{stats?.shareCount || 0}</span>
-              </div>
+              <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
               <div className="flex items-center space-x-1">
                 <Eye className="w-4 h-4" />
                 <span>{viewData?.viewCount || 0}</span>
