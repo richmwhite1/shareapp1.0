@@ -255,6 +255,7 @@ export default function ConnectionsPage() {
                           const isFollowing = !!friendship;
                           const isConnected = false; // For now, treating all as following relationships
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
+                          const hasOutgoingRequest = friendRequests.some(req => req.toUserId === searchUser.id);
                           
                           return (
                             <div
@@ -323,7 +324,17 @@ export default function ConnectionsPage() {
                                   className="flex items-center gap-2"
                                 >
                                   <Clock className="h-4 w-4" />
-                                  Pending
+                                  Request Received
+                                </Button>
+                              ) : hasOutgoingRequest ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  className="flex items-center gap-2"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  Request Sent
                                 </Button>
                               ) : (
                                 <Button
