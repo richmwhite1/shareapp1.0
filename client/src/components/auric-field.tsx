@@ -32,21 +32,19 @@ export default function AuricField({ children, postId, profileId, intensity = 0.
   // Show default middle chakra aura for all users, stronger for rated users
   const finalIntensity = ratingCount === 0 ? intensity * 0.6 : adjustedIntensity;
 
-  // Create visible aura border effect
+  // Create subtle aura effect with CSS
   const auricStyles: React.CSSProperties = {
     position: 'relative',
-    border: `2px solid ${chakraColor}`,
-    borderRadius: '50%',
+    background: `radial-gradient(ellipse at center, ${chakraColor}${Math.round(finalIntensity * 20).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
+    borderRadius: '12px',
     padding: '2px',
-    background: `radial-gradient(circle at center, ${chakraColor}15 0%, transparent 60%)`,
   };
 
   // Inner glow effect
   const glowStyles: React.CSSProperties = {
-    boxShadow: `0 0 ${8 + finalIntensity * 12}px ${chakraColor}60, inset 0 0 ${4 + finalIntensity * 6}px ${chakraColor}20`,
-    borderRadius: '50%',
-    transition: 'box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out',
-    overflow: 'hidden',
+    boxShadow: `0 0 ${15 + finalIntensity * 25}px ${chakraColor}${Math.round(finalIntensity * 30).toString(16).padStart(2, '0')}`,
+    borderRadius: '10px',
+    transition: 'box-shadow 0.3s ease-in-out',
   };
 
   return (

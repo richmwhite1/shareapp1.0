@@ -1532,64 +1532,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Post energy rating endpoints
-  app.post('/api/posts/:postId/energy', authenticateToken, async (req: any, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const ratingUserId = req.user.userId;
-      const { rating } = req.body;
-
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: 'Invalid post ID' });
-      }
-
-      if (!rating || rating < 1 || rating > 7) {
-        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
-      }
-
-      // For now, return success - will implement proper storage later
-      res.json({ success: true, rating });
-    } catch (error) {
-      console.error('Post energy rating error:', error);
-      res.status(500).json({ message: 'Failed to submit rating' });
-    }
-  });
-
-  app.get('/api/posts/:postId/energy', authenticateToken, async (req: any, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      const userId = req.user.userId;
-
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: 'Invalid post ID' });
-      }
-
-      // Return user's current rating (default to middle level)
-      res.json({ rating: 4 });
-    } catch (error) {
-      console.error('Get post energy error:', error);
-      res.status(500).json({ message: 'Failed to get rating' });
-    }
-  });
-
-  app.get('/api/posts/:postId/energy/stats', async (req, res) => {
-    try {
-      const postId = parseInt(req.params.postId);
-      if (isNaN(postId)) {
-        return res.status(400).json({ message: 'Invalid post ID' });
-      }
-
-      // Return default stats for now
-      res.json({ 
-        average: 4.0, 
-        count: 0 
-      });
-    } catch (error) {
-      console.error('Post energy stats error:', error);
-      res.status(500).json({ message: 'Failed to fetch energy stats' });
-    }
-  });
-
   // Profile energy rating endpoints
   app.post('/api/profiles/:profileId/energy', authenticateToken, async (req: any, res) => {
     try {
@@ -1605,8 +1547,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Rating must be between 1 and 7' });
       }
 
-      // For now, return success - will implement proper storage later
-      res.json({ success: true, rating });
+      // Get current user aura rating
+      const [userResult] = await db.select({
+        auraRating: sql<number>`aura_rating`,
+        ratingCount: sql<number>`rating_count`
+      }).from(users).where(eq(users.id, profileId));
+
+      if (!userResult) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const currentRating = userResult.auraRating || 4.0;
+      const currentCount = userResult.ratingCount || 0;
+      
+      // Calculate new average rating
+      const newCount = currentCount + 1;
+      const newRating = ((currentRating * currentCount) + rating) / newCount;
+
+      // Update user's aura rating
+      await db.update(users)
+        .set({ 
+          auraRating: sql`${newRating}`,
+          ratingCount: sql`${newCount}`
+        })
+        .where(eq(users.id, profileId));
+
+      res.json({ success: true, rating: newRating });
     } catch (error) {
       console.error('Profile energy rating error:', error);
       res.status(500).json({ message: 'Failed to submit rating' });
@@ -1637,10 +1603,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid profile ID' });
       }
 
-      // Return default stats for now
+      // Get user's aura rating from users table
+      const [userResult] = await db.select({
+        auraRating: sql<number>`aura_rating`,
+        ratingCount: sql<number>`rating_count`
+      }).from(users).where(eq(users.id, profileId));
+
+      if (!userResult) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
       res.json({ 
-        average: 4.0, 
-        count: 0 
+        average: userResult.auraRating || 4.0, 
+        count: userResult.ratingCount || 0 
       });
     } catch (error) {
       console.error('Profile energy stats error:', error);
