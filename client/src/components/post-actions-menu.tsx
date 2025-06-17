@@ -22,6 +22,7 @@ interface PostActionsMenuProps {
   postId: number;
   postTitle: string;
   className?: string;
+  actionType?: 'all' | 'tag' | 'repost' | 'save' | 'flag';
 }
 
 interface User {
@@ -36,7 +37,7 @@ interface Category {
   name: string;
 }
 
-export function PostActionsMenu({ postId, postTitle, className }: PostActionsMenuProps) {
+export function PostActionsMenu({ postId, postTitle, className, actionType = 'all' }: PostActionsMenuProps) {
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
@@ -218,6 +219,182 @@ export function PostActionsMenu({ postId, postTitle, className }: PostActionsMen
     friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Individual action buttons for specific actionTypes
+  if (actionType === 'tag') {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleTagFriends}
+          className={`text-gray-400 hover:text-blue-400 hover:bg-gray-700 ${className}`}
+        >
+          <Users className="h-4 w-4" />
+        </Button>
+        
+        {/* Tag Friends Dialog */}
+        <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Tag Friends</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Search friends..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {filteredFriends.map((friend) => (
+                  <div
+                    key={friend.id}
+                    className={`flex items-center p-2 rounded cursor-pointer ${
+                      selectedFriends.includes(friend.id)
+                        ? 'bg-blue-100 dark:bg-blue-900'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    onClick={() => toggleFriendSelection(friend.id)}
+                  >
+                    <img
+                      src={friend.profilePictureUrl || '/placeholder-avatar.png'}
+                      alt={friend.name}
+                      className="w-8 h-8 rounded-full mr-3"
+                    />
+                    <div>
+                      <div className="font-medium">{friend.name}</div>
+                      <div className="text-sm text-gray-500">@{friend.username}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setTagDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitTags}
+                  disabled={selectedFriends.length === 0 || tagFriendsMutation.isPending}
+                >
+                  Tag Selected ({selectedFriends.length})
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  if (actionType === 'repost') {
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleRepost}
+        disabled={repostMutation.isPending}
+        className={`text-gray-400 hover:text-green-400 hover:bg-gray-700 ${className}`}
+      >
+        <Repeat2 className="h-4 w-4" />
+      </Button>
+    );
+  }
+
+  if (actionType === 'save') {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSave}
+          className={`text-gray-400 hover:text-yellow-400 hover:bg-gray-700 ${className}`}
+        >
+          <Bookmark className="h-4 w-4" />
+        </Button>
+
+        {/* Save Dialog */}
+        <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Save to Category</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className={`p-3 rounded cursor-pointer ${
+                      selectedCategory === category.id
+                        ? 'bg-blue-100 dark:bg-blue-900'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    onClick={() => setSelectedCategory(category.id)}
+                  >
+                    <div className="font-medium">{category.name}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitSave}
+                  disabled={!selectedCategory || savePostMutation.isPending}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  if (actionType === 'flag') {
+    return (
+      <>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFlag}
+          className={`text-gray-400 hover:text-red-400 hover:bg-gray-700 ${className}`}
+        >
+          <Flag className="h-4 w-4" />
+        </Button>
+
+        {/* Flag Dialog */}
+        <Dialog open={flagDialogOpen} onOpenChange={setFlagDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Flag Post</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Reason for flagging..."
+                value={flagReason}
+                onChange={(e) => setFlagReason(e.target.value)}
+              />
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setFlagDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitFlag}
+                  disabled={!flagReason.trim() || flagPostMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Flag
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  // Default dropdown menu for 'all' or unspecified actionType
   return (
     <>
       <DropdownMenu>
