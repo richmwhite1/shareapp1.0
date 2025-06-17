@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth.tsx";
 import { useState } from "react";
 import type { PostWithUser } from "@shared/schema";
 import ImageGallery from "@/components/image-gallery";
+import EventDateOverlay from "@/components/event-date-overlay";
 
 interface PostCardProps {
   post: PostWithUser;

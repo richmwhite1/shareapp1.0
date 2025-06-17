@@ -1280,7 +1280,7 @@ END:VCALENDAR`;
                         </Select>
                       )}
                       {isRecurring && formData.privacy === 'public' && (
-                        <p className="text-sm text-amber-600 mt-1">
+                        <p className="text-sm text-amber-300 mt-1">
                           Note: Recurring events won't appear in public feed to prevent clutter
                         </p>
                       )}
@@ -1288,7 +1288,7 @@ END:VCALENDAR`;
 
                     {/* Task List */}
                     <div>
-                      <Label>Event Task List</Label>
+                      <Label className="text-white">Event Task List</Label>
                       <div className="space-y-2 mt-2">
                         <div className="flex gap-2">
                           <Input
@@ -1296,7 +1296,7 @@ END:VCALENDAR`;
                             value={newTaskText}
                             onChange={(e) => setNewTaskText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
-                            className="focus:ring-2 focus:ring-purple-500"
+                            className="focus:ring-2 focus:ring-purple-500 bg-white"
                           />
                           <Button
                             type="button"

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { PostWithUser } from "@shared/schema";
+import EventDateOverlay from "@/components/event-date-overlay";
 
 interface ImageGalleryProps {
   post: PostWithUser;
@@ -46,6 +47,15 @@ export default function ImageGallery({ post, selectedImage, onImageChange }: Ima
           className="w-full max-h-96 object-cover cursor-pointer"
           onClick={() => setShowFullscreen(true)}
         />
+        
+        {/* Event Date Overlay */}
+        {post.isEvent && post.eventDate && (
+          <EventDateOverlay
+            eventDate={post.eventDate}
+            isRecurring={post.isRecurring}
+            recurringType={post.recurringType}
+          />
+        )}
         
         {/* Navigation Controls */}
         {allImages.length > 1 && (
