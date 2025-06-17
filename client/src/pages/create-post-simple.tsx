@@ -1015,128 +1015,72 @@ END:VCALENDAR`;
                 </p>
               </div>
 
-              {/* Privacy Settings */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Post Privacy</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEvent(!isEvent)}
-                    className={`flex items-center space-x-2 ${isEvent ? 'bg-purple-50 border-purple-300 text-purple-700' : ''}`}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    <span>{isEvent ? 'Event Mode' : 'Make Event'}</span>
-                  </Button>
+              {/* Privacy Settings - More Discreet */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <Label htmlFor="privacy" className="text-sm">Privacy</Label>
+                    <Select
+                      value={formData.privacy}
+                      onValueChange={(value) => handlePrivacyChange(value as 'public' | 'friends' | 'private')}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-sm bg-input border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-border">
+                        <SelectItem value="public">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-3 w-3" />
+                            Public
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="friends">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-3 w-3" />
+                            Friends
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="private">
+                          <div className="flex items-center gap-2">
+                            <Lock className="h-3 w-3" />
+                            Private
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {formData.privacy === 'private' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFriendSelector(true)}
+                      className="text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Tag Friends
+                    </Button>
+                  )}
                 </div>
-                <div className="space-y-3">
-                  {/* Public Option */}
-                  <div 
-                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                      formData.privacy === 'public' 
-                        ? 'border-pinterest-red bg-red-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => handlePrivacyChange('public')}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        formData.privacy === 'public' 
-                          ? 'bg-pinterest-red border-pinterest-red' 
-                          : 'border-gray-300'
-                      }`}>
-                        {formData.privacy === 'public' && (
-                          <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                        )}
-                      </div>
-                      <Globe className="h-5 w-5 text-gray-600" />
-                      <div>
-                        <div className="font-medium">Public</div>
-                        <div className="text-sm text-gray-500">Everyone can see this post</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Friends Only Option */}
-                  <div 
-                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                      formData.privacy === 'friends' 
-                        ? 'border-pinterest-red bg-red-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => handlePrivacyChange('friends')}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        formData.privacy === 'friends' 
-                          ? 'bg-pinterest-red border-pinterest-red' 
-                          : 'border-gray-300'
-                      }`}>
-                        {formData.privacy === 'friends' && (
-                          <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                        )}
-                      </div>
-                      <Users className="h-5 w-5 text-gray-600" />
-                      <div>
-                        <div className="font-medium">Friends Only</div>
-                        <div className="text-sm text-gray-500">Only your friends can see this post</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Private Option */}
-                  <div 
-                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
-                      formData.privacy === 'private' 
-                        ? 'border-pinterest-red bg-red-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => handlePrivacyChange('private')}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full border-2 ${
-                          formData.privacy === 'private' 
-                            ? 'bg-pinterest-red border-pinterest-red' 
-                            : 'border-gray-300'
-                        }`}>
-                          {formData.privacy === 'private' && (
-                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                          )}
-                        </div>
-                        <Lock className="h-5 w-5 text-gray-600" />
-                        <div>
-                          <div className="font-medium">Private</div>
-                          <div className="text-sm text-gray-500">Only tagged friends can see this post</div>
-                        </div>
-                      </div>
-                      {formData.privacy === 'private' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowFriendSelector(true);
-                          }}
-                          className="flex items-center space-x-1"
-                        >
-                          <Plus className="h-4 w-4" />
-                          <span>Tag Friends</span>
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {formData.privacy === 'private' && taggedUsers.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <div className="text-sm text-gray-600">
-                          Tagged friends: {getTaggedFriendNames()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEvent(!isEvent)}
+                  className={`flex items-center space-x-2 text-xs ${isEvent ? 'bg-purple-50 border-purple-300 text-purple-700' : ''}`}
+                >
+                  <Calendar className="h-3 w-3" />
+                  <span>{isEvent ? 'Event Mode' : 'Make Event'}</span>
+                </Button>
+              </div>
+              
+              {formData.privacy === 'private' && taggedUsers.length > 0 && (
+                <div className="text-xs text-gray-600">
+                  Tagged: {getTaggedFriendNames()}
                 </div>
+              )}
 
                 {/* Event Configuration */}
                 {isEvent && (
@@ -1354,6 +1298,73 @@ END:VCALENDAR`;
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Spotify & YouTube URLs side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Spotify URL */}
+                <div>
+                  <Label htmlFor="spotifyUrl">Spotify URL (Optional)</Label>
+                  <div className="relative">
+                    <svg className="absolute left-3 top-3 h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+                    </svg>
+                    <Input
+                      id="spotifyUrl"
+                      type="url"
+                      placeholder="https://open.spotify.com/..."
+                      className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                      value={formData.spotifyUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                    />
+                    <div className="absolute right-2 top-1.5 flex space-x-1">
+                      <Button
+                        type="button"
+                        onClick={() => fetchImageFromMediaUrl(formData.spotifyUrl, 'spotify')}
+                        disabled={isFetchingImage || !formData.spotifyUrl.trim()}
+                        className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                        title="Fetch Spotify image"
+                      >
+                        <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Share a Spotify track, album, or playlist
+                  </p>
+                </div>
+
+                {/* YouTube URL */}
+                <div>
+                  <Label htmlFor="youtubeUrl">YouTube URL (Optional)</Label>
+                  <div className="relative">
+                    <svg className="absolute left-3 top-3 h-4 w-4 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <Input
+                      id="youtubeUrl"
+                      type="url"
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="pl-10 pr-12 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                      value={formData.youtubeUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                    />
+                    <div className="absolute right-2 top-1.5 flex space-x-1">
+                      <Button
+                        type="button"
+                        onClick={() => fetchImageFromMediaUrl(formData.youtubeUrl, 'youtube')}
+                        disabled={isFetchingImage || !formData.youtubeUrl.trim()}
+                        className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700"
+                        title="Fetch YouTube thumbnail"
+                      >
+                        <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Share a YouTube video or music
+                  </p>
+                </div>
               </div>
 
               {/* Friend Selector Dialog */}
