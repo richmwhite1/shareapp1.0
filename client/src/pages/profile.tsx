@@ -56,6 +56,13 @@ export default function ProfilePage() {
     enabled: !!profileUserId,
   });
 
+  // Fetch user's friends
+  const { data: userFriends = [] } = useQuery<User[]>({
+    queryKey: [`/api/friends`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!profileUserId,
+  });
+
   // Share profile mutation
   const shareProfileMutation = useMutation({
     mutationFn: async () => {
@@ -131,65 +138,55 @@ export default function ProfilePage() {
   const totalPosts = userPosts?.length || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Profile Header */}
-        <div className="mb-8">
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-6">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src={displayUser?.profilePictureUrl || ""} />
-                  <AvatarFallback className="bg-secondary text-secondary-foreground text-xl">
-                    {displayUser?.name?.charAt(0) || displayUser?.username?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-foreground mb-1">
-                    {displayUser?.name || displayUser?.username}
-                  </h1>
-                  <p className="text-muted-foreground mb-3">@{displayUser?.username}</p>
-                  
-                  <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Image className="h-4 w-4" />
-                      <span>{totalPosts} posts</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Folder className="h-4 w-4" />
-                      <span>{categories?.length || 0} {isOwnProfile ? 'categories' : 'public categories'}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Share2 className="h-4 w-4" />
-                      <span>{totalShares} shares</span>
-                    </div>
-                  </div>
+    <div className="min-h-screen bg-black">
+      <div className="max-w-md mx-auto">
+        {/* Large Profile Picture */}
+        <div className="relative">
+          <div className="w-full h-96 bg-gray-900 rounded-b-3xl overflow-hidden">
+            {displayUser?.profilePictureUrl ? (
+              <img 
+                src={displayUser.profilePictureUrl} 
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                <div className="text-6xl font-bold text-white">
+                  {displayUser?.name?.charAt(0) || displayUser?.username?.charAt(0) || "U"}
                 </div>
-                
-                {isOwnProfile && isAuthenticated && (
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleShareProfile}
-                      variant="outline"
-                      className="border-pinterest-red text-pinterest-red hover:bg-pinterest-red hover:text-white"
-                      disabled={shareProfileMutation.isPending}
-                    >
-                      <Share2 className="h-4 w-4 mr-2" />
-                      {shareProfileMutation.isPending ? 'Sharing...' : 'Share Profile'}
-                    </Button>
-                    
-                    <Link href="/create">
-                      <Button className="bg-pinterest-red hover:bg-red-700 text-white">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Post
-                      </Button>
-                    </Link>
-                  </div>
-                )}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
+          
+          {/* Profile Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <h1 className="text-2xl font-bold text-white mb-1">
+              {displayUser?.name || displayUser?.username}
+            </h1>
+            <p className="text-gray-300">@{displayUser?.username}</p>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg -mt-8 relative z-10 mb-6">
+          <div className="flex justify-around text-center">
+            <div>
+              <div className="text-xl font-bold text-white">{totalPosts}</div>
+              <div className="text-sm text-gray-400">Posts</div>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-white">{categories?.length || 0}</div>
+              <div className="text-sm text-gray-400">Lists</div>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-white">{userFriends?.length || 0}</div>
+              <div className="text-sm text-gray-400">Friends</div>
+            </div>
+            <div>
+              <div className="text-xl font-bold text-white">{totalShares}</div>
+              <div className="text-sm text-gray-400">Shares</div>
+            </div>
+          </div>
         </div>
 
         {/* Categories Section - Show public categories for all users */}
