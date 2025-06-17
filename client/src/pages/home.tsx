@@ -9,7 +9,7 @@ import type { PostWithUser } from "@shared/schema";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
-  const [feedType, setFeedType] = useState<'public' | 'friend'>('public');
+  const [feedType, setFeedType] = useState<'public' | 'friend' | 'shared'>('public');
   const [selectedFriend, setSelectedFriend] = useState<number | null>(null);
   const [currentFriendIndex, setCurrentFriendIndex] = useState(0);
   const [friendsWithPosts, setFriendsWithPosts] = useState<any[]>([]);
@@ -31,14 +31,21 @@ export default function Home() {
         const threeDaysAgo = new Date();
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
         url = `/api/posts/user/${selectedFriend}?since=${threeDaysAgo.toISOString()}`;
+      } else if (feedType === 'shared') {
+        url = '/api/shared-with-me';
       }
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch posts');
       }
       return response.json() as Promise<PostWithUser[]>;
     },
+    enabled: feedType !== 'shared' || isAuthenticated,
   });
 
   const handleSelectFeed = (type: 'public' | 'friend', friendId?: number) => {
