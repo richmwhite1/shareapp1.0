@@ -12,7 +12,7 @@ import {
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
   type AdditionalPhotoData, users
 } from "@shared/schema";
-import { db, pool } from "./db";
+import { db } from "./db";
 import { or, like, sql } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";

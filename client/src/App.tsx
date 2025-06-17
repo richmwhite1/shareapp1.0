@@ -12,6 +12,7 @@ import ProfilePage from "@/pages/profile";
 import CategoryPage from "@/pages/category";
 import SearchPage from "@/pages/search";
 import FriendsPage from "@/pages/friends";
+import NotificationsPage from "@/pages/notifications";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/friends" component={FriendsPage} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route component={NotFound} />
     </Switch>
   );

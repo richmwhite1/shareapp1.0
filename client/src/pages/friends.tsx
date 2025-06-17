@@ -101,7 +101,7 @@ export default function FriendsPage() {
   // Accept friend request mutation
   const acceptRequestMutation = useMutation({
     mutationFn: async (requestId: number) => {
-      return apiRequest('POST', `/api/friend-requests/${requestId}/respond`, { 
+      return apiRequest('POST', `/api/friend-request/${requestId}/respond`, { 
         action: 'accept' 
       });
     },
@@ -125,7 +125,7 @@ export default function FriendsPage() {
   // Reject friend request mutation
   const rejectRequestMutation = useMutation({
     mutationFn: async (requestId: number) => {
-      return apiRequest('POST', `/api/friend-requests/${requestId}/respond`, { 
+      return apiRequest('POST', `/api/friend-request/${requestId}/respond`, { 
         action: 'reject' 
       });
     },
