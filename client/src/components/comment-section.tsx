@@ -138,7 +138,7 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                   <FormControl>
                     <Textarea
                       placeholder={parentId ? "Write a reply..." : "Add a comment..."}
-                      className="resize-none focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                      className="resize-none bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
                       rows={3}
                       {...field}
                     />

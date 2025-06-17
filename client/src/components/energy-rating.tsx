@@ -109,8 +109,8 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     ratingMutation.mutate(currentRating);
   };
 
-  const averageRating = ratingStats?.average || 4;
-  const totalRatings = ratingStats?.count || 0;
+  const averageRating = (ratingStats as any)?.average || 4;
+  const totalRatings = (ratingStats as any)?.count || 0;
   
   // Generate gradient background for slider
   const sliderGradient = `linear-gradient(to right, ${CHAKRA_COLORS.join(', ')})`;
@@ -182,7 +182,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       {/* User's current rating */}
       {userRating && (
         <div className="text-xs text-purple-300">
-          Your rating: {ENERGY_EMOJIS[userRating.rating - 1]}
+          Your rating: {ENERGY_EMOJIS[(userRating as any).rating - 1]}
         </div>
       )}
     </div>

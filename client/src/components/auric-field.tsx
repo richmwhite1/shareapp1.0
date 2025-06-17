@@ -30,8 +30,8 @@ export default function AuricField({ children, postId, profileId, intensity = 0.
     enabled: !!targetId,
   });
 
-  const averageRating = ratingStats?.average || 4; // Default to level 4
-  const ratingCount = ratingStats?.count || 0;
+  const averageRating = (ratingStats as any)?.average || 4; // Default to level 4
+  const ratingCount = (ratingStats as any)?.count || 0;
   
   // Calculate the chakra color based on average rating
   const chakraIndex = Math.max(0, Math.min(6, Math.round(averageRating) - 1));
