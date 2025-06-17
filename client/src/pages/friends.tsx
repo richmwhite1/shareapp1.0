@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, UserPlus, Users, Check, X, Bell } from "lucide-react";
+import { Search, UserPlus, Users, Check, X, Bell, Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,7 +196,7 @@ export default function ConnectionsPage() {
             <TabsContent value="find" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Find Friends</CardTitle>
+                  <CardTitle>Find People</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-2 mb-6">
@@ -224,41 +224,78 @@ export default function ConnectionsPage() {
                           </p>
                         </div>
                       ) : (
-                        filteredUsers.map((searchUser) => (
-                          <div
-                            key={searchUser.id}
-                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <Avatar>
-                                <AvatarImage 
-                                  src={searchUser.profilePictureUrl || undefined} 
-                                  alt={searchUser.name}
-                                />
-                                <AvatarFallback>
-                                  {searchUser.name.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium text-gray-900 dark:text-white">
-                                  {searchUser.name}
-                                </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  @{searchUser.username}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              onClick={() => handleSendRequest(searchUser.id)}
-                              disabled={sendRequestMutation.isPending}
-                              size="sm"
-                              className="flex items-center gap-2"
+                        filteredUsers.map((searchUser) => {
+                          const isAlreadyFriend = friends.some(f => f.id === searchUser.id);
+                          const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
+                          
+                          return (
+                            <div
+                              key={searchUser.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
-                              <UserPlus className="h-4 w-4" />
-                              Add Friend
-                            </Button>
-                          </div>
-                        ))
+                              <div className="flex items-center space-x-3">
+                                <Avatar>
+                                  <AvatarImage 
+                                    src={searchUser.profilePictureUrl || undefined} 
+                                    alt={searchUser.name}
+                                  />
+                                  <AvatarFallback>
+                                    {searchUser.name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-gray-900 dark:text-white">
+                                    {searchUser.name}
+                                  </p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    @{searchUser.username}
+                                  </p>
+                                  {isAlreadyFriend && (
+                                    <p className="text-xs text-green-600 dark:text-green-400">
+                                      Connected
+                                    </p>
+                                  )}
+                                  {hasPendingRequest && (
+                                    <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                                      Request received
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              {isAlreadyFriend ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  className="flex items-center gap-2"
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Connected
+                                </Button>
+                              ) : hasPendingRequest ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  className="flex items-center gap-2"
+                                >
+                                  <Clock className="h-4 w-4" />
+                                  Pending
+                                </Button>
+                              ) : (
+                                <Button
+                                  onClick={() => handleSendRequest(searchUser.id)}
+                                  disabled={sendRequestMutation.isPending}
+                                  size="sm"
+                                  className="flex items-center gap-2"
+                                >
+                                  <UserPlus className="h-4 w-4" />
+                                  Follow
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })
                       )}
                     </div>
                   )}
@@ -269,13 +306,13 @@ export default function ConnectionsPage() {
             <TabsContent value="friends" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>My Friends</CardTitle>
+                  <CardTitle>My Connections</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {friends.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-600 dark:text-gray-400">
-                        You haven't added any friends yet. Start by searching for people!
+                        You haven't connected with anyone yet. Start by searching for people!
                       </p>
                     </div>
                   ) : (
