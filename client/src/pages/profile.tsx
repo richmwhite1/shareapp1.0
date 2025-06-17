@@ -179,7 +179,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="max-w-md mx-auto">
+      <div className="w-full">
         {/* Large Profile Picture */}
         <div className="relative">
           <div className="w-full h-96 bg-gray-900 rounded-b-3xl overflow-hidden">
@@ -198,29 +198,45 @@ export default function ProfilePage() {
             )}
           </div>
           
-          {/* Upload button - only show for own profile */}
-          {isOwnProfile && (
-            <>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingProfilePic}
-                className="absolute top-4 right-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center border-2 border-white/20 hover:bg-black/70 transition-colors disabled:opacity-50 backdrop-blur-sm"
-              >
-                {isUploadingProfilePic ? (
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Camera className="h-6 w-6 text-white" />
-                )}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleProfilePictureUpload}
-                className="hidden"
-              />
-            </>
-          )}
+          {/* Action buttons */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            {/* Share profile button */}
+            <button
+              onClick={handleShareProfile}
+              disabled={shareProfileMutation.isPending}
+              className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center border-2 border-white/20 hover:bg-black/70 transition-colors disabled:opacity-50 backdrop-blur-sm"
+            >
+              {shareProfileMutation.isPending ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Share2 className="h-6 w-6 text-white" />
+              )}
+            </button>
+
+            {/* Upload button - only show for own profile */}
+            {isOwnProfile && (
+              <>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingProfilePic}
+                  className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center border-2 border-white/20 hover:bg-black/70 transition-colors disabled:opacity-50 backdrop-blur-sm"
+                >
+                  {isUploadingProfilePic ? (
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-white" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureUpload}
+                  className="hidden"
+                />
+              </>
+            )}
+          </div>
           
           {/* Profile Info Overlay */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
@@ -253,9 +269,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="px-4 space-y-6">
+        <div className="space-y-6">
           {/* Lists Section */}
-          <div>
+          <div className="px-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-white">Lists</h2>
               <span className="text-sm text-gray-400">{categories?.length || 0} lists</span>
@@ -293,7 +309,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Friends Section */}
-          <div>
+          <div className="px-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-white">Friends</h2>
               <span className="text-sm text-gray-400">{userFriends?.length || 0} friends</span>
@@ -319,7 +335,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Followers Section */}
-          <div>
+          <div className="px-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-white">Followers</h2>
               <span className="text-sm text-gray-400">0 followers</span>
@@ -333,14 +349,14 @@ export default function ProfilePage() {
 
           {/* Recent Posts */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-3">Recent Posts</h2>
-            <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-white mb-3 px-4">Recent Posts</h2>
+            <div className="space-y-1">
               {userPosts && userPosts.length > 0 ? (
                 userPosts.slice(0, 10).map((post: PostWithUser) => (
                   <PostCard key={post.id} post={post} />
                 ))
               ) : (
-                <div className="bg-gray-900 rounded-xl p-8 text-center">
+                <div className="bg-gray-900 rounded-xl p-8 text-center mx-4">
                   <Image className="h-12 w-12 mx-auto text-gray-600 mb-3" />
                   <p className="text-gray-400 mb-4">
                     {isOwnProfile ? "You haven't created any posts yet" : `${displayUser?.name || displayUser?.username} hasn't shared any posts yet`}
