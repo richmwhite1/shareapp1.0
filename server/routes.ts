@@ -1361,29 +1361,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
-        if (task.id === taskId) {
-          return {
-            ...task,
-            completed: !task.completed,
-            completedBy: !task.completed ? userId : null
-          };
-        }
-        return task;
-      });
-
-      // Update the post with new task list (this is a simplified approach)
-      // In a real app, you'd have a separate tasks table
-      const { posts } = await import('@shared/schema');
-      await db.update(posts)
-        .set({ taskList: updatedTaskList })
-        .where(eq(posts.id, postId));
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Toggle task error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
 
   // Energy Rating Routes (Placeholder responses for now)
   
