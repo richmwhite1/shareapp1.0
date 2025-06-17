@@ -72,10 +72,10 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   e.preventDefault();
                   e.stopPropagation();
                   // Extract YouTube video ID and open in embedded player
-                  const videoId = post.youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                  const videoId = post.youtubeUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
                   if (videoId) {
                     window.open(`https://www.youtube.com/embed/${videoId}?autoplay=1`, '_blank');
-                  } else {
+                  } else if (post.youtubeUrl) {
                     window.open(post.youtubeUrl, '_blank');
                   }
                 }}
@@ -93,7 +93,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   e.preventDefault();
                   e.stopPropagation();
                   // Open Spotify link
-                  window.open(post.spotifyUrl, '_blank');
+                  if (post.spotifyUrl) {
+                    window.open(post.spotifyUrl, '_blank');
+                  }
                 }}
               >
                 <Play className="w-6 h-6 mr-2" />

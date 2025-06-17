@@ -1438,6 +1438,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Link preview endpoint
+  app.post('/api/link-preview', async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: 'URL is required' });
+      }
+
+      const { getLinkPreview } = await import('link-preview-js');
+      const metadata = await getLinkPreview(url, {
+        timeout: 5000,
+        followRedirects: 'follow',
+        handleRedirects: (baseURL: string, forwardedURL: string) => {
+          const urlObj = new URL(baseURL);
+          const forwardedURLObj = new URL(forwardedURL);
+          if (urlObj.hostname === forwardedURLObj.hostname || 
+              forwardedURLObj.hostname === 'www.' + urlObj.hostname ||
+              urlObj.hostname === 'www.' + forwardedURLObj.hostname) {
+            return true;
+          }
+          return false;
+        }
+      });
+
+      // Format the response based on the metadata type
+      let response: any = {
+        title: (metadata as any).title || '',
+        description: (metadata as any).description || '',
+        siteName: (metadata as any).siteName || '',
+        url: (metadata as any).url || url
+      };
+
+      // Handle different image formats
+      if ((metadata as any).images && (metadata as any).images.length > 0) {
+        response.images = (metadata as any).images;
+        response.image = (metadata as any).images[0]; // Primary image
+      } else if ((metadata as any).favicons && (metadata as any).favicons.length > 0) {
+        response.image = (metadata as any).favicons[(metadata as any).favicons.length - 1]; // Use largest favicon
+        response.images = [response.image];
+      }
+
+      // Special handling for YouTube
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+        if (videoId) {
+          response.image = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+          response.images = [
+            `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+            `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+            `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+          ];
+        }
+      }
+
+      // Special handling for Spotify
+      if (url.includes('spotify.com')) {
+        // Try to extract Spotify metadata from the existing data
+        if ((metadata as any).images && (metadata as any).images.length > 0) {
+          response.image = (metadata as any).images[0];
+        }
+      }
+
+      res.json(response);
+    } catch (error) {
+      console.error('Link preview error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch link metadata',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Multiple hashtag search with sorting
   app.get('/api/search/hashtags', async (req, res) => {
     try {
