@@ -1532,6 +1532,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Post energy rating endpoints
+  app.post('/api/posts/:postId/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const ratingUserId = req.user.userId;
+      const { rating } = req.body;
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
+
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
+      }
+
+      // For now, return success - will implement proper storage later
+      res.json({ success: true, rating });
+    } catch (error) {
+      console.error('Post energy rating error:', error);
+      res.status(500).json({ message: 'Failed to submit rating' });
+    }
+  });
+
+  app.get('/api/posts/:postId/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const userId = req.user.userId;
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
+
+      // Return user's current rating (default to middle level)
+      res.json({ rating: 4 });
+    } catch (error) {
+      console.error('Get post energy error:', error);
+      res.status(500).json({ message: 'Failed to get rating' });
+    }
+  });
+
+  app.get('/api/posts/:postId/energy/stats', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
+
+      // Return default stats for now
+      res.json({ 
+        average: 4.0, 
+        count: 0 
+      });
+    } catch (error) {
+      console.error('Post energy stats error:', error);
+      res.status(500).json({ message: 'Failed to fetch energy stats' });
+    }
+  });
+
   // Profile energy rating endpoints
   app.post('/api/profiles/:profileId/energy', authenticateToken, async (req: any, res) => {
     try {

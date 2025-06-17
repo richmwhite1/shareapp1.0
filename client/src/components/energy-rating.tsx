@@ -12,17 +12,17 @@ interface EnergyRatingProps {
 }
 
 const ENERGY_EMOJIS = [
-  '😐', // 1 - Neutral/Flat
-  '😊', // 2 - Slightly positive
-  '😄', // 3 - Happy
-  '😍', // 4 - Love/Heart energy
-  '🤩', // 5 - Star-struck
-  '✨', // 6 - Sparkles/mystical
-  '🔮'  // 7 - Crystal ball/highest energy
+  '😐', // 1 - Low energy
+  '🙂', // 2 - Slightly positive
+  '😊', // 3 - Good energy
+  '😍', // 4 - Great energy
+  '🤩', // 5 - Excellent energy
+  '✨', // 6 - Amazing energy
+  '🔮'  // 7 - Peak energy
 ];
 
-const CHAKRA_NAMES = [
-  'Root', 'Sacral', 'Solar Plexus', 'Heart', 'Throat', 'Third Eye', 'Crown'
+const ENERGY_LABELS = [
+  'Low', 'Fair', 'Good', 'Great', 'Excellent', 'Amazing', 'Peak'
 ];
 
 export default function EnergyRating({ postId, profileId, className = "" }: EnergyRatingProps) {
@@ -50,10 +50,12 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
 
   const ratingMutation = useMutation({
     mutationFn: async (rating: number) => {
+      const token = localStorage.getItem('token');
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ rating }),
       });
@@ -68,8 +70,8 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       queryClient.invalidateQueries({ queryKey: [endpoint, 'user'] });
       queryClient.invalidateQueries({ queryKey: [statsEndpoint] });
       toast({
-        title: "Aura rating submitted",
-        description: `You rated this ${CHAKRA_NAMES[currentRating - 1]} chakra`,
+        title: "Energy rating submitted",
+        description: `You rated this ${ENERGY_LABELS[currentRating - 1]}`,
       });
     },
     onError: () => {
@@ -118,11 +120,19 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
         
         <div className="relative">
-          {/* Custom slider track with chakra gradient */}
-          <div 
-            className="h-2 rounded-full mb-3"
-            style={{ background: sliderGradient }}
-          />
+          {/* Segmented color track */}
+          <div className="flex h-3 rounded-full overflow-hidden mb-3 border border-gray-600">
+            {Array.from({length: 7}, (_, i) => (
+              <div 
+                key={i}
+                className="flex-1 transition-opacity duration-200"
+                style={{ 
+                  backgroundColor: getAuraColor(i + 1),
+                  opacity: currentRating > i ? 1 : 0.3
+                }}
+              />
+            ))}
+          </div>
           
           <Slider
             value={[currentRating]}
@@ -130,7 +140,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
             max={7}
             min={1}
             step={1}
-            className="relative -mt-5"
+            className="relative -mt-6"
             style={{
               '--slider-thumb-color': getAuraColor(currentRating)
             } as React.CSSProperties}
@@ -143,7 +153,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
             className="font-medium"
             style={{ color: getAuraColor(currentRating) }}
           >
-            {CHAKRA_NAMES[currentRating - 1]} {ENERGY_EMOJIS[currentRating - 1]}
+            {ENERGY_LABELS[currentRating - 1]} {ENERGY_EMOJIS[currentRating - 1]}
           </span>
           <span>High</span>
         </div>
@@ -157,7 +167,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
             style={{ backgroundColor: getAuraColor(currentRating) }}
           />
           <span className="text-sm">
-            Level {currentRating} - {CHAKRA_NAMES[currentRating - 1]}
+            Level {currentRating} - {ENERGY_LABELS[currentRating - 1]}
           </span>
         </div>
         
