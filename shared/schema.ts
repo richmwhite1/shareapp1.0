@@ -190,6 +190,52 @@ export const blacklist = pgTable("blacklist", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Post views tracking
+export const postViews = pgTable("post_views", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id"), // null for anonymous views
+  viewType: text("view_type").notNull(), // "feed", "expanded", "profile"
+  viewDuration: integer("view_duration"), // milliseconds
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Saved posts to user lists
+export const savedPosts = pgTable("saved_posts", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  categoryId: integer("category_id").notNull(), // which list it's saved to
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// User reposts
+export const reposts = pgTable("reposts", {
+  id: serial("id").primaryKey(),
+  originalPostId: integer("original_post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Post flags for moderation
+export const postFlags = pgTable("post_flags", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  userId: integer("user_id").notNull(),
+  reason: text("reason"), // optional reason for flagging
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Tagged posts for "shared with you" feed
+export const taggedPosts = pgTable("tagged_posts", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  fromUserId: integer("from_user_id").notNull(), // who tagged
+  toUserId: integer("to_user_id").notNull(), // who was tagged
+  isViewed: boolean("is_viewed").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -450,6 +496,21 @@ export type UserWithFriends = User & {
   friends: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>[];
   friendCount: number;
   hasNewPosts?: boolean;
+};
+
+// New types for view tracking and post interactions
+export type PostView = typeof postViews.$inferSelect;
+export type SavedPost = typeof savedPosts.$inferSelect;
+export type Repost = typeof reposts.$inferSelect;
+export type PostFlag = typeof postFlags.$inferSelect;
+export type TaggedPost = typeof taggedPosts.$inferSelect;
+
+// Extended post type with view count and repost info
+export type PostWithStats = PostWithUser & {
+  viewCount: number;
+  isRepost?: boolean;
+  originalPost?: PostWithUser;
+  repostUser?: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
 };
 
 export type NotificationWithUser = Notification & {

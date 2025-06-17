@@ -97,6 +97,34 @@ export interface IStorage {
   getRsvpStats(postId: number): Promise<{ going: number; maybe: number; not_going: number }>;
   getRsvpList(postId: number, status: string): Promise<Array<{ user: User; createdAt: Date }>>;
 
+  // View tracking methods
+  trackView(postId: number, userId: number | null, viewType: string, viewDuration?: number): Promise<void>;
+  getPostViews(postId: number): Promise<number>;
+
+  // Save post methods
+  savePost(postId: number, userId: number, categoryId: number): Promise<void>;
+  unsavePost(postId: number, userId: number): Promise<void>;
+  getSavedPosts(userId: number, categoryId?: number): Promise<PostWithUser[]>;
+  isSaved(postId: number, userId: number): Promise<boolean>;
+
+  // Repost methods
+  repost(postId: number, userId: number): Promise<void>;
+  unrepost(postId: number, userId: number): Promise<void>;
+  getReposts(userId: number): Promise<PostWithStats[]>;
+  isReposted(postId: number, userId: number): Promise<boolean>;
+
+  // Flag methods
+  flagPost(postId: number, userId: number, reason?: string): Promise<void>;
+  unflagPost(postId: number, userId: number): Promise<void>;
+  getPostFlags(postId: number): Promise<number>;
+  checkAutoDelete(postId: number): Promise<boolean>;
+
+  // Tag methods
+  tagFriendsToPost(postId: number, fromUserId: number, toUserIds: number[]): Promise<void>;
+  getTaggedPosts(userId: number): Promise<PostWithUser[]>;
+  getSharedWithMePosts(userId: number): Promise<PostWithUser[]>;
+  markTaggedPostViewed(postId: number, userId: number): Promise<void>;
+
   // Admin methods
   getAnalytics(): Promise<{ userCount: number; postCount: number; trendingHashtags: Hashtag[] }>;
   flagUser(userId: number): Promise<void>;
