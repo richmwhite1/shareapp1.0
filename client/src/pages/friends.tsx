@@ -382,8 +382,8 @@ export default function ConnectionsPage() {
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 @{friend.username}
                               </p>
-                              <p className="text-xs text-green-600 dark:text-green-400">
-                                Following
+                              <p className="text-xs text-blue-600 dark:text-blue-400">
+                                {(friend as any).relationshipStatus === 'connected' ? 'Connected' : 'Following'}
                               </p>
                             </div>
                           </div>
