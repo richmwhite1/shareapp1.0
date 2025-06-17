@@ -128,10 +128,10 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
         
         <div className="relative">
-          {/* Custom slider with chakra gradient */}
+          {/* Custom slider with current color */}
           <div 
             className="h-2 rounded-full"
-            style={{ background: sliderGradient }}
+            style={{ backgroundColor: CHAKRA_COLORS[currentRating - 1] }}
           />
           <Slider
             value={[currentRating]}

@@ -45,7 +45,7 @@ export default function FriendsStoriesBar({
   };
 
   return (
-    <div className="flex items-center overflow-x-auto p-4 bg-black border-b border-gray-800 space-x-4">
+    <div className="flex items-center overflow-x-auto px-3 py-2 bg-black border-b border-gray-800 space-x-3">
       {/* Public Feed Button */}
       <div className="flex flex-col items-center space-y-1 flex-shrink-0">
         <div
@@ -69,7 +69,7 @@ export default function FriendsStoriesBar({
             onClick={() => handleFriendClick(friendWithPosts.user.id, index)}
           >
             {/* Story Ring */}
-            <div className={`w-18 h-18 rounded-full p-0.5 ${
+            <div className={`w-16 h-16 rounded-full p-0.5 ${
               activeFeed === friendWithPosts.user.id.toString() 
                 ? 'bg-gradient-to-tr from-yellow-400 via-red-500 to-pink-500' 
                 : 'bg-gradient-to-tr from-pinterest-red to-red-600'

@@ -102,14 +102,14 @@ export default function Home() {
         onNextFriend={handleNextFriend}
       />
       
-      <main className="max-w-lg mx-auto px-0">
+      <main className="max-w-lg mx-auto">
 
         {/* Content */}
         {isLoading ? (
-          <div className="space-y-8">
+          <div className="space-y-0">
             {[...Array(3)].map((_, i) => (
-              <Card key={i} className="bg-gray-800 border-gray-700 overflow-hidden">
-                <CardContent className="p-4">
+              <div key={i} className="bg-gray-800 border-0 overflow-hidden">
+                <div className="p-4">
                   <div className="flex items-center space-x-3 mb-4">
                     <Skeleton className="w-10 h-10 rounded-full bg-gray-700" />
                     <div className="space-y-2">
@@ -117,11 +117,9 @@ export default function Home() {
                       <Skeleton className="h-3 w-24 bg-gray-700" />
                     </div>
                   </div>
-                  <Skeleton className="w-full h-64 rounded-lg mb-4 bg-gray-700" />
-                  <Skeleton className="h-4 w-full mb-2 bg-gray-700" />
-                  <Skeleton className="h-4 w-3/4 bg-gray-700" />
-                </CardContent>
-              </Card>
+                  <Skeleton className="w-full h-80 mb-0 bg-gray-700" />
+                </div>
+              </div>
             ))}
           </div>
         ) : posts && posts.length > 0 ? (
