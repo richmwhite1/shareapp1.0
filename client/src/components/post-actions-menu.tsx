@@ -188,14 +188,6 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
     setFlagDialogOpen(true);
   };
 
-  const handleDelete = () => {
-    // For now, just show a confirmation dialog
-    if (confirm('Are you sure you want to delete this post?')) {
-      // TODO: Implement actual delete functionality
-      console.log('Delete post:', postId);
-    }
-  };
-
   const toggleFriendSelection = (friendId: number) => {
     setSelectedFriends(prev =>
       prev.includes(friendId)
@@ -428,7 +420,11 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
             <Flag className="h-4 w-4 mr-2" />
             Flag
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+          <DropdownMenuItem onClick={() => {
+            if (confirm('Are you sure you want to delete this post?')) {
+              console.log('Delete post:', postId);
+            }
+          }} className="text-red-600">
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </DropdownMenuItem>

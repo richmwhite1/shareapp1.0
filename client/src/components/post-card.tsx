@@ -632,11 +632,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 )}
                 
                 {/* Task List */}
-                {post.taskList && Array.isArray(post.taskList) && (post.taskList as any[]).length > 0 && (
+                {post.taskList && Array.isArray(post.taskList) && post.taskList.length > 0 && (
                   <div className="mt-3">
                     <h4 className="text-sm font-medium text-purple-300 mb-2">Event Tasks:</h4>
                     <div className="space-y-2">
-                      {(post.taskList as any[]).map((task: any, index: number) => (
+                      {post.taskList.map((task: any, index: number) => (
                         <div key={task.id || index} className="flex items-center gap-3 p-2 bg-purple-900/10 border border-purple-700/30 rounded cursor-pointer hover:bg-purple-900/20 transition-colors">
                           <button 
                             className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
