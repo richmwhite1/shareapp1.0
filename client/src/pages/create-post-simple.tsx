@@ -485,8 +485,8 @@ END:VCALENDAR`;
   };
 
   const getTaggedFriendNames = () => {
-    if (!Array.isArray(friends?.data)) return '';
-    return friends.data
+    if (!Array.isArray(friends)) return '';
+    return friends
       .filter((friend: any) => taggedUsers.includes(friend.id))
       .map((friend: any) => friend.name || friend.username)
       .join(', ');
@@ -494,13 +494,11 @@ END:VCALENDAR`;
 
   // Data fetching
   const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['/api/categories'],
-    queryFn: getQueryFn('/api/categories')
+    queryKey: ['/api/categories']
   });
 
   const { data: friends } = useQuery({
-    queryKey: ['/api/friends'],
-    queryFn: getQueryFn('/api/friends')
+    queryKey: ['/api/friends']
   });
 
   // Set default category when categories load
@@ -1317,8 +1315,8 @@ END:VCALENDAR`;
                   <DialogTitle>Tag Friends</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-60 overflow-y-auto">
-                  {Array.isArray(friends?.data) && friends.data.length > 0 ? (
-                    friends.data.map((friend: any) => (
+                  {Array.isArray(friends) && friends.length > 0 ? (
+                    friends.map((friend: any) => (
                       <div key={friend.id} className="flex items-center space-x-2 p-2">
                         <input
                           type="checkbox"

@@ -1455,6 +1455,16 @@ export class DatabaseStorage implements IStorage {
     
     if (values.length > 0) {
       await db.insert(taggedPosts).values(values);
+      
+      // Create notifications for tagged users
+      const notificationValues = toUserIds.map(toUserId => ({
+        userId: toUserId,
+        type: "tag" as const,
+        postId,
+        fromUserId,
+      }));
+      
+      await db.insert(notifications).values(notificationValues);
     }
   }
 
