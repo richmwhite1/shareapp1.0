@@ -1367,7 +1367,17 @@ END:VCALENDAR`;
                 </div>
               </div>
 
-              {/* Friend Selector Dialog */}
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                disabled={isLoading || mutation.isPending}
+                className="w-full bg-pinterest-red hover:bg-red-700 text-white py-3"
+              >
+                {isLoading || mutation.isPending ? 'Creating Post...' : 'Create Post'}
+              </Button>
+            </form>
+
+            {/* Friend Selector Dialog */}
               <Dialog open={showFriendSelector} onOpenChange={setShowFriendSelector}>
                 <DialogContent className="sm:max-w-md">
                   <DialogHeader>
@@ -1817,7 +1827,6 @@ END:VCALENDAR`;
               >
                 {isLoading || mutation.isPending ? 'Creating Post...' : 'Create Post'}
               </Button>
-            </form>
           </CardContent>
         </Card>
       </div>
