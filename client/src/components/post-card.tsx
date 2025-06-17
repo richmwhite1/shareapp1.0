@@ -466,83 +466,101 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             </div>
           )}
 
-          {/* Flag Button - Only show in detail view */}
-          {isDetailView && isAuthenticated && post.user.id !== user?.id && (
-            <Dialog>
-              <DialogTrigger asChild>
+          {/* Flag and Delete Buttons - Only show in detail view, bottom right */}
+          {isDetailView && (
+            <div className="flex items-center space-x-2">
+              {/* Flag Button - Only for posts by other users */}
+              {isAuthenticated && post.user.id !== user?.id && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                    >
+                      <Flag className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-gray-800 border-gray-700">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">Report Post</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Reason for reporting
+                        </label>
+                        <Select value={reportReason} onValueChange={setReportReason}>
+                          <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                            <SelectValue placeholder="Select a reason" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-700 border-gray-600">
+                            <SelectItem value="spam">Spam</SelectItem>
+                            <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                            <SelectItem value="harassment">Harassment</SelectItem>
+                            <SelectItem value="fake">Fake or misleading</SelectItem>
+                            <SelectItem value="copyright">Copyright violation</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Additional details (optional)
+                        </label>
+                        <Textarea
+                          value={reportDescription}
+                          onChange={(e) => setReportDescription(e.target.value)}
+                          placeholder="Provide more details about the issue..."
+                          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500">
+                            Cancel
+                          </Button>
+                        </DialogTrigger>
+                        <Button
+                          onClick={() => {
+                            if (!reportReason) {
+                              toast({
+                                title: "Missing reason",
+                                description: "Please select a reason for reporting.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            reportMutation.mutate({
+                              reason: reportReason,
+                              description: reportDescription,
+                            });
+                          }}
+                          disabled={reportMutation.isPending}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Submit Report
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+
+              {/* Delete Button - Only for post owner */}
+              {isAuthenticated && user && post.user.id === user.id && (
                 <Button
+                  onClick={handleDelete}
                   variant="ghost"
                   size="sm"
+                  disabled={deleteMutation.isPending}
                   className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
                 >
-                  <Flag className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-gray-800 border-gray-700">
-                <DialogHeader>
-                  <DialogTitle className="text-white">Report Post</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Reason for reporting
-                    </label>
-                    <Select value={reportReason} onValueChange={setReportReason}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select a reason" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        <SelectItem value="spam">Spam</SelectItem>
-                        <SelectItem value="inappropriate">Inappropriate content</SelectItem>
-                        <SelectItem value="harassment">Harassment</SelectItem>
-                        <SelectItem value="fake">Fake or misleading</SelectItem>
-                        <SelectItem value="copyright">Copyright violation</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Additional details (optional)
-                    </label>
-                    <Textarea
-                      value={reportDescription}
-                      onChange={(e) => setReportDescription(e.target.value)}
-                      placeholder="Provide more details about the issue..."
-                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500">
-                        Cancel
-                      </Button>
-                    </DialogTrigger>
-                    <Button
-                      onClick={() => {
-                        if (!reportReason) {
-                          toast({
-                            title: "Missing reason",
-                            description: "Please select a reason for reporting.",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        reportMutation.mutate({
-                          reason: reportReason,
-                          description: reportDescription,
-                        });
-                      }}
-                      disabled={reportMutation.isPending}
-                      className="bg-red-600 hover:bg-red-700 text-white"
-                    >
-                      Submit Report
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              )}
+            </div>
           )}
         </div>
 
@@ -845,22 +863,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         </div>
       )}
 
-      {/* Delete Button - only show for post owner in detail view */}
-      {isDetailView && user && post.user.id === user.id && (
-        <div className="px-6 pb-6">
-          <div className="flex justify-end">
-            <Button
-              onClick={handleDelete}
-              variant="ghost"
-              size="sm"
-              disabled={deleteMutation.isPending}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {/* RSVP Component - Only show in detail view for events */}
       {isDetailView && post.isEvent && <EventRsvp post={post} />}
