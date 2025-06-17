@@ -10,7 +10,7 @@ import fs from "fs";
 import { 
   signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData
+  type AdditionalPhotoData, users
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg } from 'drizzle-orm';
@@ -1435,6 +1435,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(followed);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Profile picture upload endpoint
+  app.post('/api/user/profile-picture', authenticateToken, upload.single('profilePicture'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const userId = req.user.userId;
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `profile-${userId}-${Date.now()}${fileExtension}`;
+      const uploadPath = path.join('uploads', fileName);
+
+      // Move file to permanent location
+      await fs.promises.rename(req.file.path, uploadPath);
+
+      // Update user's profile picture URL in database
+      await db.update(users)
+        .set({ profilePictureUrl: `/uploads/${fileName}` })
+        .where(eq(users.id, userId));
+
+      res.json({ 
+        success: true, 
+        profilePictureUrl: `/uploads/${fileName}` 
+      });
+    } catch (error) {
+      console.error('Profile picture upload error:', error);
+      res.status(500).json({ message: 'Failed to upload profile picture' });
     }
   });
 

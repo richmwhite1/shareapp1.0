@@ -198,6 +198,30 @@ export default function ProfilePage() {
             )}
           </div>
           
+          {/* Upload button - only show for own profile */}
+          {isOwnProfile && (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingProfilePic}
+                className="absolute top-4 right-4 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center border-2 border-white/20 hover:bg-black/70 transition-colors disabled:opacity-50 backdrop-blur-sm"
+              >
+                {isUploadingProfilePic ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera className="h-6 w-6 text-white" />
+                )}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+                className="hidden"
+              />
+            </>
+          )}
+          
           {/* Profile Info Overlay */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
             <h1 className="text-2xl font-bold text-white mb-1">
