@@ -253,7 +253,7 @@ export default function ConnectionsPage() {
                         filteredUsers.map((searchUser) => {
                           const friendship = friends.find((f: any) => f.id === searchUser.id);
                           const isFollowing = !!friendship;
-                          const isConnected = friendship?.relationshipStatus === 'connected';
+                          const isConnected = false; // For now, treating all as following relationships
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
                           
                           return (
