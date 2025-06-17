@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal, Share2, Users, Repeat2, Bookmark, Flag, X, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Share2, Users, Repeat2, Bookmark, Flag, X, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,7 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +55,8 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
   const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [flagReason, setFlagReason] = useState('');
+  const [selectedFlagReason, setSelectedFlagReason] = useState('');
+  const [customFlagReason, setCustomFlagReason] = useState('');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -204,6 +214,8 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
   };
 
   const handleFlag = () => {
+    setSelectedFlagReason('');
+    setCustomFlagReason('');
     setFlagDialogOpen(true);
   };
 
@@ -228,10 +240,24 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
   };
 
   const submitFlag = () => {
-    if (flagReason.trim()) {
-      flagPostMutation.mutate(flagReason.trim());
+    const reason = selectedFlagReason === 'other' ? customFlagReason.trim() : 
+                  flagReasons.find(r => r.toLowerCase().replace(/\s+/g, '-') === selectedFlagReason) || selectedFlagReason;
+    if (reason) {
+      flagPostMutation.mutate(reason);
     }
   };
+
+  const flagReasons = [
+    'Spam or misleading content',
+    'Harassment or bullying',
+    'Hate speech or discrimination',
+    'Violence or dangerous content',
+    'Sexual or inappropriate content',
+    'Copyright infringement',
+    'Privacy violation',
+    'Misinformation',
+    'Other'
+  ];
 
   const filteredFriends = friends.filter(friend =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -549,11 +575,29 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Why are you flagging this post?
             </div>
-            <Input
-              placeholder="Optional: Reason for flagging..."
-              value={flagReason}
-              onChange={(e) => setFlagReason(e.target.value)}
-            />
+            
+            <Select value={selectedFlagReason} onValueChange={setSelectedFlagReason}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                {flagReasons.map((reason) => (
+                  <SelectItem key={reason.toLowerCase().replace(/\s+/g, '-')} value={reason.toLowerCase().replace(/\s+/g, '-')}>
+                    {reason}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {selectedFlagReason === 'other' && (
+              <Textarea
+                placeholder="Please describe the issue..."
+                value={customFlagReason}
+                onChange={(e) => setCustomFlagReason(e.target.value)}
+                className="min-h-[80px]"
+              />
+            )}
+            
             <div className="text-xs text-gray-500">
               Posts with 2+ flags are automatically removed.
             </div>
@@ -564,7 +608,7 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
               <Button
                 variant="destructive"
                 onClick={submitFlag}
-                disabled={flagPostMutation.isPending}
+                disabled={flagPostMutation.isPending || !selectedFlagReason || (selectedFlagReason === 'other' && !customFlagReason.trim())}
               >
                 Flag Post
               </Button>
