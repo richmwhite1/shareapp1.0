@@ -14,6 +14,7 @@ import { useState } from "react";
 import type { PostWithUser } from "@shared/schema";
 import ImageGallery from "@/components/image-gallery";
 import EventDateOverlay from "@/components/event-date-overlay";
+import EventRsvp from "@/components/event-rsvp";
 
 interface PostCardProps {
   post: PostWithUser;

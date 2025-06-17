@@ -561,7 +561,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reminders: isEventBool ? eventReminders : undefined,
         isRecurring: isEventBool ? isRecurringBool : undefined,
         recurringType: isEventBool && isRecurringBool ? recurringType : undefined,
-        taskList: isEventBool ? eventTaskList : undefined
+        taskList: isEventBool ? eventTaskList : undefined,
+        allowRsvp: isEventBool ? (validatedData.allowRsvp === 'true') : false
       });
 
       // Get post with user data
@@ -1106,6 +1107,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.sharePost(0, userId); // Use 0 as postId for profile shares
       res.json({ success: true });
     } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // RSVP routes
+  app.post('/api/posts/:id/rsvp', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      if (!['going', 'maybe', 'not_going'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid RSVP status' });
+      }
+
+      // Check if post exists and allows RSVPs
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      
+      if (!post.isEvent || !post.allowRsvp) {
+        return res.status(400).json({ message: 'This post does not allow RSVPs' });
+      }
+
+      // Check if user already has an RSVP
+      const existingRsvp = await storage.getRsvp(postId, req.user.userId);
+      
+      if (existingRsvp) {
+        await storage.updateRsvp(postId, req.user.userId, status);
+      } else {
+        await storage.createRsvp(postId, req.user.userId, status);
+      }
+
+      res.json({ message: 'RSVP updated successfully' });
+    } catch (error) {
+      console.error('RSVP error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/rsvp', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const rsvp = await storage.getRsvp(postId, req.user.userId);
+      res.json(rsvp || { status: null });
+    } catch (error) {
+      console.error('Get RSVP error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/rsvp/stats', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const stats = await storage.getRsvpStats(postId);
+      res.json(stats);
+    } catch (error) {
+      console.error('RSVP stats error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/rsvp/:status', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { status } = req.params;
+      
+      if (!['going', 'maybe', 'not_going'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid RSVP status' });
+      }
+
+      const rsvpList = await storage.getRsvpList(postId, status);
+      res.json(rsvpList);
+    } catch (error) {
+      console.error('RSVP list error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
