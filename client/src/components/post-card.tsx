@@ -60,46 +60,93 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         )}
 
-        {/* Play buttons for YouTube and Spotify - center of image */}
+        {/* Play buttons for YouTube and Spotify - subtle top right corner */}
         {(post.youtubeUrl || post.spotifyUrl) && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute top-2 right-2 flex gap-1">
             {post.youtubeUrl && (
               <Button
-                size="lg"
-                variant="secondary"
-                className="bg-red-600/90 hover:bg-red-700 text-white border-0 backdrop-blur-sm mr-2"
+                size="sm"
+                variant="ghost"
+                className="bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm h-8 w-8 p-0"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // Extract YouTube video ID and open in embedded player
+                  // Extract YouTube video ID and create embedded iframe
                   const videoId = post.youtubeUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
                   if (videoId) {
-                    window.open(`https://www.youtube.com/embed/${videoId}?autoplay=1`, '_blank');
-                  } else if (post.youtubeUrl) {
-                    window.open(post.youtubeUrl, '_blank');
+                    // Create modal with embedded YouTube player
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                      <div class="relative w-full max-w-4xl mx-4">
+                        <button class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">&times;</button>
+                        <div class="relative pb-[56.25%] h-0">
+                          <iframe 
+                            src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                            class="absolute top-0 left-0 w-full h-full rounded-lg"
+                            frameborder="0" 
+                            allowfullscreen
+                            allow="autoplay; encrypted-media">
+                          </iframe>
+                        </div>
+                      </div>
+                    `;
+                    
+                    const closeBtn = modal.querySelector('button');
+                    closeBtn?.addEventListener('click', () => modal.remove());
+                    modal.addEventListener('click', (e) => {
+                      if (e.target === modal) modal.remove();
+                    });
+                    
+                    document.body.appendChild(modal);
                   }
                 }}
               >
-                <Play className="w-6 h-6 mr-2" />
-                Play Video
+                <Play className="w-4 h-4" />
               </Button>
             )}
             {post.spotifyUrl && (
               <Button
-                size="lg"
-                variant="secondary"
-                className="bg-green-600/90 hover:bg-green-700 text-white border-0 backdrop-blur-sm"
+                size="sm"
+                variant="ghost"
+                className="bg-black/40 hover:bg-black/60 text-white border-0 backdrop-blur-sm h-8 w-8 p-0"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // Open Spotify link
-                  if (post.spotifyUrl) {
-                    window.open(post.spotifyUrl, '_blank');
+                  // Extract Spotify track/album ID and create embedded player
+                  const spotifyMatch = post.spotifyUrl?.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+                  if (spotifyMatch) {
+                    const [, type, id] = spotifyMatch;
+                    // Create modal with embedded Spotify player
+                    const modal = document.createElement('div');
+                    modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-50';
+                    modal.innerHTML = `
+                      <div class="relative w-full max-w-md mx-4">
+                        <button class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">&times;</button>
+                        <iframe 
+                          src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0" 
+                          width="100%" 
+                          height="352" 
+                          frameborder="0" 
+                          allowfullscreen="" 
+                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                          loading="lazy"
+                          class="rounded-lg">
+                        </iframe>
+                      </div>
+                    `;
+                    
+                    const closeBtn = modal.querySelector('button');
+                    closeBtn?.addEventListener('click', () => modal.remove());
+                    modal.addEventListener('click', (e) => {
+                      if (e.target === modal) modal.remove();
+                    });
+                    
+                    document.body.appendChild(modal);
                   }
                 }}
               >
-                <Play className="w-6 h-6 mr-2" />
-                Play on Spotify
+                <Play className="w-4 h-4" />
               </Button>
             )}
           </div>

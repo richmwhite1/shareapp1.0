@@ -143,9 +143,18 @@ export default function CreatePostPage() {
     if (!newCategoryName.trim()) return;
     
     try {
+      const token = getAuthToken();
+      if (!token) {
+        console.error('No authentication token');
+        return;
+      }
+
       const response = await fetch('/api/categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         credentials: 'include',
         body: JSON.stringify({
           name: newCategoryName.trim(),
@@ -160,9 +169,26 @@ export default function CreatePostPage() {
         setNewCategoryDescription('');
         setShowNewCategoryDialog(false);
         queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+        
+        toast({
+          title: "Success",
+          description: "Category created successfully!"
+        });
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.message || "Failed to create category",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error('Failed to create category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create category. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
