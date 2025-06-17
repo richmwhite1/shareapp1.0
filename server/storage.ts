@@ -31,6 +31,7 @@ export interface IStorage {
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
   getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]>;
   getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]>;
+  getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]>;
   getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
   getFriendsPosts(userId: number): Promise<PostWithUser[]>;
   getTaggedPosts(userId: number): Promise<PostWithUser[]>;
@@ -554,6 +555,50 @@ export class DatabaseStorage implements IStorage {
       user: r.user!,
       category: r.category || undefined
     })) as PostWithUser[];
+  }
+
+  async getPostsByMultipleHashtags(hashtagNames: string[], sortBy: string = 'popular'): Promise<PostWithUser[]> {
+    if (hashtagNames.length === 0) {
+      return [];
+    }
+
+    // For simplicity, if multiple hashtags are provided, find posts that contain ANY of them
+    // This provides broader search results which is more useful for discovery
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        }
+      })
+      .from(posts)
+      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(sql`${hashtags.name} = ANY(${hashtagNames})`)
+      .orderBy(sortBy === 'popular' ? desc(posts.engagement) : desc(posts.createdAt));
+
+    // Remove duplicates (posts that have multiple matching hashtags)
+    const uniquePosts = new Map();
+    for (const row of result) {
+      if (!uniquePosts.has(row.post.id)) {
+        uniquePosts.set(row.post.id, {
+          ...row.post,
+          user: row.user!,
+          category: row.category || undefined
+        });
+      }
+    }
+
+    return Array.from(uniquePosts.values()) as PostWithUser[];
   }
 
   async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {
