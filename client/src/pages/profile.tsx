@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Folder, Image, Plus, Users, Lock, Trash2, Share2 } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import PostCard from "@/components/post-card";
 import type { User, PostWithUser, CategoryWithPosts } from "@shared/schema";
 
 interface UserResponse {

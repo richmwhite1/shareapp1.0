@@ -374,22 +374,33 @@ END:VCALENDAR`;
         
         // For Spotify, we get the album cover on first try
         if (type === 'spotify' && metadata.image) {
-          const response = await fetch(metadata.image);
-          const blob = await response.blob();
-          const file = new File([blob], 'spotify-cover.jpg', { type: 'image/jpeg' });
-          const processedFile = await processImageFile(file);
-          setPrimaryPhoto(processedFile);
-          setPrimaryPhotoPreview(metadata.image);
+          try {
+            const response = await fetch(metadata.image);
+            const blob = await response.blob();
+            const file = new File([blob], 'spotify-cover.jpg', { type: 'image/jpeg' });
+            const processedFile = await processImageFile(file);
+            setPrimaryPhoto(processedFile);
+            setPrimaryPhotoPreview(metadata.image);
+          } catch (error) {
+            console.warn('Could not fetch Spotify image due to CORS:', error);
+            // Use the image URL directly without fetching
+            setPrimaryPhotoPreview(metadata.image);
+          }
         }
         
         // For YouTube, get thumbnail on first try
         else if (type === 'youtube' && metadata.image) {
-          const response = await fetch(metadata.image);
-          const blob = await response.blob();
-          const file = new File([blob], 'youtube-thumbnail.jpg', { type: 'image/jpeg' });
-          const processedFile = await processImageFile(file);
-          setPrimaryPhoto(processedFile);
-          setPrimaryPhotoPreview(metadata.image);
+          try {
+            const response = await fetch(metadata.image);
+            const blob = await response.blob();
+            const file = new File([blob], 'youtube-thumbnail.jpg', { type: 'image/jpeg' });
+            const processedFile = await processImageFile(file);
+            setPrimaryPhoto(processedFile);
+            setPrimaryPhotoPreview(metadata.image);
+          } catch (error) {
+            console.warn('Could not fetch YouTube image due to CORS:', error);
+            setPrimaryPhotoPreview(metadata.image);
+          }
         }
         
         // For general links, cycle through available images
