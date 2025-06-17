@@ -137,6 +137,14 @@ export const reports = pgTable("reports", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Hashtag follows
+export const hashtagFollows = pgTable("hashtag_follows", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  hashtagId: integer("hashtag_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Blacklist for admin
 export const blacklist = pgTable("blacklist", {
   id: serial("id").primaryKey(),
@@ -336,6 +344,8 @@ export type CreateNotificationData = z.infer<typeof createNotificationSchema>;
 
 export type Report = typeof reports.$inferSelect;
 export type CreateReportData = z.infer<typeof createReportSchema>;
+
+export type HashtagFollow = typeof hashtagFollows.$inferSelect;
 
 export type BlacklistItem = typeof blacklist.$inferSelect;
 

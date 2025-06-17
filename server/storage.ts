@@ -1,11 +1,11 @@
 import { 
   users, posts, comments, categories, postLikes, postShares, friendships, friendRequests, hashtags, 
-  postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist,
+  postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
   type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
   type Notification, type CreateNotificationData, type Report, type CreateReportData,
-  type BlacklistItem, type UserWithFriends, type NotificationWithUser
+  type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, or, inArray, sql, like } from "drizzle-orm";
@@ -583,7 +583,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
-      .where(sql`${hashtags.name} = ANY(${hashtagNames})`)
+      .where(inArray(hashtags.name, hashtagNames))
       .orderBy(sortBy === 'popular' ? desc(posts.engagement) : desc(posts.createdAt));
 
     // Remove duplicates (posts that have multiple matching hashtags)
