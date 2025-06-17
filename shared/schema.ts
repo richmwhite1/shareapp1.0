@@ -71,6 +71,25 @@ export const postShares = pgTable("post_shares", {
   sharedAt: timestamp("shared_at").notNull().defaultNow(),
 });
 
+// Energy/Aura rating system (1-7 chakra scale)
+export const postEnergyRatings = pgTable("post_energy_ratings", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-7 (red to violet chakra)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const profileEnergyRatings = pgTable("profile_energy_ratings", {
+  id: serial("id").primaryKey(),
+  profileId: integer("profile_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-7 (red to violet chakra)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Friends system
 export const friendships = pgTable("friendships", {
   id: serial("id").primaryKey(),

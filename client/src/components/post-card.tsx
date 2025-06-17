@@ -15,6 +15,8 @@ import type { PostWithUser } from "@shared/schema";
 import ImageGallery from "@/components/image-gallery";
 import EventDateOverlay from "@/components/event-date-overlay";
 import EventRsvp from "@/components/event-rsvp-simple";
+import EnergyRating from "@/components/energy-rating";
+import AuricField from "@/components/auric-field";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -154,7 +156,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   };
 
   return (
-    <div className="bg-black overflow-hidden transition-all duration-300">
+    <AuricField postId={post.id}>
+      <div className="bg-black overflow-hidden transition-all duration-300">
       {/* Post Header */}
       <div className={`${isDetailView ? 'p-6' : 'p-4'} bg-black`}>
         <div className="flex items-center justify-between">
@@ -666,6 +669,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* RSVP Component - Only show in detail view for events */}
       {isDetailView && post.isEvent && <EventRsvp post={post} />}
-    </div>
+      </div>
+    </AuricField>
   );
 }
