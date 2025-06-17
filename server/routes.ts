@@ -1511,6 +1511,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Image fetch proxy endpoint to handle CORS issues
+  app.post('/api/fetch-image', async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      
+      if (!imageUrl) {
+        return res.status(400).json({ message: 'Image URL is required' });
+      }
+
+      // Import node-fetch dynamically
+      const fetch = (await import('node-fetch')).default;
+      
+      const response = await fetch(imageUrl, {
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const buffer = await response.buffer();
+
+      res.setHeader('Content-Type', contentType);
+      res.send(buffer);
+    } catch (error) {
+      console.error('Image fetch error:', error);
+      res.status(500).json({ 
+        message: 'Failed to fetch image',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Multiple hashtag search with sorting
   app.get('/api/search/hashtags', async (req, res) => {
     try {

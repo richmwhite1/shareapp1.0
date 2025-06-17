@@ -373,12 +373,29 @@ END:VCALENDAR`;
             : 0;
           const imageUrl = metadata.images[currentImageIndex];
           
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'fetched-image.jpg', { type: 'image/jpeg' });
-          const processedFile = await processImageFile(file);
-          setPrimaryPhoto(processedFile);
-          setPrimaryPhotoPreview(imageUrl);
+          try {
+            // Use a proxy endpoint to fetch images to avoid CORS issues
+            const response = await fetch('/api/fetch-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ imageUrl })
+            });
+            
+            if (response.ok) {
+              const blob = await response.blob();
+              const file = new File([blob], 'fetched-image.jpg', { type: 'image/jpeg' });
+              const processedFile = await processImageFile(file);
+              setPrimaryPhoto(processedFile);
+              setPrimaryPhotoPreview(imageUrl);
+            } else {
+              throw new Error('Failed to fetch image');
+            }
+          } catch (error) {
+            console.error('Image fetch error:', error);
+            // Fallback: just set the image URL without downloading
+            setPrimaryPhotoPreview(imageUrl);
+          }
         }
         
         // Update description if available and empty
