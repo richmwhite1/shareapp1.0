@@ -1560,9 +1560,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentRating = userResult.auraRating || 4;
       const currentCount = userResult.ratingCount || 0;
       
-      // Calculate new average rating
+      // Calculate new weighted average rating (keep as decimal for accuracy)
       const newCount = currentCount + 1;
-      const newRating = Math.round(((currentRating * currentCount) + rating) / newCount);
+      const newRating = ((currentRating * currentCount) + rating) / newCount;
 
       // Update user's aura rating
       await db.update(users)

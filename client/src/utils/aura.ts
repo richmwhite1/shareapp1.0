@@ -1,18 +1,18 @@
 export const getAuraColor = (rating: number): string => {
-  if (!rating || rating < 1) return "#00FF00"; // Default to green (heart chakra)
+  if (!rating || rating < 1) return "#6B8E6A"; // Default to level 4
   
-  const chakraColors = [
-    "#FF0000", // 1: Root (Red)
-    "#FF8C00", // 2: Sacral (Orange)
-    "#FFD700", // 3: Solar Plexus (Yellow)
-    "#00FF00", // 4: Heart (Green)
-    "#00BFFF", // 5: Throat (Blue)
-    "#4B0082", // 6: Third Eye (Indigo)
-    "#8A2BE2", // 7: Crown (Violet)
+  const auraColors = [
+    "#8B2E2E", // 1: Dark Red
+    "#D97438", // 2: Orange
+    "#CC9F4C", // 3: Gold
+    "#6B8E6A", // 4: Green
+    "#5A8298", // 5: Blue
+    "#4A4066", // 6: Purple
+    "#A89EC4", // 7: Light Purple
   ];
   
-  const index = Math.min(Math.floor(rating) - 1, 6);
-  return chakraColors[Math.max(0, index)];
+  const index = Math.min(Math.round(rating) - 1, 6);
+  return auraColors[Math.max(0, index)];
 };
 
 export const getAuraStyle = (rating: number) => ({

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
-import { getAuraColor, getChakraLevel } from "@/utils/aura";
+import { getAuraColor } from "@/utils/aura";
 
 interface EnergyRatingProps {
   postId?: number;
@@ -11,35 +11,21 @@ interface EnergyRatingProps {
   className?: string;
 }
 
-const ENERGY_EMOJIS = [
-  '😐', // 1 - Neutral/Flat
-  '😊', // 2 - Slightly positive
-  '😄', // 3 - Happy
-  '😍', // 4 - Love/Heart energy
-  '🤩', // 5 - Star-struck
-  '✨', // 6 - Sparkles/mystical
-  '🔮'  // 7 - Crystal ball/highest energy
-];
-
-const CHAKRA_NAMES = [
-  'Root', 'Sacral', 'Solar Plexus', 'Heart', 'Throat', 'Third Eye', 'Crown'
-];
-
-const CHAKRA_COLORS = [
-  '#FF0000', // 1 - Root Chakra (Red)
-  '#FF8C00', // 2 - Sacral Chakra (Orange)
-  '#FFD700', // 3 - Solar Plexus (Yellow)
-  '#00FF00', // 4 - Heart Chakra (Green)
-  '#00BFFF', // 5 - Throat Chakra (Blue)
-  '#4B0082', // 6 - Third Eye (Indigo)
-  '#8A2BE2'  // 7 - Crown Chakra (Violet)
+const RATING_COLORS = [
+  '#8B2E2E', // 1: Dark Red
+  '#D97438', // 2: Orange
+  '#CC9F4C', // 3: Gold
+  '#6B8E6A', // 4: Green
+  '#5A8298', // 5: Blue
+  '#4A4066', // 6: Purple
+  '#A89EC4', // 7: Light Purple
 ];
 
 export default function EnergyRating({ postId, profileId, className = "" }: EnergyRatingProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentRating, setCurrentRating] = useState<number>(4); // Default to heart chakra
+  const [currentRating, setCurrentRating] = useState<number>(4);
 
   const isPost = !!postId;
   const targetId = postId || profileId;
@@ -48,16 +34,30 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
   // Get current user's rating
   const { data: userRating } = useQuery({
     queryKey: [endpoint, 'user'],
+    queryFn: async () => {
+      const response = await fetch(endpoint, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) return null;
+      return response.json();
+    },
     enabled: !!user && !!targetId,
   });
 
-  // Get average rating stats
+  // Get rating stats
   const { data: ratingStats } = useQuery({
     queryKey: [endpoint, 'stats'],
+    queryFn: async () => {
+      const response = await fetch(`${endpoint}/stats`);
+      if (!response.ok) return null;
+      return response.json();
+    },
     enabled: !!targetId,
   });
 
-  // Rating mutation
+  // Rating submission mutation
   const ratingMutation = useMutation({
     mutationFn: async (rating: number) => {
       const response = await fetch(endpoint, {
@@ -78,30 +78,30 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [endpoint, 'user'] });
       queryClient.invalidateQueries({ queryKey: [endpoint, 'stats'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/profiles/${profileId}/energy/stats`] });
       toast({
-        title: "Aura rating submitted",
-        description: `You rated this ${CHAKRA_NAMES[currentRating - 1]} chakra level`,
+        title: "Rating submitted",
+        description: "Your rating has been recorded",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to submit energy rating. Please try again.",
+        description: "Failed to submit rating. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const handleRatingChange = (value: number[]) => {
-    const rating = value[0];
-    setCurrentRating(rating);
+    setCurrentRating(value[0]);
   };
 
   const handleRatingSubmit = () => {
     if (!user) {
       toast({
         title: "Login required",
-        description: "Please log in to rate energy levels.",
+        description: "Please log in to submit ratings.",
         variant: "destructive",
       });
       return;
@@ -113,17 +113,19 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
   const totalRatings = (ratingStats as any)?.count || 0;
   
   // Generate gradient background for slider
-  const sliderGradient = `linear-gradient(to right, ${CHAKRA_COLORS.join(', ')})`;
+  const sliderGradient = `linear-gradient(to right, ${RATING_COLORS.join(', ')})`;
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Energy Rating Slider */}
-      <div className="space-y-2">
+    <div className={`space-y-4 ${className}`}>
+      {/* Rating Slider */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-300">Aura</span>
           <div className="flex items-center gap-2">
-            <span className="text-lg">{ENERGY_EMOJIS[0]}</span>
-            <span className="text-lg">{ENERGY_EMOJIS[6]}</span>
+            <span className="text-lg">😊</span>
+            <span className="text-sm font-medium text-gray-300">Rating</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💖</span>
           </div>
         </div>
         
@@ -137,7 +139,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
           <div 
             className="h-2 rounded-full absolute transition-all duration-200"
             style={{ 
-              backgroundColor: CHAKRA_COLORS[currentRating - 1],
+              backgroundColor: RATING_COLORS[currentRating - 1],
               width: `${((currentRating - 1) / 6) * 100}%`
             }}
           />
@@ -157,18 +159,20 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
           <div className="flex items-center gap-2">
             <span 
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: CHAKRA_COLORS[currentRating - 1] }}
+              style={{ backgroundColor: RATING_COLORS[currentRating - 1] }}
             />
-            <span className="text-gray-300">
-              {ENERGY_EMOJIS[currentRating - 1]}
-            </span>
+            <span className="text-gray-300">Level {currentRating}</span>
           </div>
+        </div>
+
+        {/* Rate button positioned lower */}
+        <div className="flex justify-end mt-4">
           <button
             onClick={handleRatingSubmit}
             disabled={ratingMutation.isPending}
-            className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
+            className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
           >
-            {ratingMutation.isPending ? 'Rating...' : 'Rate'}
+            {ratingMutation.isPending ? 'Submitting...' : 'Submit Rating'}
           </button>
         </div>
       </div>
@@ -178,19 +182,11 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         <div className="text-xs text-gray-400 flex items-center gap-2">
           <div className="flex items-center gap-1">
             <span 
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: CHAKRA_COLORS[Math.round(averageRating) - 1] }}
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: getAuraColor(averageRating) }}
             />
-            <span>Avg Level: {Math.round(averageRating)}</span>
+            <span>Average: {averageRating.toFixed(1)} ({totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})</span>
           </div>
-          <span>({totalRatings} rating{totalRatings !== 1 ? 's' : ''})</span>
-        </div>
-      )}
-
-      {/* User's current rating */}
-      {userRating && (
-        <div className="text-xs text-purple-300">
-          Your rating: {ENERGY_EMOJIS[(userRating as any).rating - 1]}
         </div>
       )}
     </div>
