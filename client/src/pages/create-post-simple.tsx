@@ -893,14 +893,14 @@ END:VCALENDAR`;
                   </div>
 
                   <div>
-                    <Label htmlFor="category" className="text-sm">Category</Label>
+                    <Label htmlFor="category" className="text-sm">List</Label>
                     <div className="flex gap-2">
                       <Select
                         value={formData.categoryId}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
                       >
                         <SelectTrigger className="w-40 h-8 text-sm bg-input border-border">
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select list" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
                           {Array.isArray(categories) && categories.map((category: any) => (
@@ -924,11 +924,11 @@ END:VCALENDAR`;
                         </DialogTrigger>
                         <DialogContent className="bg-card border-border">
                           <DialogHeader>
-                            <DialogTitle className="text-foreground">Create New Category</DialogTitle>
+                            <DialogTitle className="text-foreground">Create New List</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label htmlFor="categoryName">Category Name *</Label>
+                              <Label htmlFor="categoryName">List Name *</Label>
                               <Input
                                 id="categoryName"
                                 placeholder="e.g., Christmas, Travel, Recipes"
@@ -941,7 +941,7 @@ END:VCALENDAR`;
                               <Label htmlFor="categoryDescription">Description (Optional)</Label>
                               <Textarea
                                 id="categoryDescription"
-                                placeholder="Describe this category..."
+                                placeholder="Describe this list..."
                                 value={newCategoryDescription}
                                 onChange={(e) => setNewCategoryDescription(e.target.value)}
                                 className="bg-input border-border"
@@ -963,7 +963,7 @@ END:VCALENDAR`;
                                 disabled={!newCategoryName.trim() || mutation.isPending}
                                 className="bg-pinterest-red hover:bg-red-700 text-white"
                               >
-                                {mutation.isPending ? 'Creating...' : 'Create Category'}
+                                {mutation.isPending ? 'Creating...' : 'Create List'}
                               </Button>
                             </div>
                           </div>

@@ -466,6 +466,19 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           {/* Flag and Delete Buttons - Only show in detail view, bottom right */}
           {isDetailView && (
             <div className="flex items-center space-x-2">
+              {/* Delete Button - Only for post owner */}
+              {isAuthenticated && user && post.user.id === user.id && (
+                <Button
+                  onClick={handleDelete}
+                  variant="ghost"
+                  size="sm"
+                  disabled={deleteMutation.isPending}
+                  className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+
               {/* Flag Button - Only for posts by other users */}
               {isAuthenticated && post.user.id !== user?.id && (
                 <Dialog>
