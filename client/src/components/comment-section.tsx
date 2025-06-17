@@ -312,19 +312,19 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
   if (isLoading) {
     return (
-      <Card className="bg-white rounded-2xl pinterest-shadow overflow-hidden">
+      <Card className="bg-black rounded-2xl border-gray-800 overflow-hidden">
         <CardHeader>
-          <CardTitle>Comments</CardTitle>
+          <CardTitle className="text-white">Comments</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-black">
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex space-x-3 animate-pulse">
-                <div className="w-10 h-10 bg-gray-200 rounded-full" />
+                <div className="w-10 h-10 bg-gray-800 rounded-full" />
                 <div className="flex-1">
-                  <div className="bg-gray-200 rounded-lg p-4">
-                    <div className="h-4 bg-gray-300 rounded w-1/4 mb-2" />
-                    <div className="h-4 bg-gray-300 rounded w-3/4" />
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <div className="h-4 bg-gray-700 rounded w-1/4 mb-2" />
+                    <div className="h-4 bg-gray-700 rounded w-3/4" />
                   </div>
                 </div>
               </div>
@@ -336,28 +336,28 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   }
 
   return (
-    <Card className="bg-white rounded-2xl pinterest-shadow overflow-hidden">
-      <CardHeader className="border-b border-gray-100">
-        <CardTitle className="text-xl font-semibold text-gray-900">
+    <Card className="bg-black rounded-2xl border-gray-800 overflow-hidden">
+      <CardHeader className="border-b border-gray-800 bg-black">
+        <CardTitle className="text-xl font-semibold text-white">
           Comments {comments && comments.length > 0 && `(${comments.length})`}
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="p-6 border-b border-gray-100">
+      <CardContent className="p-6 border-b border-gray-800 bg-black">
         <CommentForm postId={postId} />
       </CardContent>
 
-      <CardContent className="p-0">
+      <CardContent className="p-0 bg-black">
         {comments && comments.length > 0 ? (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-800">
             {comments.map((comment) => (
-              <div key={comment.id} className="p-6">
+              <div key={comment.id} className="p-6 bg-black">
                 <CommentThread comment={comment} postId={postId} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-6 text-center text-pinterest-gray">
+          <div className="p-6 text-center text-gray-400 bg-black">
             <p>No comments yet. Be the first to share your thoughts!</p>
           </div>
         )}

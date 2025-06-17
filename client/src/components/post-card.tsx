@@ -17,6 +17,7 @@ import EventDateOverlay from "@/components/event-date-overlay";
 import EventRsvp from "@/components/event-rsvp-simple";
 import EnergyRating from "@/components/energy-rating";
 import AuricField from "@/components/auric-field";
+import AuricPhotoBorder from "@/components/auric-photo-border";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -275,19 +276,23 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       {/* Primary Photo */}
       <div className="relative">
         {isDetailView ? (
-          <ImageGallery 
-            post={post} 
-            selectedImage={selectedImage} 
-            onImageChange={setSelectedImage} 
-          />
-        ) : (
-          <Link href={`/post/${post.id}`}>
-            <img
-              src={post.primaryPhotoUrl}
-              alt={post.primaryDescription}
-              className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+          <AuricPhotoBorder postId={post.id}>
+            <ImageGallery 
+              post={post} 
+              selectedImage={selectedImage} 
+              onImageChange={setSelectedImage} 
             />
-          </Link>
+          </AuricPhotoBorder>
+        ) : (
+          <AuricPhotoBorder postId={post.id}>
+            <Link href={`/post/${post.id}`}>
+              <img
+                src={post.primaryPhotoUrl}
+                alt={post.primaryDescription}
+                className="w-full h-64 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              />
+            </Link>
+          </AuricPhotoBorder>
         )}
       </div>
 
