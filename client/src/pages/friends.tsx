@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Search, UserPlus, Users, Check, X, Bell, Clock } from "lucide-react";
+import { Search, UserPlus, Users, Check, X, Bell, Clock, UserMinus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,6 +145,28 @@ export default function ConnectionsPage() {
     },
   });
 
+  // Unfollow mutation
+  const unfollowMutation = useMutation({
+    mutationFn: async (friendId: number) => {
+      return apiRequest('DELETE', `/api/friends/${friendId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Connection removed",
+        description: "You are no longer connected.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/search/users', 'all'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to unfollow",
+        description: error.message || "Could not remove connection.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -159,6 +181,10 @@ export default function ConnectionsPage() {
 
   const handleRejectRequest = (requestId: number) => {
     rejectRequestMutation.mutate(requestId);
+  };
+
+  const handleUnfollow = (friendId: number) => {
+    unfollowMutation.mutate(friendId);
   };
 
   if (!isAuthenticated) {
@@ -320,25 +346,40 @@ export default function ConnectionsPage() {
                       {friends.map((friend) => (
                         <div
                           key={friend.id}
-                          className="flex items-center space-x-3 p-4 border rounded-lg"
+                          className="flex items-center justify-between p-4 border rounded-lg"
                         >
-                          <Avatar>
-                            <AvatarImage 
-                              src={friend.profilePictureUrl || undefined} 
-                              alt={friend.name}
-                            />
-                            <AvatarFallback>
-                              {friend.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {friend.name}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              @{friend.username}
-                            </p>
+                          <div className="flex items-center space-x-3">
+                            <Avatar>
+                              <AvatarImage 
+                                src={friend.profilePictureUrl || undefined} 
+                                alt={friend.name}
+                              />
+                              <AvatarFallback>
+                                {friend.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {friend.name}
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                @{friend.username}
+                              </p>
+                              <p className="text-xs text-green-600 dark:text-green-400">
+                                Following
+                              </p>
+                            </div>
                           </div>
+                          <Button
+                            onClick={() => handleUnfollow(friend.id)}
+                            disabled={unfollowMutation.isPending}
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                            Unfollow
+                          </Button>
                         </div>
                       ))}
                     </div>

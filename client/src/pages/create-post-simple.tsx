@@ -158,7 +158,7 @@ export default function CreatePostPage() {
         credentials: 'include',
         body: JSON.stringify({
           name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || null
+          description: newCategoryDescription.trim() || ""
         })
       });
       
