@@ -324,7 +324,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
   return (
     <AuricField postId={post.id}>
-      <div className="bg-black overflow-hidden transition-all duration-300">
+      <div className="bg-black overflow-hidden transition-all duration-300 relative">
       {/* Post Header */}
       <div className={`${isDetailView ? 'p-6' : 'p-4'} bg-black`}>
         <div className="flex items-center justify-between">
@@ -864,6 +864,90 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* RSVP Component - Only show in detail view for events */}
       {isDetailView && post.isEvent && <EventRsvp post={post} />}
+
+      {/* Flag and Delete Buttons - Positioned at bottom right of expanded posts */}
+      {isDetailView && (
+        <div className="absolute bottom-4 right-4 flex items-center space-x-2">
+          {/* Delete Button - Only for post owner */}
+          {isAuthenticated && user && post.user.id === user.id && (
+            <Button
+              onClick={handleDelete}
+              variant="ghost"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              className="text-gray-400 hover:text-red-400 hover:bg-gray-700 bg-black/50 backdrop-blur-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+
+          {/* Flag Button - Only for posts by other users */}
+          {isAuthenticated && post.user.id !== user?.id && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-red-400 hover:bg-gray-700 bg-black/50 backdrop-blur-sm"
+                >
+                  <Flag className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-gray-800 border-gray-700">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Report Post</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Reason for reporting
+                    </label>
+                    <Select value={reportReason} onValueChange={setReportReason}>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue placeholder="Select a reason" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-700 border-gray-600">
+                        <SelectItem value="spam">Spam</SelectItem>
+                        <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                        <SelectItem value="harassment">Harassment</SelectItem>
+                        <SelectItem value="fake">Fake or misleading</SelectItem>
+                        <SelectItem value="copyright">Copyright violation</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Additional details (optional)
+                    </label>
+                    <Textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      placeholder="Provide more details about the issue..."
+                      className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2">
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="bg-gray-600 border-gray-500 text-white hover:bg-gray-500">
+                        Cancel
+                      </Button>
+                    </DialogTrigger>
+                    <Button
+                      onClick={handleReport}
+                      disabled={reportMutation.isPending}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Submit Report
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      )}
       </div>
     </AuricField>
   );

@@ -410,7 +410,7 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleTagFriends}>
             <Users className="h-4 w-4 mr-2" />
-            Tag Friends
+            Tag Connections
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleRepost}>
             <Repeat2 className="h-4 w-4 mr-2" />
@@ -418,7 +418,7 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleSave}>
             <Bookmark className="h-4 w-4 mr-2" />
-            Save
+            Save to List
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleFlag} className="text-red-600">
             <Flag className="h-4 w-4 mr-2" />
