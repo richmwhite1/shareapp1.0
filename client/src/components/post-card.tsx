@@ -14,7 +14,7 @@ import { useState } from "react";
 import type { PostWithUser } from "@shared/schema";
 import ImageGallery from "@/components/image-gallery";
 import EventDateOverlay from "@/components/event-date-overlay";
-import EventRsvp from "@/components/event-rsvp";
+import EventRsvp from "@/components/event-rsvp-simple";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -423,11 +423,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   <div className="mt-3">
                     <h4 className="text-sm font-medium text-purple-300 mb-2">Event Tasks:</h4>
                     <div className="space-y-1">
-                      {post.taskList.map((task: any) => (
-                        <div key={task.id} className="flex items-center gap-2 text-sm">
+                      {(post.taskList as any[]).map((task: any, index: number) => (
+                        <div key={task.id || index} className="flex items-center gap-2 text-sm">
                           <div className={`w-2 h-2 rounded-full ${task.completed ? 'bg-green-500' : 'bg-gray-500'}`}></div>
                           <span className={task.completed ? 'line-through text-gray-400' : 'text-gray-300'}>
-                            {task.text}
+                            {task.text || task.task || 'Task item'}
                           </span>
                         </div>
                       ))}

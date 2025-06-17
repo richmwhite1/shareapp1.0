@@ -1320,7 +1320,7 @@ END:VCALENDAR`;
                             value={newTaskText}
                             onChange={(e) => setNewTaskText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
-                            className="focus:ring-2 focus:ring-purple-500 bg-black text-white border-purple-300 placeholder:text-gray-400"
+                            className="focus:ring-2 focus:ring-purple-500 bg-black text-white border-purple-300 placeholder:text-gray-400 dark:bg-black dark:text-white dark:border-purple-300"
                           />
                           <Button
                             type="button"
