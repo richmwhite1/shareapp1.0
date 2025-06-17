@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth.tsx";
 import PostCard from "@/components/post-card";
-import Header from "@/components/header-simple";
+
 import { Link, useLocation } from "wouter";
 
 export default function SearchPage() {
@@ -175,7 +175,6 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Hashtag Input */}
         <Card className="mb-8">

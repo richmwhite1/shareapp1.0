@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth.tsx";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
-import Header from "@/components/header-simple";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -134,8 +134,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="mb-8">
