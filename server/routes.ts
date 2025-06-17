@@ -1770,6 +1770,182 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // View tracking routes
+  app.post('/api/posts/:id/view', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { viewType, viewDuration } = req.body;
+      await storage.trackView(postId, req.user.userId, viewType, viewDuration);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/views', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const viewCount = await storage.getPostViews(postId);
+      res.json({ viewCount });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Save post routes
+  app.post('/api/posts/:id/save', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { categoryId } = req.body;
+      await storage.savePost(postId, req.user.userId, categoryId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/posts/:id/save', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.unsavePost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/saved', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const isSaved = await storage.isSaved(postId, req.user.userId);
+      res.json({ isSaved });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/saved-posts', authenticateToken, async (req: any, res) => {
+    try {
+      const categoryId = req.query.categoryId ? parseInt(req.query.categoryId as string) : undefined;
+      const savedPosts = await storage.getSavedPosts(req.user.userId, categoryId);
+      res.json(savedPosts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Repost routes
+  app.post('/api/posts/:id/repost', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.repost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/posts/:id/repost', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.unrepost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/reposted', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const isReposted = await storage.isReposted(postId, req.user.userId);
+      res.json({ isReposted });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/reposts', authenticateToken, async (req: any, res) => {
+    try {
+      const reposts = await storage.getReposts(req.user.userId);
+      res.json(reposts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Flag routes
+  app.post('/api/posts/:id/flag', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { reason } = req.body;
+      await storage.flagPost(postId, req.user.userId, reason);
+      
+      // Check if post should be auto-deleted
+      const wasDeleted = await storage.checkAutoDelete(postId);
+      
+      res.json({ success: true, wasDeleted });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/posts/:id/flag', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.unflagPost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/posts/:id/flags', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const flagCount = await storage.getPostFlags(postId);
+      res.json({ flagCount });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Tag friends routes
+  app.post('/api/posts/:id/tag', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { userIds } = req.body;
+      
+      if (!Array.isArray(userIds)) {
+        return res.status(400).json({ message: 'userIds must be an array' });
+      }
+      
+      await storage.tagFriendsToPost(postId, req.user.userId, userIds);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/shared-with-me', authenticateToken, async (req: any, res) => {
+    try {
+      const sharedPosts = await storage.getSharedWithMePosts(req.user.userId);
+      res.json(sharedPosts);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/tag/viewed', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.markTaggedPostViewed(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

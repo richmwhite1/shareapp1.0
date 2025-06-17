@@ -1,11 +1,13 @@
 import { 
   users, posts, comments, categories, postLikes, postShares, friendships, friendRequests, hashtags, 
   postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows, rsvps,
+  postViews, savedPosts, reposts, postFlags, taggedPosts,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
   type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
   type Notification, type CreateNotificationData, type Report, type CreateReportData,
-  type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp
+  type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp,
+  type PostView, type SavedPost, type Repost, type PostFlag, type TaggedPost, type PostWithStats
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, or, inArray, sql, like, gt } from "drizzle-orm";
@@ -1252,6 +1254,243 @@ export class DatabaseStorage implements IStorage {
       user: r.user as User,
       createdAt: r.createdAt,
     }));
+  }
+
+  // View tracking methods
+  async trackView(postId: number, userId: number | null, viewType: string, viewDuration?: number): Promise<void> {
+    await db.insert(postViews).values({
+      postId,
+      userId,
+      viewType,
+      viewDuration,
+    });
+  }
+
+  async getPostViews(postId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(postViews)
+      .where(eq(postViews.postId, postId));
+    
+    return result?.count || 0;
+  }
+
+  // Save post methods
+  async savePost(postId: number, userId: number, categoryId: number): Promise<void> {
+    await db.insert(savedPosts).values({
+      postId,
+      userId,
+      categoryId,
+    });
+  }
+
+  async unsavePost(postId: number, userId: number): Promise<void> {
+    await db.delete(savedPosts).where(
+      and(eq(savedPosts.postId, postId), eq(savedPosts.userId, userId))
+    );
+  }
+
+  async getSavedPosts(userId: number, categoryId?: number): Promise<PostWithUser[]> {
+    let whereCondition = eq(savedPosts.userId, userId);
+    
+    if (categoryId) {
+      whereCondition = and(eq(savedPosts.userId, userId), eq(savedPosts.categoryId, categoryId));
+    }
+
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        category: {
+          id: categories.id,
+          name: categories.name,
+        },
+      })
+      .from(savedPosts)
+      .innerJoin(posts, eq(savedPosts.postId, posts.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(whereCondition)
+      .orderBy(desc(savedPosts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
+      category: r.category as Pick<Category, 'id' | 'name'> | undefined,
+      additionalPhotoData: r.post.additionalPhotoData ? JSON.parse(r.post.additionalPhotoData as string) : undefined,
+    }));
+  }
+
+  async isSaved(postId: number, userId: number): Promise<boolean> {
+    const [result] = await db
+      .select({ id: savedPosts.id })
+      .from(savedPosts)
+      .where(and(eq(savedPosts.postId, postId), eq(savedPosts.userId, userId)))
+      .limit(1);
+    
+    return !!result;
+  }
+
+  // Repost methods
+  async repost(postId: number, userId: number): Promise<void> {
+    await db.insert(reposts).values({
+      originalPostId: postId,
+      userId,
+    });
+  }
+
+  async unrepost(postId: number, userId: number): Promise<void> {
+    await db.delete(reposts).where(
+      and(eq(reposts.originalPostId, postId), eq(reposts.userId, userId))
+    );
+  }
+
+  async getReposts(userId: number): Promise<PostWithStats[]> {
+    const result = await db
+      .select({
+        repost: reposts,
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        category: {
+          id: categories.id,
+          name: categories.name,
+        },
+      })
+      .from(reposts)
+      .innerJoin(posts, eq(reposts.originalPostId, posts.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(reposts.userId, userId))
+      .orderBy(desc(reposts.createdAt));
+
+    const postsWithViews = await Promise.all(
+      result.map(async (r) => {
+        const viewCount = await this.getPostViews(r.post.id);
+        const currentUser = await this.getUser(userId);
+        return {
+          ...r.post,
+          user: r.user as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
+          category: r.category as Pick<Category, 'id' | 'name'> | undefined,
+          additionalPhotoData: r.post.additionalPhotoData ? JSON.parse(r.post.additionalPhotoData as string) : undefined,
+          viewCount,
+          isRepost: true,
+          repostUser: currentUser ? {
+            id: currentUser.id,
+            username: currentUser.username,
+            name: currentUser.name,
+            profilePictureUrl: currentUser.profilePictureUrl
+          } : undefined,
+        };
+      })
+    );
+
+    return postsWithViews;
+  }
+
+  async isReposted(postId: number, userId: number): Promise<boolean> {
+    const [result] = await db
+      .select({ id: reposts.id })
+      .from(reposts)
+      .where(and(eq(reposts.originalPostId, postId), eq(reposts.userId, userId)))
+      .limit(1);
+    
+    return !!result;
+  }
+
+  // Flag methods
+  async flagPost(postId: number, userId: number, reason?: string): Promise<void> {
+    await db.insert(postFlags).values({
+      postId,
+      userId,
+      reason,
+    });
+  }
+
+  async unflagPost(postId: number, userId: number): Promise<void> {
+    await db.delete(postFlags).where(
+      and(eq(postFlags.postId, postId), eq(postFlags.userId, userId))
+    );
+  }
+
+  async getPostFlags(postId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(postFlags)
+      .where(eq(postFlags.postId, postId));
+    
+    return result?.count || 0;
+  }
+
+  async checkAutoDelete(postId: number): Promise<boolean> {
+    const flagCount = await this.getPostFlags(postId);
+    if (flagCount >= 2) {
+      await this.deletePost(postId);
+      return true;
+    }
+    return false;
+  }
+
+  // Tag methods
+  async tagFriendsToPost(postId: number, fromUserId: number, toUserIds: number[]): Promise<void> {
+    const values = toUserIds.map(toUserId => ({
+      postId,
+      fromUserId,
+      toUserId,
+    }));
+    
+    if (values.length > 0) {
+      await db.insert(taggedPosts).values(values);
+    }
+  }
+
+  async getTaggedPosts(userId: number): Promise<PostWithUser[]> {
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        category: {
+          id: categories.id,
+          name: categories.name,
+        },
+      })
+      .from(taggedPosts)
+      .innerJoin(posts, eq(taggedPosts.postId, posts.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(taggedPosts.toUserId, userId))
+      .orderBy(desc(taggedPosts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
+      category: r.category as Pick<Category, 'id' | 'name'> | undefined,
+    }));
+  }
+
+  async getSharedWithMePosts(userId: number): Promise<PostWithUser[]> {
+    return this.getTaggedPosts(userId);
+  }
+
+  async markTaggedPostViewed(postId: number, userId: number): Promise<void> {
+    await db
+      .update(taggedPosts)
+      .set({ isViewed: true })
+      .where(and(eq(taggedPosts.postId, postId), eq(taggedPosts.toUserId, userId)));
   }
 }
 
