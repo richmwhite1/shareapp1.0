@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Users, ChevronRight } from "lucide-react";
+import { Users, ChevronRight, Share } from "lucide-react";
 import { getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth.tsx";
 import type { User } from "@shared/schema";
 
 interface FriendsStoriesBarProps {
-  onSelectFeed: (type: 'public' | 'friend', friendId?: number) => void;
+  onSelectFeed: (type: 'public' | 'friend' | 'shared', friendId?: number) => void;
   activeFeed: string;
   currentFriendIndex: number;
   onNextFriend: () => void;
@@ -40,6 +40,10 @@ export default function FriendsStoriesBar({
     onSelectFeed('public');
   };
 
+  const handleSharedClick = () => {
+    onSelectFeed('shared');
+  };
+
   const handleFriendClick = (friendId: number, index: number) => {
     onSelectFeed('friend', friendId);
   };
@@ -58,6 +62,21 @@ export default function FriendsStoriesBar({
         </div>
         <span className="text-xs text-gray-400 text-center">Public</span>
       </div>
+
+      {/* Shared with You Button */}
+      {isAuthenticated && (
+        <div className="flex flex-col items-center space-y-1 flex-shrink-0">
+          <div
+            className={`w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center cursor-pointer transition-all ${
+              activeFeed === 'shared' ? 'ring-2 ring-white scale-110' : 'hover:scale-105'
+            }`}
+            onClick={handleSharedClick}
+          >
+            <Share className="text-white w-6 h-6" />
+          </div>
+          <span className="text-xs text-gray-400 text-center">Shared</span>
+        </div>
+      )}
 
       {/* Friends with Recent Posts */}
       {friendsWithRecentPosts.map((friendWithPosts, index) => (
@@ -106,7 +125,7 @@ export default function FriendsStoriesBar({
         </Button>
       )}
 
-      {/* Friends Management Link */}
+      {/* Connections Management Link */}
       {isAuthenticated && (
         <div className="flex flex-col items-center space-y-1 flex-shrink-0 ml-4">
           <Button
@@ -114,13 +133,13 @@ export default function FriendsStoriesBar({
             size="sm"
             className="w-16 h-16 rounded-full border-2 border-dashed border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300"
             onClick={() => {
-              // Navigate to friends management - we'll implement this
+              // Navigate to connections management
               window.location.href = '/friends';
             }}
           >
             <Users className="w-6 h-6" />
           </Button>
-          <span className="text-xs text-gray-400 text-center">Friends</span>
+          <span className="text-xs text-gray-400 text-center">Connections</span>
         </div>
       )}
     </div>

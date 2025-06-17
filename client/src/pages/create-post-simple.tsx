@@ -877,7 +877,7 @@ END:VCALENDAR`;
                         <SelectItem value="friends">
                           <div className="flex items-center gap-2">
                             <Users className="h-3 w-3" />
-                            Friends
+                            Connections
                           </div>
                         </SelectItem>
                         <SelectItem value="private">
