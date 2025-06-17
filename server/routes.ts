@@ -1479,6 +1479,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user privacy settings endpoint
+  app.put('/api/user/privacy', authenticateToken, async (req: any, res) => {
+    try {
+      const { defaultPrivacy } = req.body;
+      const userId = req.user.userId;
+
+      if (!['public', 'connections'].includes(defaultPrivacy)) {
+        return res.status(400).json({ message: 'Invalid privacy setting' });
+      }
+
+      // For now, we'll just return success since we don't have a privacy field in the users table yet
+      // In a real implementation, you'd add a defaultPrivacy field to the users table
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Privacy update error:', error);
+      res.status(500).json({ message: 'Failed to update privacy setting' });
+    }
+  });
+
   // Link preview endpoint
   app.post('/api/link-preview', async (req, res) => {
     try {

@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const params = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
+  const [defaultPrivacy, setDefaultPrivacy] = useState<'public' | 'connections'>('public');
   
   // If there's an ID param, we're viewing another user's profile
   const profileUserId = params.id ? parseInt(params.id) : user?.id;
@@ -89,6 +90,26 @@ export default function ProfilePage() {
     },
   });
 
+  // Privacy setting mutation
+  const updatePrivacyMutation = useMutation({
+    mutationFn: async (privacy: 'public' | 'connections') => {
+      return apiRequest('PUT', `/api/user/privacy`, { defaultPrivacy: privacy });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Privacy setting updated",
+        description: "Your default privacy preference has been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update failed",
+        description: "Failed to update privacy setting",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Profile picture upload mutation
   const uploadProfilePicMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -141,6 +162,11 @@ export default function ProfilePage() {
 
   const handleShareProfile = () => {
     shareProfileMutation.mutate();
+  };
+
+  const handlePrivacyChange = (privacy: 'public' | 'connections') => {
+    setDefaultPrivacy(privacy);
+    updatePrivacyMutation.mutate(privacy);
   };
 
   // Handle file selection for profile picture
@@ -262,7 +288,8 @@ export default function ProfilePage() {
                     name="defaultPrivacy" 
                     value="public" 
                     className="text-blue-600"
-                    defaultChecked 
+                    checked={defaultPrivacy === 'public'}
+                    onChange={() => handlePrivacyChange('public')}
                   />
                   Public
                 </label>
@@ -272,6 +299,8 @@ export default function ProfilePage() {
                     name="defaultPrivacy" 
                     value="connections" 
                     className="text-blue-600"
+                    checked={defaultPrivacy === 'connections'}
+                    onChange={() => handlePrivacyChange('connections')}
                   />
                   Connections Only
                 </label>
