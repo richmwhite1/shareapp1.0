@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Users, ChevronRight, Share } from "lucide-react";
 import { getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth.tsx";
+import AuricField from "@/components/auric-field";
 import type { User } from "@shared/schema";
 
 interface FriendsStoriesBarProps {
@@ -94,15 +95,17 @@ export default function FriendsStoriesBar({
                 : 'bg-gradient-to-tr from-pinterest-red to-red-600'
             }`}>
               <div className="w-full h-full rounded-full bg-black p-0.5">
-                <Avatar className="w-full h-full">
-                  <AvatarImage 
-                    src={friendWithPosts.user.profilePictureUrl || undefined} 
-                    alt={friendWithPosts.user.name}
-                  />
-                  <AvatarFallback className="bg-gray-700 text-white">
-                    {friendWithPosts.user.name?.charAt(0) || friendWithPosts.user.username.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+                <AuricField profileId={friendWithPosts.user.id} intensity={0.3}>
+                  <Avatar className="w-full h-full">
+                    <AvatarImage 
+                      src={friendWithPosts.user.profilePictureUrl || undefined} 
+                      alt={friendWithPosts.user.name}
+                    />
+                    <AvatarFallback className="bg-gray-700 text-white">
+                      {friendWithPosts.user.name?.charAt(0) || friendWithPosts.user.username.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                </AuricField>
               </div>
             </div>
           </div>

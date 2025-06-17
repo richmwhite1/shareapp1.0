@@ -329,12 +329,14 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         <div className="flex items-center justify-between">
           <Link href={`/profile/${post.user.id}`}>
             <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
-              <Avatar className={isDetailView ? 'w-12 h-12' : 'w-10 h-10'}>
-                <AvatarImage src={post.user.profilePictureUrl || undefined} />
-                <AvatarFallback className="bg-gray-600 text-white">
-                  {post.user.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <AuricField profileId={post.user.id} intensity={0.3}>
+                <Avatar className={isDetailView ? 'w-12 h-12' : 'w-10 h-10'}>
+                  <AvatarImage src={post.user.profilePictureUrl || undefined} />
+                  <AvatarFallback className="bg-gray-600 text-white">
+                    {post.user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </AuricField>
               <div>
                 <h3 className={`font-semibold text-white hover:text-yellow-400 transition-colors ${isDetailView ? 'text-base' : 'text-sm'}`}>
                   {post.user.name}

@@ -376,15 +376,17 @@ export default function ConnectionsPage() {
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
-                            <Avatar>
-                              <AvatarImage 
-                                src={friend.profilePictureUrl || undefined} 
-                                alt={friend.name}
-                              />
-                              <AvatarFallback>
-                                {friend.name.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
+                            <AuricField profileId={friend.id} intensity={0.2}>
+                              <Avatar>
+                                <AvatarImage 
+                                  src={friend.profilePictureUrl || undefined} 
+                                  alt={friend.name}
+                                />
+                                <AvatarFallback>
+                                  {friend.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </AuricField>
                             <div>
                               <p className="font-medium text-gray-900 dark:text-white">
                                 {friend.name}
