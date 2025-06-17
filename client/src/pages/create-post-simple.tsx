@@ -330,6 +330,83 @@ END:VCALENDAR`;
     }
   };
 
+  // Metadata fetching function
+  const fetchLinkMetadata = async (url: string, type: 'primary' | 'spotify' | 'youtube') => {
+    if (!url.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/link-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ url: url.trim() })
+      });
+      
+      if (response.ok) {
+        const metadata = await response.json();
+        
+        // For Spotify, we get the album cover on first try
+        if (type === 'spotify' && metadata.image) {
+          const response = await fetch(metadata.image);
+          const blob = await response.blob();
+          const file = new File([blob], 'spotify-cover.jpg', { type: 'image/jpeg' });
+          const processedFile = await processImageFile(file);
+          setPrimaryPhoto(processedFile);
+          setPrimaryPhotoPreview(metadata.image);
+        }
+        
+        // For YouTube, get thumbnail on first try
+        else if (type === 'youtube' && metadata.image) {
+          const response = await fetch(metadata.image);
+          const blob = await response.blob();
+          const file = new File([blob], 'youtube-thumbnail.jpg', { type: 'image/jpeg' });
+          const processedFile = await processImageFile(file);
+          setPrimaryPhoto(processedFile);
+          setPrimaryPhotoPreview(metadata.image);
+        }
+        
+        // For general links, cycle through available images
+        else if (type === 'primary' && metadata.images && metadata.images.length > 0) {
+          const currentImageIndex = primaryPhoto ? 
+            (metadata.images.findIndex((img: string) => img === primaryPhotoPreview) + 1) % metadata.images.length 
+            : 0;
+          const imageUrl = metadata.images[currentImageIndex];
+          
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'fetched-image.jpg', { type: 'image/jpeg' });
+          const processedFile = await processImageFile(file);
+          setPrimaryPhoto(processedFile);
+          setPrimaryPhotoPreview(imageUrl);
+        }
+        
+        // Update description if available and empty
+        if (metadata.title && !formData.primaryDescription.trim()) {
+          setFormData(prev => ({ 
+            ...prev, 
+            primaryDescription: metadata.description || metadata.title 
+          }));
+        }
+        
+        toast({
+          title: "Success",
+          description: "Link metadata fetched successfully!"
+        });
+      } else {
+        throw new Error('Failed to fetch link metadata');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch link metadata. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Privacy and friend functions
   const handlePrivacyChange = (privacy: 'public' | 'friends' | 'private') => {
     setFormData(prev => ({ ...prev, privacy }));
@@ -498,6 +575,16 @@ END:VCALENDAR`;
       return;
     }
 
+    // Ensure at least one link is provided
+    if (!formData.primaryLink.trim() && !formData.spotifyUrl.trim() && !formData.youtubeUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide at least one link (general, Spotify, or YouTube)",
+        variant: "destructive"
+      });
+      return;
+    }
+
     mutation.mutate(formData);
   };
 
@@ -578,16 +665,28 @@ END:VCALENDAR`;
                 <p className="text-xs text-muted-foreground mb-2">
                   Share a website, article, or any link related to your post
                 </p>
-                <div className="relative">
-                  <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="primaryLink"
-                    type="url"
-                    placeholder="https://example.com"
-                    value={formData.primaryLink}
-                    onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
-                    className="pl-10 bg-input border-border"
-                  />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="primaryLink"
+                      type="url"
+                      placeholder="https://example.com"
+                      value={formData.primaryLink}
+                      onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
+                      className="pl-10 bg-input border-border"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchLinkMetadata(formData.primaryLink, 'primary')}
+                    disabled={!formData.primaryLink.trim() || isLoading}
+                    className="px-3"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
@@ -598,18 +697,30 @@ END:VCALENDAR`;
                   <p className="text-xs text-muted-foreground mb-2">
                     Share a Spotify track, album, or playlist
                   </p>
-                  <div className="relative">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                        <Download className="h-2 w-2 text-white" />
+                      </div>
+                      <Input
+                        id="spotifyUrl"
+                        type="url"
+                        placeholder="https://open.spotify.com/..."
+                        value={formData.spotifyUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                        className="pl-10 bg-input border-border"
+                      />
                     </div>
-                    <Input
-                      id="spotifyUrl"
-                      type="url"
-                      placeholder="https://open.spotify.com/..."
-                      value={formData.spotifyUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchLinkMetadata(formData.spotifyUrl, 'spotify')}
+                      disabled={!formData.spotifyUrl.trim() || isLoading}
+                      className="px-3"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
 
@@ -618,18 +729,30 @@ END:VCALENDAR`;
                   <p className="text-xs text-muted-foreground mb-2">
                     Share a YouTube video or music
                   </p>
-                  <div className="relative">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+                        <Download className="h-2 w-2 text-white" />
+                      </div>
+                      <Input
+                        id="youtubeUrl"
+                        type="url"
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={formData.youtubeUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                        className="pl-10 bg-input border-border"
+                      />
                     </div>
-                    <Input
-                      id="youtubeUrl"
-                      type="url"
-                      placeholder="https://youtube.com/watch?v=..."
-                      value={formData.youtubeUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchLinkMetadata(formData.youtubeUrl, 'youtube')}
+                      disabled={!formData.youtubeUrl.trim() || isLoading}
+                      className="px-3"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -57,6 +57,49 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           <div className="absolute top-3 left-3 bg-purple-600/90 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 backdrop-blur-sm">
             <Calendar className="w-3 h-3" />
             <span>{new Date(post.eventDate).toLocaleDateString()}</span>
+          </div>
+        )}
+
+        {/* Play buttons for YouTube and Spotify - center of image */}
+        {(post.youtubeUrl || post.spotifyUrl) && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            {post.youtubeUrl && (
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-red-600/90 hover:bg-red-700 text-white border-0 backdrop-blur-sm mr-2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Extract YouTube video ID and open in embedded player
+                  const videoId = post.youtubeUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                  if (videoId) {
+                    window.open(`https://www.youtube.com/embed/${videoId}?autoplay=1`, '_blank');
+                  } else {
+                    window.open(post.youtubeUrl, '_blank');
+                  }
+                }}
+              >
+                <Play className="w-6 h-6 mr-2" />
+                Play Video
+              </Button>
+            )}
+            {post.spotifyUrl && (
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-green-600/90 hover:bg-green-700 text-white border-0 backdrop-blur-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Open Spotify link
+                  window.open(post.spotifyUrl, '_blank');
+                }}
+              >
+                <Play className="w-6 h-6 mr-2" />
+                Play on Spotify
+              </Button>
+            )}
           </div>
         )}
         
