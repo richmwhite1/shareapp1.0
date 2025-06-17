@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   profilePictureUrl: text("profile_picture_url"),
   defaultPrivacy: text("default_privacy").notNull().default("public"), // public, connections
-  auraRating: integer("aura_rating").default(4), // User's average aura rating (1-7 chakra scale)
+  auraRating: numeric("aura_rating", { precision: 3, scale: 2 }).default("4.00"), // User's average aura rating (1-7 scale)
   ratingCount: integer("rating_count").default(0), // Number of ratings received
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

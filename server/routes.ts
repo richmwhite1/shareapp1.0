@@ -1557,7 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const currentRating = userResult.auraRating || 4;
+      const currentRating = parseFloat((userResult.auraRating || "4.0").toString());
       const currentCount = userResult.ratingCount || 0;
       
       // Calculate new weighted average rating (keep as decimal for accuracy)
@@ -1567,7 +1567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user's aura rating
       await db.update(users)
         .set({ 
-          auraRating: newRating,
+          auraRating: newRating.toFixed(2),
           ratingCount: newCount
         })
         .where(eq(users.id, profileId));
@@ -1614,7 +1614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        average: userResult.auraRating || 4, 
+        average: parseFloat((userResult.auraRating || "4.0").toString()), 
         count: userResult.ratingCount || 0 
       });
     } catch (error) {
