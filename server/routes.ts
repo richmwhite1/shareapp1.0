@@ -13,7 +13,29 @@ import {
   type AdditionalPhotoData, users
 } from "@shared/schema";
 import { db } from "./db";
-import { or, like, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg } from 'drizzle-orm';
+import { 
+  posts, 
+  users, 
+  categories, 
+  comments, 
+  postLikes, 
+  postShares, 
+  postEnergyRatings,
+  profileEnergyRatings,
+  friendships, 
+  friendRequests, 
+  hashtags, 
+  postHashtags, 
+  postTags, 
+  commentTags,
+  commentHashtags,
+  notifications,
+  reports,
+  hashtagFollows,
+  rsvps,
+  blacklist
+} from '@shared/schema';
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const upload = multer({ 
@@ -1303,6 +1325,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       console.error('Toggle task error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Energy Rating Routes
+  
+  // Submit energy rating for a post
+  app.post('/api/posts/:id/energy', authenticateToken, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { rating } = req.body;
+      const userId = req.user!.id;
+
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
+      }
+
+      // Check if user already rated this post
+      const existingRating = await db.select()
+        .from(postEnergyRatings)
+        .where(and(
+          eq(postEnergyRatings.postId, postId),
+          eq(postEnergyRatings.userId, userId)
+        ))
+        .limit(1);
+
+      if (existingRating.length > 0) {
+        // Update existing rating
+        await db.update(postEnergyRatings)
+          .set({ rating, updatedAt: new Date() })
+          .where(and(
+            eq(postEnergyRatings.postId, postId),
+            eq(postEnergyRatings.userId, userId)
+          ));
+      } else {
+        // Create new rating
+        await db.insert(postEnergyRatings).values({
+          postId,
+          userId,
+          rating,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's energy rating for a post
+  app.get('/api/posts/:id/energy/user', requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.user!.id;
+
+      const rating = await db.select()
+        .from(postEnergyRatings)
+        .where(and(
+          eq(postEnergyRatings.postId, postId),
+          eq(postEnergyRatings.userId, userId)
+        ))
+        .limit(1);
+
+      res.json(rating[0] || null);
+    } catch (error) {
+      console.error('Get user energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get energy rating stats for a post
+  app.get('/api/posts/:id/energy/stats', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+
+      const stats = await db.select({
+        average: avg(postEnergyRatings.rating),
+        count: count(postEnergyRatings.id)
+      })
+        .from(postEnergyRatings)
+        .where(eq(postEnergyRatings.postId, postId));
+
+      const result = stats[0];
+      res.json({
+        average: result.average ? parseFloat(result.average.toString()) : 0,
+        count: result.count || 0
+      });
+    } catch (error) {
+      console.error('Get energy stats error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Submit energy rating for a profile
+  app.post('/api/profiles/:id/energy', requireAuth, async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+      const { rating } = req.body;
+      const userId = req.user!.id;
+
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
+      }
+
+      // Prevent self-rating
+      if (profileId === userId) {
+        return res.status(400).json({ message: 'Cannot rate your own profile' });
+      }
+
+      // Check if user already rated this profile
+      const existingRating = await db.select()
+        .from(profileEnergyRatings)
+        .where(and(
+          eq(profileEnergyRatings.profileId, profileId),
+          eq(profileEnergyRatings.raterId, userId)
+        ))
+        .limit(1);
+
+      if (existingRating.length > 0) {
+        // Update existing rating
+        await db.update(profileEnergyRatings)
+          .set({ rating, updatedAt: new Date() })
+          .where(and(
+            eq(profileEnergyRatings.profileId, profileId),
+            eq(profileEnergyRatings.raterId, userId)
+          ));
+      } else {
+        // Create new rating
+        await db.insert(profileEnergyRatings).values({
+          profileId,
+          raterId: userId,
+          rating,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Profile energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's energy rating for a profile
+  app.get('/api/profiles/:id/energy/user', requireAuth, async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+      const userId = req.user!.id;
+
+      const rating = await db.select()
+        .from(profileEnergyRatings)
+        .where(and(
+          eq(profileEnergyRatings.profileId, profileId),
+          eq(profileEnergyRatings.raterId, userId)
+        ))
+        .limit(1);
+
+      res.json(rating[0] || null);
+    } catch (error) {
+      console.error('Get user profile energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get energy rating stats for a profile
+  app.get('/api/profiles/:id/energy/stats', async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+
+      const stats = await db.select({
+        average: avg(profileEnergyRatings.rating),
+        count: count(profileEnergyRatings.id)
+      })
+        .from(profileEnergyRatings)
+        .where(eq(profileEnergyRatings.profileId, profileId));
+
+      const result = stats[0];
+      res.json({
+        average: result.average ? parseFloat(result.average.toString()) : 0,
+        count: result.count || 0
+      });
+    } catch (error) {
+      console.error('Get profile energy stats error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

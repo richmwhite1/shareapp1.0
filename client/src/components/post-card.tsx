@@ -358,6 +358,13 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         </div>
 
+        {/* Energy Rating - Detail view only */}
+        {isDetailView && (
+          <div className="mt-2 pt-2 border-t border-gray-800">
+            <EnergyRating postId={post.id} />
+          </div>
+        )}
+
         {/* Hashtags in feed view */}
         {!isDetailView && post.hashtags && post.hashtags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-gray-800">
