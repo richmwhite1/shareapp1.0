@@ -10,7 +10,7 @@ import {
   type PostView, type SavedPost, type Repost, type PostFlag, type TaggedPost, type PostWithStats
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count, or, inArray, sql, like, gt } from "drizzle-orm";
+import { eq, and, desc, count, or, inArray, sql, like, gt, max, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -61,6 +61,7 @@ export interface IStorage {
   respondToFriendRequest(requestId: number, action: 'accept' | 'reject'): Promise<void>;
   getFriends(userId: number): Promise<UserWithFriends[]>;
   getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>>;
+  getFriendsOrderedByRecentTags(userId: number): Promise<User[]>;
   areFriends(userId: number, friendId: number): Promise<boolean>;
   removeFriend(userId: number, friendId: number): Promise<void>;
 
@@ -961,6 +962,8 @@ export class DatabaseStorage implements IStorage {
       createdAt: r.createdAt
     }));
   }
+
+
 
   async areFriends(userId: number, friendId: number): Promise<boolean> {
     const [friendship] = await db

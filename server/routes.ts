@@ -1198,6 +1198,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get friends ordered by recent tagging activity
+  app.get('/api/friends/recent-tags', authenticateToken, async (req: any, res) => {
+    try {
+      const friends = await storage.getFriendsOrderedByRecentTags(req.user.userId);
+      res.json(friends);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/friend-requests', authenticateToken, async (req: any, res) => {
     try {
       const requests = await storage.getFriendRequests(req.user.userId);
