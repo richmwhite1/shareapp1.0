@@ -1127,8 +1127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Post not found' });
       }
       
-      if (!post.isEvent || !post.allowRsvp) {
-        return res.status(400).json({ message: 'This post does not allow RSVPs' });
+      if (!post.isEvent) {
+        return res.status(400).json({ message: 'This post is not an event' });
       }
 
       // Check if user already has an RSVP
