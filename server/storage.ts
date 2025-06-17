@@ -861,11 +861,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Create notification for the follow
-    await this.createNotification({
-      userId: toUserId,
-      type: "friend_request",
-      fromUserId
-    });
+    try {
+      await this.createNotification({
+        userId: toUserId,
+        type: "friend_request",
+        fromUserId
+      });
+    } catch (notificationError) {
+      console.log('Notification creation failed, but friendship was established:', notificationError);
+      // Don't throw error - the friendship was successfully created
+    }
   }
 
   async respondToFriendRequest(requestId: number, action: 'accept' | 'reject'): Promise<void> {
@@ -1149,7 +1154,9 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    // Remove any message field from notification data
+    const { message, ...notificationData } = notification as any;
+    const [newNotification] = await db.insert(notifications).values(notificationData).returning();
     return newNotification;
   }
 
