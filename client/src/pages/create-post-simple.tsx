@@ -1334,9 +1334,9 @@ END:VCALENDAR`;
                         {taskList.length > 0 && (
                           <div className="space-y-1 max-h-32 overflow-y-auto">
                             {taskList.map((task) => (
-                              <div key={task.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                              <div key={task.id} className="flex items-center gap-2 p-2 bg-black border border-purple-300 rounded">
                                 <CheckSquare className="h-4 w-4 text-purple-600" />
-                                <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                                <span className={`flex-1 text-sm text-white ${task.completed ? 'line-through text-gray-400' : ''}`}>
                                   {task.text}
                                 </span>
                                 <Button

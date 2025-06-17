@@ -4,7 +4,7 @@ import { Check, Clock, X, Users, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth.tsx";
 import type { PostWithUser, User } from "@shared/schema";
 
@@ -21,30 +21,37 @@ export default function EventRsvp({ post }: EventRsvpProps) {
   // Get user's current RSVP status
   const { data: userRsvp } = useQuery({
     queryKey: [`/api/posts/${post.id}/rsvp`],
-    queryFn: getQueryFn,
     enabled: !!user,
   });
 
   // Get RSVP statistics
   const { data: rsvpStats } = useQuery({
     queryKey: [`/api/posts/${post.id}/rsvp/stats`],
-    queryFn: getQueryFn,
   });
 
   // Get participant list for a specific status
   const { data: participants } = useQuery({
     queryKey: [`/api/posts/${post.id}/rsvp/${showParticipants}`],
-    queryFn: getQueryFn,
     enabled: !!showParticipants,
   });
 
   // RSVP mutation
   const rsvpMutation = useMutation({
     mutationFn: async (status: string) => {
-      return apiRequest(`/api/posts/${post.id}/rsvp`, {
+      const response = await fetch(`/api/posts/${post.id}/rsvp`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
         body: JSON.stringify({ status }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update RSVP');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/rsvp`] });

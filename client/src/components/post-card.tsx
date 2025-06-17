@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -288,6 +288,29 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
         )}
       </div>
 
+      {/* Event Date Display in Feed */}
+      {!isDetailView && post.isEvent && post.eventDate && (
+        <div className="px-3 py-2 bg-purple-900/30 border-t border-purple-700">
+          <div className="flex items-center gap-2 text-purple-300 text-sm">
+            <Calendar className="h-4 w-4" />
+            <span>
+              {new Date(post.eventDate).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+              })}
+            </span>
+            {post.isRecurring && (
+              <span className="text-xs bg-purple-600 px-1 py-0.5 rounded">
+                {post.recurringType}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Social Actions Bar */}
       <div className="p-3 bg-black">
         <div className="flex items-center justify-between">
@@ -371,6 +394,48 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <p className="text-gray-300 leading-relaxed mt-3">
               {post.primaryDescription}
             </p>
+
+            {/* Event Date and Details - Detail View */}
+            {post.isEvent && post.eventDate && (
+              <div className="mt-4 p-4 bg-purple-900/20 border border-purple-700 rounded-lg">
+                <div className="flex items-center gap-2 text-purple-300 mb-2">
+                  <Calendar className="h-5 w-5" />
+                  <span className="font-medium">Event Details</span>
+                </div>
+                <p className="text-white mb-2">
+                  {new Date(post.eventDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit'
+                  })}
+                </p>
+                {post.isRecurring && (
+                  <span className="inline-block text-xs bg-purple-600 px-2 py-1 rounded mb-2">
+                    Recurring {post.recurringType}
+                  </span>
+                )}
+                
+                {/* Task List */}
+                {post.taskList && Array.isArray(post.taskList) && post.taskList.length > 0 && (
+                  <div className="mt-3">
+                    <h4 className="text-sm font-medium text-purple-300 mb-2">Event Tasks:</h4>
+                    <div className="space-y-1">
+                      {post.taskList.map((task: any) => (
+                        <div key={task.id} className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${task.completed ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                          <span className={task.completed ? 'line-through text-gray-400' : 'text-gray-300'}>
+                            {task.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Hashtags */}
             {post.hashtags && post.hashtags.length > 0 && (
@@ -548,6 +613,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         </div>
       )}
+
+      {/* RSVP Component - Only show in detail view for events */}
+      {isDetailView && post.isEvent && post.allowRsvp && <EventRsvp post={post} />}
     </div>
   );
 }
