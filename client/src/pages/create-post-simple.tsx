@@ -46,6 +46,7 @@ export default function CreatePostPage() {
   const [recurringType, setRecurringType] = useState<"weekly" | "monthly" | "annually" | "">("");
   const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
+  const [allowRsvp, setAllowRsvp] = useState(false);
 
   // Calendar integration functions
   const generateCalendarUrl = (type: 'google' | 'apple') => {
@@ -778,6 +779,7 @@ END:VCALENDAR`;
         if (taskList.length > 0) {
           formDataToSend.append('taskList', JSON.stringify(taskList));
         }
+        formDataToSend.append('allowRsvp', allowRsvp.toString());
       }
       
       additionalPhotos.forEach((photoData, index) => {
@@ -1186,7 +1188,7 @@ END:VCALENDAR`;
                                 setEventDate(eventDateTime.toISOString());
                               }
                             }}
-                            className="bg-white border-purple-300 focus:ring-2 focus:ring-purple-500"
+                            className="bg-black text-white border-purple-300 focus:ring-2 focus:ring-purple-500"
                           />
                         </div>
                       </div>
@@ -1286,6 +1288,28 @@ END:VCALENDAR`;
                       )}
                     </div>
 
+                    {/* RSVP Option */}
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="allowRsvp"
+                          checked={allowRsvp}
+                          onChange={(e) => setAllowRsvp(e.target.checked)}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <Label htmlFor="allowRsvp" className="flex items-center gap-2 text-white">
+                          <Users className="h-4 w-4" />
+                          Allow RSVPs
+                        </Label>
+                      </div>
+                      {allowRsvp && (
+                        <p className="text-sm text-purple-300 mt-1">
+                          People can respond with Going, Maybe, or Not Going
+                        </p>
+                      )}
+                    </div>
+
                     {/* Task List */}
                     <div>
                       <Label className="text-white">Event Task List</Label>
@@ -1296,7 +1320,7 @@ END:VCALENDAR`;
                             value={newTaskText}
                             onChange={(e) => setNewTaskText(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
-                            className="focus:ring-2 focus:ring-purple-500 bg-white"
+                            className="focus:ring-2 focus:ring-purple-500 bg-black text-white border-purple-300 placeholder:text-gray-400"
                           />
                           <Button
                             type="button"
