@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 interface PostActionsMenuProps {
   postId: number;
   postTitle: string;
+  postUserId?: number;
   className?: string;
   actionType?: 'all' | 'tag' | 'repost' | 'save' | 'flag';
 }
