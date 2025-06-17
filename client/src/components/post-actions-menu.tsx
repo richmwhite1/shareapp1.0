@@ -49,9 +49,9 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch friends for tagging
+  // Fetch friends for tagging (with recent tagging history)
   const { data: friends = [] } = useQuery<User[]>({
-    queryKey: ['/api/friends'],
+    queryKey: ['/api/friends/recent-tags'],
     enabled: tagDialogOpen,
   });
 

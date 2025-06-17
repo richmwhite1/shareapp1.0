@@ -266,6 +266,14 @@ export const insertPostSchema = createInsertSchema(posts).pick({
   spotifyUrl: true,
   youtubeUrl: true,
   mediaMetadata: true,
+  privacy: true,
+  isEvent: true,
+  eventDate: true,
+  reminders: true,
+  isRecurring: true,
+  recurringType: true,
+  taskList: true,
+  allowRsvp: true,
 });
 
 export const createPostSchema = insertPostSchema.extend({
@@ -284,7 +292,7 @@ export const createPostSchema = insertPostSchema.extend({
   // Event fields
   isEvent: z.boolean().optional(),
   eventDate: z.string().optional(),
-  reminders: z.array(z.enum(["2_weeks", "1_week", "2_days", "1_day"])).optional(),
+  reminders: z.array(z.enum(["1_month", "2_weeks", "1_week", "3_days", "1_day", "day_of"])).optional(),
   isRecurring: z.boolean().optional(),
   recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
   taskList: z.array(z.object({
