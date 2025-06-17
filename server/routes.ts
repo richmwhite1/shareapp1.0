@@ -1108,16 +1108,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User search endpoint
+  // Get all users endpoint
+  app.get('/api/users/all', async (req, res) => {
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        profilePictureUrl: users.profilePictureUrl
+      }).from(users);
+      
+      res.json(allUsers);
+    } catch (error) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // User search endpoint - now accepts any length query
   app.get('/api/search/users', async (req, res) => {
     try {
       const query = req.query.q;
-      if (!query || typeof query !== 'string' || query.trim().length < 2) {
-        return res.status(400).json({ message: 'Search query must be at least 2 characters' });
+      if (!query || typeof query !== 'string') {
+        // Return all users if no query
+        const allUsers = await db.select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }).from(users);
+        return res.json(allUsers);
       }
       
-      const users = await storage.searchUsers(query);
-      const safeUsers = users.map(user => ({
+      const users_result = await storage.searchUsers(query);
+      const safeUsers = users_result.map(user => ({
         id: user.id,
         username: user.username,
         name: user.name,
