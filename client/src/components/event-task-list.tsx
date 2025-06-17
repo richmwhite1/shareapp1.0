@@ -65,7 +65,7 @@ export default function EventTaskList({ post }: EventTaskListProps) {
     },
   });
 
-  if (!post.isEvent || !post.taskList || post.taskList.length === 0) {
+  if (!post.isEvent || !post.taskList || !Array.isArray(post.taskList) || post.taskList.length === 0) {
     return null;
   }
 

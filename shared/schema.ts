@@ -239,6 +239,15 @@ export const taggedPosts = pgTable("tagged_posts", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Task assignments for events
+export const taskAssignments = pgTable("task_assignments", {
+  id: serial("id").primaryKey(),
+  postId: integer("post_id").notNull(),
+  taskId: text("task_id").notNull(),
+  userId: integer("user_id").notNull(),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+});
+
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,

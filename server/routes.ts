@@ -10,7 +10,9 @@ import fs from "fs";
 import { 
   signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData, users
+  type AdditionalPhotoData, users, posts, categories, comments, postLikes, postShares, friendships, friendRequests, 
+  hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
+  reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg } from 'drizzle-orm';
@@ -1284,6 +1286,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get task assignments for a post
+  app.get('/api/posts/:postId/task-assignments', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      
+      const post = await storage.getPost(postId);
+      if (!post || !post.taskList) {
+        return res.json([]);
+      }
+
+      const taskList = Array.isArray(post.taskList) ? post.taskList : [];
+      const assignments = [];
+
+      for (const task of taskList) {
+        if (task.completedBy) {
+          const user = await storage.getUser(task.completedBy);
+          if (user) {
+            assignments.push({
+              taskId: task.id,
+              userId: task.completedBy,
+              userName: user.name,
+              assignedAt: new Date()
+            });
+          }
+        }
+      }
+
+      res.json(assignments);
+    } catch (error) {
+      console.error('Get task assignments error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Toggle task assignment endpoint
   app.post('/api/posts/:postId/tasks/:taskId/toggle', authenticateToken, async (req: any, res) => {
     try {
@@ -1304,6 +1340,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the task list
       const taskList = Array.isArray(post.taskList) ? post.taskList : [];
       const updatedTaskList = taskList.map((task: any) => {
+        if (task.id === taskId) {
+          // Toggle assignment - if user is already assigned, remove them, otherwise assign them
+          return {
+            ...task,
+            completedBy: task.completedBy === userId ? null : userId
+          };
+        }
+        return task;
+      });
+
+      // Update the post with new task list
+      await db.update(posts)
+        .set({ taskList: updatedTaskList })
+        .where(eq(posts.id, postId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Toggle task assignment error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
         if (task.id === taskId) {
           return {
             ...task,
