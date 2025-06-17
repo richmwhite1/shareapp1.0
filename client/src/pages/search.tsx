@@ -22,10 +22,14 @@ export default function SearchPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const hashtagParam = params.get('hashtag');
-    if (hashtagParam) {
-      setSelectedHashtags([hashtagParam]);
+    if (hashtagParam && !selectedHashtags.includes(hashtagParam)) {
+      setSelectedHashtags(prev => [...prev, hashtagParam]);
+      // Clear the URL parameter after processing
+      if (window.history.replaceState) {
+        window.history.replaceState({}, '', '/search');
+      }
     }
-  }, [location]);
+  }, [location, selectedHashtags]);
 
   // Hashtag input handling
   const addHashtag = (tag: string) => {
