@@ -38,7 +38,7 @@ export const posts = pgTable("posts", {
   // Event functionality
   isEvent: boolean("is_event").notNull().default(false),
   eventDate: timestamp("event_date"),
-  reminders: text("reminders").array(), // ["1_month", "2_weeks", "1_week", "3_days", "1_day", "day_of"]
+  reminders: text("reminders").array(), // ["1_month", "2_weeks", "1_week", "3_days", "1_day"] - day_of is automatic
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurringType: text("recurring_type"), // "weekly", "monthly", "annually"
   taskList: json("task_list"), // Array of {id, text, completed, completedBy: userId}
@@ -292,7 +292,7 @@ export const createPostSchema = insertPostSchema.extend({
   // Event fields
   isEvent: z.boolean().optional(),
   eventDate: z.string().optional(),
-  reminders: z.array(z.enum(["1_month", "2_weeks", "1_week", "3_days", "1_day", "day_of"])).optional(),
+  reminders: z.array(z.enum(["1_month", "2_weeks", "1_week", "3_days", "1_day"])).optional(),
   isRecurring: z.boolean().optional(),
   recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
   taskList: z.array(z.object({

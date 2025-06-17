@@ -285,7 +285,7 @@ export default function ProfilePage() {
                 
                 return (
                   <Link key={category.id} href={`/category/${category.id}`}>
-                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-gray-800 transition-colors">
+                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors">
                       <div className="w-12 h-12 rounded-xl mx-auto mb-2 overflow-hidden">
                         {hasImage ? (
                           <img 

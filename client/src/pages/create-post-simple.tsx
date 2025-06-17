@@ -1081,14 +1081,13 @@ END:VCALENDAR`;
                   <div>
                     <Label className="text-purple-200">Event Reminders {formData.privacy === 'public' ? '(Pick up to 3)' : ''}</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {['1_month', '2_weeks', '1_week', '3_days', '1_day', 'day_of'].map((reminderValue) => {
+                      {['1_month', '2_weeks', '1_week', '3_days', '1_day'].map((reminderValue) => {
                         const reminderLabel = {
                           '1_month': '1 month',
                           '2_weeks': '2 weeks', 
                           '1_week': '1 week',
                           '3_days': '3 days',
-                          '1_day': '1 day',
-                          'day_of': 'day of'
+                          '1_day': '1 day'
                         }[reminderValue];
                         
                         const isSelected = reminders.includes(reminderValue);

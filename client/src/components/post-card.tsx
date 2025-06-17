@@ -224,9 +224,18 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}/stats`] });
-      toast({
-        title: "Shared!",
-        description: "Post has been shared successfully.",
+      // Copy share link to clipboard
+      const shareUrl = `${window.location.origin}/post/${post.id}`;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        toast({
+          title: "Link copied!",
+          description: "Post link has been copied to your clipboard.",
+        });
+      }).catch(() => {
+        toast({
+          title: "Shared!",
+          description: "Post has been shared successfully.",
+        });
       });
     },
   });
@@ -354,18 +363,6 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="tag" />
                 <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="repost" />
                 <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="save" />
-                
-                {user && post.user.id === user.id && (
-                  <Button
-                    onClick={handleDelete}
-                    variant="ghost"
-                    size="sm"
-                    disabled={deleteMutation.isPending}
-                    className="text-red-400 hover:text-red-600 hover:bg-gray-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
               </>
             ) : (
               /* Feed View - Use Hamburger Menu */
