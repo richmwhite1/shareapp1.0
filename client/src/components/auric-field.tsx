@@ -40,25 +40,23 @@ export default function AuricField({ children, postId, profileId, intensity = 0.
   // Adjust intensity based on number of ratings (more ratings = stronger aura)
   const adjustedIntensity = Math.min(intensity * (1 + ratingCount * 0.1), 0.8);
   
+  // Show default middle chakra aura for users with no ratings
+  const finalIntensity = ratingCount === 0 ? intensity * 0.5 : adjustedIntensity;
+
   // Create subtle aura effect with CSS
   const auricStyles: React.CSSProperties = {
     position: 'relative',
-    background: `radial-gradient(ellipse at center, ${chakraColor}${Math.round(adjustedIntensity * 15).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
+    background: `radial-gradient(ellipse at center, ${chakraColor}${Math.round(finalIntensity * 15).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
     borderRadius: '12px',
     padding: '2px',
   };
 
   // Inner glow effect
   const glowStyles: React.CSSProperties = {
-    boxShadow: ratingCount > 0 ? `0 0 ${20 + adjustedIntensity * 30}px ${chakraColor}${Math.round(adjustedIntensity * 30).toString(16).padStart(2, '0')}` : 'none',
+    boxShadow: `0 0 ${15 + finalIntensity * 25}px ${chakraColor}${Math.round(finalIntensity * 25).toString(16).padStart(2, '0')}`,
     borderRadius: '10px',
     transition: 'box-shadow 0.3s ease-in-out',
   };
-
-  // If no ratings yet, render without aura
-  if (ratingCount === 0) {
-    return <div>{children}</div>;
-  }
 
   return (
     <div style={auricStyles} className="auric-field">

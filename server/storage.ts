@@ -919,11 +919,9 @@ export class DatabaseStorage implements IStorage {
           username: friend.username,
           name: friend.name,
           profilePictureUrl: friend.profilePictureUrl,
-          email: '',
           password: '',
-          bio: '',
-          createdAt: friend.createdAt,
-          isFlagged: false
+          defaultPrivacy: friend.defaultPrivacy || 'public',
+          createdAt: friend.createdAt
         },
         hasRecentPosts: !!recentPost
       });
@@ -976,20 +974,28 @@ export class DatabaseStorage implements IStorage {
           profilePictureUrl: users.profilePictureUrl,
           createdAt: users.createdAt,
           password: users.password,
+          defaultPrivacy: users.defaultPrivacy,
         },
         lastTagged: max(taggedPosts.createdAt),
       })
       .from(friendships)
-      .innerJoin(users, eq(friendships.friendId, users.id))
+      .innerJoin(users, or(
+        and(eq(friendships.userId, userId), eq(users.id, friendships.friendId)),
+        and(eq(friendships.friendId, userId), eq(users.id, friendships.userId))
+      ))
       .leftJoin(taggedPosts, and(
         eq(taggedPosts.fromUserId, userId),
         eq(taggedPosts.toUserId, users.id)
       ))
       .where(and(
-        eq(friendships.userId, userId),
-        eq(friendships.status, 'accepted')
+        or(
+          eq(friendships.userId, userId),
+          eq(friendships.friendId, userId)
+        ),
+        eq(friendships.status, 'accepted'),
+        ne(users.id, userId) // Exclude self
       ))
-      .groupBy(users.id, users.username, users.name, users.profilePictureUrl, users.createdAt, users.password)
+      .groupBy(users.id, users.username, users.name, users.profilePictureUrl, users.createdAt, users.password, users.defaultPrivacy)
       .orderBy(desc(max(taggedPosts.createdAt)));
 
     return result.map(r => r.user as User);
