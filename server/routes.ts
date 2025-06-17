@@ -1111,17 +1111,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all users endpoint
   app.get('/api/users/all', async (req, res) => {
     try {
-      const allUsers = await db.select({
+      const result = await db.select({
         id: users.id,
         username: users.username,
         name: users.name,
         profilePictureUrl: users.profilePictureUrl
       }).from(users);
       
-      res.json(allUsers);
+      res.json(result);
     } catch (error) {
       console.error('Get all users error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message });
     }
   });
 

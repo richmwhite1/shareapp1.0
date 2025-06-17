@@ -123,6 +123,12 @@ export class DatabaseStorage implements IStorage {
 
   async searchUsers(query: string): Promise<User[]> {
     try {
+      if (!query || query.trim() === '') {
+        // Return all users if no query provided
+        const allUsers = await db.select().from(users);
+        return allUsers;
+      }
+      
       const searchTerm = `%${query.toLowerCase()}%`;
       const foundUsers = await db.select().from(users).where(
         or(
@@ -136,6 +142,9 @@ export class DatabaseStorage implements IStorage {
       console.error('Database search error:', error);
       // Fallback to return existing users for testing
       const allUsers = await db.select().from(users);
+      if (!query || query.trim() === '') {
+        return allUsers;
+      }
       const searchTerm = query.toLowerCase();
       return allUsers.filter(user => 
         user.username.toLowerCase().includes(searchTerm) || 
