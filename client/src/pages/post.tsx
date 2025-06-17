@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
-import Header from "@/components/header";
+import Header from "@/components/header-simple";
 import PostCard from "@/components/post-card";
 import CommentSection from "@/components/comment-section";
 import { Card, CardContent } from "@/components/ui/card";

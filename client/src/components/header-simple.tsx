@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Bell, TrendingUp, Hash, User } from "lucide-react";
+import { Bell, User } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Header() {
@@ -23,11 +23,7 @@ export default function Header() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Fetch trending hashtags
-  const { data: trendingHashtags } = useQuery({
-    queryKey: ['/api/hashtags/trending'],
-    select: (data: any) => data?.slice(0, 5) || [],
-  });
+
 
   return (
     <header className="bg-black text-white shadow-lg sticky top-0 z-40 w-full">
@@ -44,25 +40,6 @@ export default function Header() {
           <div className="flex items-center space-x-2">
             {isAuthenticated ? (
               <>
-                {/* Trending Hashtags */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-yellow-400 hover:bg-gray-800 p-2">
-                      <TrendingUp className="w-5 h-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-gray-800 border-gray-700">
-                    {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
-                      <Link key={hashtag.id} href={`/search?hashtag=${hashtag.name}`}>
-                        <DropdownMenuItem className="text-white hover:bg-gray-700 cursor-pointer">
-                          <Hash className="w-3 h-3 mr-2" />
-                          {hashtag.name} ({hashtag.count})
-                        </DropdownMenuItem>
-                      </Link>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
                 {/* Notifications */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
