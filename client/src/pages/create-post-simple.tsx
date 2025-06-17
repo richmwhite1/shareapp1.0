@@ -1818,14 +1818,7 @@ END:VCALENDAR`;
                 />
               </div>
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full bg-pinterest-red text-white hover:bg-red-700"
-                disabled={isLoading || mutation.isPending}
-              >
-                {isLoading || mutation.isPending ? 'Creating Post...' : 'Create Post'}
-              </Button>
+
           </CardContent>
         </Card>
       </div>
