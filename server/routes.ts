@@ -1296,6 +1296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update the post with new task list (this is a simplified approach)
       // In a real app, you'd have a separate tasks table
+      const { posts } = await import('@shared/schema');
       await db.update(posts)
         .set({ taskList: updatedTaskList })
         .where(eq(posts.id, postId));

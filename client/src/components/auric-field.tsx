@@ -22,15 +22,15 @@ const CHAKRA_COLORS = [
 export default function AuricField({ children, postId, profileId, intensity = 0.3 }: AuricFieldProps) {
   const isPost = !!postId;
   const targetId = postId || profileId;
-  const endpoint = isPost ? `/api/posts/${targetId}/energy` : `/api/profiles/${targetId}/energy`;
+  const endpoint = isPost ? `/api/posts/${targetId}/energy/stats` : `/api/profiles/${targetId}/energy/stats`;
 
   // Get average energy rating for this target
   const { data: ratingStats } = useQuery({
-    queryKey: [endpoint, 'stats'],
+    queryKey: [endpoint],
     enabled: !!targetId,
   });
 
-  const averageRating = ratingStats?.average || 4; // Default to heart chakra
+  const averageRating = ratingStats?.average || 4; // Default to level 4
   const ratingCount = ratingStats?.count || 0;
   
   // Calculate the chakra color based on average rating

@@ -31,8 +31,8 @@ const ENERGY_EMOJIS = [
   '🔮'  // 7 - Crystal ball/highest energy
 ];
 
-const CHAKRA_NAMES = [
-  'Root', 'Sacral', 'Solar Plexus', 'Heart', 'Throat', 'Third Eye', 'Crown'
+const AURA_LEVELS = [
+  'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6', 'Level 7'
 ];
 
 export default function EnergyRating({ postId, profileId, className = "" }: EnergyRatingProps) {
@@ -79,8 +79,8 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       queryClient.invalidateQueries({ queryKey: [endpoint, 'user'] });
       queryClient.invalidateQueries({ queryKey: [endpoint, 'stats'] });
       toast({
-        title: "Energy rating submitted",
-        description: `You rated this ${CHAKRA_NAMES[currentRating - 1]} chakra energy`,
+        title: "Aura rating submitted",
+        description: `You rated this ${AURA_LEVELS[currentRating - 1]} aura`,
       });
     },
     onError: () => {
@@ -120,7 +120,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       {/* Energy Rating Slider */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-300">Energy Level</span>
+          <span className="text-sm font-medium text-gray-300">Aura</span>
           <div className="flex items-center gap-2">
             <span className="text-lg">{ENERGY_EMOJIS[0]}</span>
             <span className="text-lg">{ENERGY_EMOJIS[6]}</span>
@@ -152,7 +152,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
               style={{ backgroundColor: CHAKRA_COLORS[currentRating - 1] }}
             />
             <span className="text-gray-300">
-              {CHAKRA_NAMES[currentRating - 1]} {ENERGY_EMOJIS[currentRating - 1]}
+              {ENERGY_EMOJIS[currentRating - 1]}
             </span>
           </div>
           <button
@@ -173,7 +173,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: CHAKRA_COLORS[Math.round(averageRating) - 1] }}
             />
-            <span>Avg: {CHAKRA_NAMES[Math.round(averageRating) - 1]}</span>
+            <span>Avg Level: {Math.round(averageRating)}</span>
           </div>
           <span>({totalRatings} rating{totalRatings !== 1 ? 's' : ''})</span>
         </div>
@@ -182,7 +182,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       {/* User's current rating */}
       {userRating && (
         <div className="text-xs text-purple-300">
-          Your rating: {CHAKRA_NAMES[userRating.rating - 1]} {ENERGY_EMOJIS[userRating.rating - 1]}
+          Your rating: {ENERGY_EMOJIS[userRating.rating - 1]}
         </div>
       )}
     </div>
