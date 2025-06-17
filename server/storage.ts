@@ -514,7 +514,7 @@ export class DatabaseStorage implements IStorage {
           and(
             eq(postShares.postId, postId),
             eq(postShares.userId, userId),
-            gt(postShares.createdAt, thirtySecondsAgo)
+            gt(postShares.sharedAt, thirtySecondsAgo)
           )
         );
       
@@ -602,8 +602,8 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
 
-    // For simplicity, if multiple hashtags are provided, find posts that contain ANY of them
-    // This provides broader search results which is more useful for discovery
+    // Use AND logic: find posts that contain ALL of the selected hashtags
+    // We do this by finding posts that have hashtag matches equal to the number of hashtags requested
     const result = await db
       .select({
         post: posts,
@@ -616,7 +616,8 @@ export class DatabaseStorage implements IStorage {
         category: {
           id: categories.id,
           name: categories.name
-        }
+        },
+        matchCount: count()
       })
       .from(posts)
       .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
@@ -624,21 +625,15 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
       .where(inArray(hashtags.name, hashtagNames))
+      .groupBy(posts.id, users.id, users.username, users.name, users.profilePictureUrl, categories.id, categories.name)
+      .having(sql`count(*) = ${hashtagNames.length}`)
       .orderBy(sortBy === 'popular' ? desc(posts.engagement) : desc(posts.createdAt));
 
-    // Remove duplicates (posts that have multiple matching hashtags)
-    const uniquePosts = new Map();
-    for (const row of result) {
-      if (!uniquePosts.has(row.post.id)) {
-        uniquePosts.set(row.post.id, {
-          ...row.post,
-          user: row.user!,
-          category: row.category || undefined
-        });
-      }
-    }
-
-    return Array.from(uniquePosts.values()) as PostWithUser[];
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      category: r.category || undefined
+    })) as PostWithUser[];
   }
 
   async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {

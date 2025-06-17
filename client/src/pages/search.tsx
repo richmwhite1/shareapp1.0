@@ -208,34 +208,17 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* Sort Options */}
-            {selectedHashtags.length > 0 && (
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <SortAsc className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium">Sort by:</span>
-                </div>
-                <Select value={sortBy} onValueChange={(value: "popular" | "recent") => setSortBy(value)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="popular">Most Popular</SelectItem>
-                    <SelectItem value="recent">Most Recent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+
           </CardContent>
         </Card>
 
-        {/* My Saved Hashtags */}
+        {/* My Hashtags */}
         {followedHashtags && followedHashtags.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5" />
-                My Saved Hashtags
+                My Hashtags
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -312,9 +295,9 @@ export default function SearchPage() {
                         variant={isFollowing ? "default" : "outline"}
                         size="sm"
                         onClick={handleToggleFollow}
-                        className={`h-8 px-2 ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
+                        className={`h-8 w-8 p-0 ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
                       >
-                        {isFollowing ? 'Following' : 'Follow'}
+                        {isFollowing ? '✓' : '+'}
                       </Button>
                     </div>
                   );
@@ -330,14 +313,28 @@ export default function SearchPage() {
         {selectedHashtags.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <SearchIcon className="h-5 w-5" />
-                Search Results
-                {searchResults && (
-                  <Badge variant="secondary">
-                    {searchResults.length} posts found
-                  </Badge>
-                )}
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SearchIcon className="h-5 w-5" />
+                  Search Results
+                  {searchResults && (
+                    <Badge variant="secondary">
+                      {searchResults.length} posts found
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <SortAsc className="h-4 w-4 text-gray-500" />
+                  <Select value={sortBy} onValueChange={(value: "popular" | "recent") => setSortBy(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="popular">Most Popular</SelectItem>
+                      <SelectItem value="recent">Most Recent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
