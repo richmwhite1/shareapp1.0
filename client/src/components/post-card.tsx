@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play } from "lucide-react";
+import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,6 +18,8 @@ import EventRsvp from "@/components/event-rsvp-simple";
 import EnergyRating from "@/components/energy-rating";
 import AuricField from "@/components/auric-field";
 import AuricPhotoBorder from "@/components/auric-photo-border";
+import { ViewTracker } from "@/components/view-tracker";
+import { PostActionsMenu } from "@/components/post-actions-menu";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -38,10 +40,16 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
+  // Get view count
+  const { data: viewData } = useQuery<{ viewCount: number }>({
+    queryKey: [`/api/posts/${post.id}/views`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+
   // For feed view, use magazine-style layout with overlaid stats
   if (!isDetailView) {
     return (
-      <div className="relative bg-black">
+      <ViewTracker postId={post.id} viewType="feed" className="relative bg-black">
         <AuricPhotoBorder postId={post.id}>
           <Link href={`/post/${post.id}`}>
             <img
@@ -168,15 +176,22 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 <Share2 className="w-4 h-4" />
                 <span>{stats?.shareCount || 0}</span>
               </div>
-            </div>
-            {post.discountCode && (
-              <div className="bg-pinterest-red text-white px-2 py-1 rounded text-xs font-bold">
-                ${post.discountCode}
+              <div className="flex items-center space-x-1">
+                <Eye className="w-4 h-4" />
+                <span>{viewData?.viewCount || 0}</span>
               </div>
-            )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {post.discountCode && (
+                <div className="bg-pinterest-red text-white px-2 py-1 rounded text-xs font-bold">
+                  ${post.discountCode}
+                </div>
+              )}
+              <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} />
+            </div>
           </div>
         </div>
-      </div>
+      </ViewTracker>
     );
   }
 
