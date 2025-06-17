@@ -1264,14 +1264,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle task assignment endpoint
+  app.post('/api/posts/:postId/tasks/:taskId/toggle', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      const taskId = req.params.taskId;
+      const userId = req.user.userId;
+
+      // Get the post and its task list
+      const post = await storage.getPost(postId);
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+
+      if (!post.isEvent || !post.taskList) {
+        return res.status(400).json({ message: 'Post is not an event or has no tasks' });
+      }
+
+      // Update the task list
+      const taskList = Array.isArray(post.taskList) ? post.taskList : [];
+      const updatedTaskList = taskList.map((task: any) => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            completed: !task.completed,
+            completedBy: !task.completed ? userId : null
+          };
+        }
+        return task;
+      });
+
+      // Update the post with new task list (this is a simplified approach)
+      // In a real app, you'd have a separate tasks table
+      await db.update(posts)
+        .set({ taskList: updatedTaskList })
+        .where(eq(posts.id, postId));
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Toggle task error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get all users endpoint
   app.get('/api/users/all', async (req, res) => {
     try {
-      const result = await pool.query('SELECT id, username, name, profile_picture_url as "profilePictureUrl" FROM users ORDER BY id');
-      res.json(result.rows);
+      const result = await db.select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        profilePictureUrl: users.profilePictureUrl
+      }).from(users).orderBy(users.id);
+      res.json(result);
     } catch (error) {
       console.error('Get all users error:', error);
-      res.status(500).json({ message: 'Internal server error', error: error.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
   });
 

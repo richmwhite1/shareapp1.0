@@ -242,12 +242,12 @@ function CommentThread({ comment, postId, level = 0 }: {
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center space-x-2 mb-2">
-              <span className="font-medium text-gray-900">{comment.user.name}</span>
-              <span className="text-sm text-pinterest-gray">{formatDate(comment.createdAt)}</span>
+              <span className="font-medium text-white">{comment.user.name}</span>
+              <span className="text-sm text-gray-400">{formatDate(comment.createdAt)}</span>
             </div>
-            <p className="text-gray-700">{comment.text}</p>
+            <p className="text-gray-200">{comment.text}</p>
             {comment.imageUrl && (
               <img
                 src={comment.imageUrl}

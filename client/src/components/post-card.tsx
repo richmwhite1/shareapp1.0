@@ -422,13 +422,63 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 {post.taskList && Array.isArray(post.taskList) && post.taskList.length > 0 && (
                   <div className="mt-3">
                     <h4 className="text-sm font-medium text-purple-300 mb-2">Event Tasks:</h4>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {(post.taskList as any[]).map((task: any, index: number) => (
-                        <div key={task.id || index} className="flex items-center gap-2 text-sm">
-                          <div className={`w-2 h-2 rounded-full ${task.completed ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                          <span className={task.completed ? 'line-through text-gray-400' : 'text-gray-300'}>
+                        <div key={task.id || index} className="flex items-center gap-3 p-2 bg-purple-900/10 border border-purple-700/30 rounded cursor-pointer hover:bg-purple-900/20 transition-colors">
+                          <button 
+                            className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                              task.completed 
+                                ? 'bg-green-600 border-green-600 text-white' 
+                                : 'border-purple-400 hover:border-purple-300'
+                            }`}
+                            onClick={async () => {
+                              if (!user) {
+                                toast({
+                                  title: "Login required",
+                                  description: "Please log in to assign tasks.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              
+                              try {
+                                const response = await fetch(`/api/posts/${post.id}/tasks/${task.id}/toggle`, {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                  },
+                                });
+                                
+                                if (response.ok) {
+                                  // Refresh the post data
+                                  queryClient.invalidateQueries({ queryKey: [`/api/posts/${post.id}`] });
+                                  toast({
+                                    title: task.completed ? "Task unclaimed" : "Task claimed",
+                                    description: task.completed ? "You have unclaimed this task." : "You have claimed this task!",
+                                  });
+                                } else {
+                                  throw new Error('Failed to toggle task');
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to update task. Please try again.",
+                                  variant: "destructive",
+                                });
+                              }
+                            }}
+                          >
+                            {task.completed && <span className="text-xs">✓</span>}
+                          </button>
+                          <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-400' : 'text-gray-300'}`}>
                             {task.text || task.task || 'Task item'}
                           </span>
+                          {task.completedBy && (
+                            <span className="text-xs text-purple-300 bg-purple-900/30 px-2 py-1 rounded">
+                              Assigned to User {task.completedBy}
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -615,7 +665,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       )}
 
       {/* RSVP Component - Only show in detail view for events */}
-      {isDetailView && post.isEvent && post.allowRsvp && <EventRsvp post={post} />}
+      {isDetailView && post.isEvent && <EventRsvp post={post} />}
     </div>
   );
 }
