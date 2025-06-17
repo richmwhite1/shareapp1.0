@@ -35,6 +35,29 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
 
+  // Delete post mutation
+  const deleteMutation = useMutation({
+    mutationFn: () => apiRequest(`/api/posts/${post.id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      toast({
+        title: "Post deleted",
+        description: "Your post has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Navigate back to home if on detail page
+      if (isDetailView) {
+        window.location.href = '/';
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Get post stats
   const { data: stats } = useQuery<{ likeCount: number; commentCount: number; shareCount: number }>({
     queryKey: [`/api/posts/${post.id}/stats`],
@@ -175,6 +198,45 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               ))}
             </div>
           )}
+        </div>
+
+        {/* Post Actions - Like, Comment, Share buttons */}
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-800">
+          <div className="flex items-center space-x-6">
+            <FeedLikeButton postId={post.id} />
+            <Link href={`/post/${post.id}`}>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                <MessageCircle className="h-5 w-5 mr-2" />
+                <span>{stats?.commentCount || 0}</span>
+              </Button>
+            </Link>
+            <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {/* Post Actions Menu */}
+            <PostActionsMenu 
+              postId={post.id} 
+              postTitle={post.primaryDescription || ""} 
+              postUserId={post.userId}
+            />
+            
+            {/* Delete button for post owner */}
+            {user?.id === post.userId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this post?')) {
+                    deleteMutation.mutate();
+                  }
+                }}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Energy Rating Component */}

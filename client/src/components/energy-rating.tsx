@@ -121,11 +121,11 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg">😊</span>
+            <span className="text-lg">😐</span>
             <span className="text-sm font-medium text-gray-300">Rating</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-lg">💖</span>
+            <span className="text-lg">♥️</span>
           </div>
         </div>
         
@@ -155,13 +155,13 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
 
         {/* Current selection display */}
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-center text-sm">
           <div className="flex items-center gap-2">
             <span 
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: RATING_COLORS[currentRating - 1] }}
             />
-            <span className="text-gray-300">Level {currentRating}</span>
+            <span className="text-gray-300">{currentRating}</span>
           </div>
         </div>
 
