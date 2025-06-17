@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, Download, Hash, Globe, Users, Lock, Calendar } from "lucide-react";
+import { Upload, X, Image, Download, Hash, Globe, Users, Lock, Calendar, Plus, Clock, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
@@ -31,6 +34,13 @@ export default function CreatePostPage() {
   const [isFetchingImage, setIsFetchingImage] = useState(false);
   const [isEvent, setIsEvent] = useState(false);
   const [eventDate, setEventDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [eventTime, setEventTime] = useState("12:00");
+  const [reminders, setReminders] = useState<string[]>([]);
+  const [newReminder, setNewReminder] = useState("");
+  const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean}[]>([]);
+  const [newTask, setNewTask] = useState("");
+  const [allowRsvp, setAllowRsvp] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const { isAuthenticated } = useAuth();
@@ -86,6 +96,53 @@ export default function CreatePostPage() {
     setHashtags(prev => prev.filter(tag => tag !== tagToRemove));
   };
 
+  // Handle date selection for events
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      const eventDateTime = new Date(date);
+      const [hours, minutes] = eventTime.split(':');
+      eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+      setEventDate(eventDateTime.toISOString());
+    } else {
+      setEventDate('');
+    }
+  };
+
+  // Add reminder
+  const addReminder = () => {
+    if (newReminder.trim() && !reminders.includes(newReminder.trim())) {
+      setReminders(prev => [...prev, newReminder.trim()]);
+      setNewReminder("");
+    }
+  };
+
+  const removeReminder = (reminderToRemove: string) => {
+    setReminders(prev => prev.filter(r => r !== reminderToRemove));
+  };
+
+  // Add task
+  const addTask = () => {
+    if (newTask.trim()) {
+      setTaskList(prev => [...prev, {
+        id: Date.now().toString(),
+        text: newTask.trim(),
+        completed: false
+      }]);
+      setNewTask("");
+    }
+  };
+
+  const removeTask = (taskId: string) => {
+    setTaskList(prev => prev.filter(t => t.id !== taskId));
+  };
+
+  const toggleTask = (taskId: string) => {
+    setTaskList(prev => prev.map(t => 
+      t.id === taskId ? { ...t, completed: !t.completed } : t
+    ));
+  };
+
   // Fetch image from URL
   const fetchImageFromUrl = async () => {
     if (!formData.primaryLink.trim()) return;
@@ -128,6 +185,88 @@ export default function CreatePostPage() {
     }
   };
 
+  // Fetch from Spotify
+  const fetchFromSpotify = async () => {
+    if (!formData.spotifyUrl.trim()) return;
+    setIsFetchingImage(true);
+    try {
+      const response = await fetch('/api/scrape-spotify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url: formData.spotifyUrl }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch from Spotify');
+
+      const blob = await response.blob();
+      const file = new File([blob], 'spotify-thumbnail.jpg', { type: blob.type });
+      
+      setPrimaryPhoto(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPrimaryPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      toast({
+        title: "Spotify thumbnail fetched",
+        description: "Album artwork loaded from Spotify",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch from Spotify",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
+
+  // Fetch from YouTube
+  const fetchFromYouTube = async () => {
+    if (!formData.youtubeUrl.trim()) return;
+    setIsFetchingImage(true);
+    try {
+      const response = await fetch('/api/scrape-youtube', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ url: formData.youtubeUrl }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch from YouTube');
+
+      const blob = await response.blob();
+      const file = new File([blob], 'youtube-thumbnail.jpg', { type: blob.type });
+      
+      setPrimaryPhoto(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPrimaryPhotoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      toast({
+        title: "YouTube thumbnail fetched",
+        description: "Video thumbnail loaded from YouTube",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch from YouTube",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetchingImage(false);
+    }
+  };
+
   // Create post mutation
   const mutation = useMutation({
     mutationFn: async () => {
@@ -149,6 +288,9 @@ export default function CreatePostPage() {
       formDataToSend.append('privacy', formData.privacy);
       formDataToSend.append('isEvent', isEvent.toString());
       if (isEvent && eventDate) formDataToSend.append('eventDate', eventDate);
+      if (isEvent && reminders.length > 0) formDataToSend.append('reminders', JSON.stringify(reminders));
+      if (isEvent && taskList.length > 0) formDataToSend.append('taskList', JSON.stringify(taskList));
+      if (isEvent) formDataToSend.append('allowRsvp', allowRsvp.toString());
 
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -243,7 +385,7 @@ export default function CreatePostPage() {
             <div>
               <Label className="text-white">Description *</Label>
               <Textarea
-                placeholder="What's on your mind?"
+                placeholder="What did you find?"
                 className="bg-black border-gray-700 text-white"
                 rows={3}
                 value={formData.primaryDescription}
