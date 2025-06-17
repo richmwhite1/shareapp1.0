@@ -52,6 +52,14 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </Link>
         </AuricPhotoBorder>
         
+        {/* Event date overlay - top left corner */}
+        {post.isEvent && post.eventDate && (
+          <div className="absolute top-3 left-3 bg-purple-600/90 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 backdrop-blur-sm">
+            <Calendar className="w-3 h-3" />
+            <span>{new Date(post.eventDate).toLocaleDateString()}</span>
+          </div>
+        )}
+        
         {/* Overlaid stats at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
           <div className="flex items-center justify-between text-white">
