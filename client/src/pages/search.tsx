@@ -351,7 +351,10 @@ export default function SearchPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
-                    No posts found with the selected hashtags.
+                    No posts found containing ALL selected hashtags.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Posts must contain every hashtag you've selected to appear in results.
                   </p>
                 </div>
               )}
