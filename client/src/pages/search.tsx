@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth.tsx";
 import PostCard from "@/components/post-card";
-import Header from "@/components/header";
+import Header from "@/components/header-simple";
 import { Link, useLocation } from "wouter";
 
 export default function SearchPage() {
@@ -24,12 +24,13 @@ export default function SearchPage() {
     const hashtagParam = params.get('hashtag');
     if (hashtagParam && !selectedHashtags.includes(hashtagParam)) {
       setSelectedHashtags(prev => [...prev, hashtagParam]);
+      setHashtagInput('#' + hashtagParam); // Also populate the input field
       // Clear the URL parameter after processing
       if (window.history.replaceState) {
         window.history.replaceState({}, '', '/search');
       }
     }
-  }, [location, selectedHashtags]);
+  }, [location]);
 
   // Hashtag input handling
   const addHashtag = (tag: string) => {
