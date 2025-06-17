@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth.tsx";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
+import { useState, useRef } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Folder, Image, Plus, Users, Lock, Trash2, Share2 } from "lucide-react";
+import { Folder, Image, Plus, Users, Lock, Trash2, Share2, Camera } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
@@ -24,6 +25,8 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const params = useParams();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   
   // If there's an ID param, we're viewing another user's profile
   const profileUserId = params.id ? parseInt(params.id) : user?.id;
@@ -86,6 +89,33 @@ export default function ProfilePage() {
     },
   });
 
+  // Profile picture upload mutation
+  const uploadProfilePicMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+      
+      return apiRequest('POST', `/api/user/profile-picture`, formData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been updated successfully!",
+      });
+      // Invalidate auth query to refresh user data
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/verify'] });
+      setIsUploadingProfilePic(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload profile picture",
+        variant: "destructive",
+      });
+      setIsUploadingProfilePic(false);
+    },
+  });
+
   // Delete category mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: async (categoryId: number) => {
@@ -111,6 +141,15 @@ export default function ProfilePage() {
 
   const handleShareProfile = () => {
     shareProfileMutation.mutate();
+  };
+
+  // Handle file selection for profile picture
+  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploadingProfilePic(true);
+      uploadProfilePicMutation.mutate(file);
+    }
   };
 
   // Only require authentication when viewing your own profile (no ID parameter)
@@ -169,7 +208,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Stats */}
-        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg -mt-8 relative z-10 mb-6">
+        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg -mt-6 relative z-10 mb-6">
           <div className="flex justify-around text-center">
             <div>
               <div className="text-xl font-bold text-white">{totalPosts}</div>
@@ -199,17 +238,33 @@ export default function ProfilePage() {
             </div>
             
             <div className="grid grid-cols-4 gap-3">
-              {(categories || []).slice(0, 8).filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => (
-                <Link key={category.id} href={`/category/${category.id}`}>
-                  <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-gray-800 transition-colors">
-                    <div className="w-12 h-12 bg-pinterest-red/20 rounded-xl mx-auto mb-2 flex items-center justify-center">
-                      <Folder className="h-6 w-6 text-pinterest-red" />
+              {(categories || []).slice(0, 8).filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => {
+                // Get the most recent post image from this category
+                const recentPost = userPosts?.find(post => post.categoryId === category.id);
+                const hasImage = recentPost?.primaryPhotoUrl;
+                
+                return (
+                  <Link key={category.id} href={`/category/${category.id}`}>
+                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-gray-800 transition-colors">
+                      <div className="w-12 h-12 rounded-xl mx-auto mb-2 overflow-hidden">
+                        {hasImage ? (
+                          <img 
+                            src={recentPost.primaryPhotoUrl} 
+                            alt={category.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-pinterest-red/20 rounded-xl flex items-center justify-center">
+                            <Folder className="h-6 w-6 text-pinterest-red" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-white font-medium truncate">{category.name}</div>
+                      <div className="text-xs text-gray-400">{category.posts?.length || 0} items</div>
                     </div>
-                    <div className="text-xs text-white font-medium truncate">{category.name}</div>
-                    <div className="text-xs text-gray-400">{category.posts?.length || 0} items</div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
