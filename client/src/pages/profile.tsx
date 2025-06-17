@@ -10,6 +10,7 @@ import { Folder, Image, Plus, Users, Lock, Trash2, Share2, Camera } from "lucide
 import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
+import EnergyRating from "@/components/energy-rating";
 import type { User, PostWithUser, CategoryWithPosts } from "@shared/schema";
 
 interface UserResponse {
@@ -396,31 +397,7 @@ export default function ProfilePage() {
         {/* Aura Rating Section - Only show when viewing other users */}
         {!isOwnProfile && (
           <div className="px-6 py-4 bg-gray-800 mx-4 rounded-lg mb-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-white mb-2">Rate {displayUser?.name}'s Aura</h3>
-              <div className="flex items-center justify-center mb-3">
-                <span className="text-2xl font-bold text-white mr-2">{auraData?.average?.toFixed(1) || '4.0'}</span>
-                <div className={`w-4 h-4 rounded-full ${getAuraColor(auraData?.average || 4).replace('border-', 'bg-')}`}></div>
-                <span className="text-sm text-gray-400 ml-2">({auraData?.count || 0} ratings)</span>
-              </div>
-              <div className="flex justify-center space-x-2 mb-2">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    onClick={() => handleAuraRating(rating)}
-                    disabled={rateUserMutation.isPending}
-                    className={`w-8 h-8 rounded-full transition-all ${
-                      auraRating >= rating 
-                        ? 'bg-yellow-400 text-black' 
-                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                    } ${rateUserMutation.isPending ? 'opacity-50' : ''}`}
-                  >
-                    {rating}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-gray-400">Rate their energy and vibe</p>
-            </div>
+            <EnergyRating profileId={profileUserId} className="w-full" />
           </div>
         )}
 

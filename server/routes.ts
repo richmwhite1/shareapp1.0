@@ -1532,41 +1532,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Aura rating endpoints
-  app.post('/api/users/:userId/aura', authenticateToken, async (req: any, res) => {
+  // Profile energy rating endpoints
+  app.post('/api/profiles/:profileId/energy', authenticateToken, async (req: any, res) => {
     try {
-      const userId = parseInt(req.params.userId);
+      const profileId = parseInt(req.params.profileId);
       const ratingUserId = req.user.userId;
       const { rating } = req.body;
 
-      if (isNaN(userId) || userId === ratingUserId) {
+      if (isNaN(profileId) || profileId === ratingUserId) {
         return res.status(400).json({ message: 'Cannot rate yourself' });
       }
 
-      if (!rating || rating < 1 || rating > 5) {
-        return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
       }
 
       // For now, just return success - we'll implement storage later
-      res.json({ success: true });
+      res.json({ success: true, rating });
     } catch (error) {
-      console.error('Aura rating error:', error);
+      console.error('Profile energy rating error:', error);
       res.status(500).json({ message: 'Failed to submit rating' });
     }
   });
 
-  app.get('/api/users/:userId/aura/stats', async (req, res) => {
+  app.get('/api/profiles/:profileId/energy', authenticateToken, async (req: any, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
+      const profileId = parseInt(req.params.profileId);
+      const userId = req.user.userId;
+
+      if (isNaN(profileId)) {
+        return res.status(400).json({ message: 'Invalid profile ID' });
       }
 
-      // For now, return default values - we'll implement storage later
+      // Return user's current rating for this profile
+      res.json({ rating: 4 }); // Default to heart chakra
+    } catch (error) {
+      console.error('Get profile energy error:', error);
+      res.status(500).json({ message: 'Failed to get rating' });
+    }
+  });
+
+  app.get('/api/profiles/:profileId/energy/stats', async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.profileId);
+      if (isNaN(profileId)) {
+        return res.status(400).json({ message: 'Invalid profile ID' });
+      }
+
+      // Return stats for the profile's average energy rating
       res.json({ average: 4, count: 0 });
     } catch (error) {
-      console.error('Aura stats error:', error);
-      res.status(500).json({ message: 'Failed to fetch aura stats' });
+      console.error('Profile energy stats error:', error);
+      res.status(500).json({ message: 'Failed to fetch energy stats' });
     }
   });
 

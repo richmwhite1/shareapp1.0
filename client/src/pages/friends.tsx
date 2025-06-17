@@ -259,9 +259,7 @@ export default function ConnectionsPage() {
                         </div>
                       ) : (
                         filteredUsers.map((searchUser) => {
-                          const friendship = friends.find((f: any) => f.id === searchUser.id);
-                          const isFollowing = !!friendship;
-                          const isConnected = !!friendship; // All friendships are connections in this system
+                          const isConnected = friends.some((f: any) => f.id === searchUser.id);
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
                           const hasOutgoingRequest = outgoingRequests.some(req => req.toUser.id === searchUser.id);
                           
@@ -292,14 +290,14 @@ export default function ConnectionsPage() {
                                       Connected
                                     </p>
                                   )}
-                                  {isFollowing && !isConnected && (
-                                    <p className="text-xs text-blue-600 dark:text-blue-400">
-                                      Following
-                                    </p>
-                                  )}
                                   {hasPendingRequest && (
                                     <p className="text-xs text-yellow-600 dark:text-yellow-400">
                                       Request received
+                                    </p>
+                                  )}
+                                  {hasOutgoingRequest && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                                      Request sent
                                     </p>
                                   )}
                                 </div>
@@ -313,16 +311,6 @@ export default function ConnectionsPage() {
                                 >
                                   <Check className="h-4 w-4" />
                                   Connected
-                                </Button>
-                              ) : isFollowing ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled
-                                  className="flex items-center gap-2"
-                                >
-                                  <Check className="h-4 w-4" />
-                                  Following
                                 </Button>
                               ) : hasPendingRequest ? (
                                 <Button
