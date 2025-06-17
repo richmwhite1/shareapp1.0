@@ -601,7 +601,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/posts', async (req, res) => {
     try {
-      const posts = await storage.getAllPosts();
+      // Extract user ID from token if present
+      let viewerId: number | undefined;
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET) as any;
+          viewerId = decoded.userId;
+        } catch (error) {
+          // Invalid token, proceed as anonymous user
+        }
+      }
+
+      const posts = await storage.getAllPosts(viewerId);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
