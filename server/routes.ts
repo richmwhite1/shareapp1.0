@@ -1547,8 +1547,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Rating must be between 1 and 7' });
       }
 
-      // For now, just return success - we'll implement storage later
-      res.json({ success: true, rating });
+      // Get current user aura rating
+      const [userResult] = await db.select({
+        auraRating: sql<number>`aura_rating`,
+        ratingCount: sql<number>`rating_count`
+      }).from(users).where(eq(users.id, profileId));
+
+      if (!userResult) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const currentRating = userResult.auraRating || 4.0;
+      const currentCount = userResult.ratingCount || 0;
+      
+      // Calculate new average rating
+      const newCount = currentCount + 1;
+      const newRating = ((currentRating * currentCount) + rating) / newCount;
+
+      // Update user's aura rating
+      await db.update(users)
+        .set({ 
+          auraRating: sql`${newRating}`,
+          ratingCount: sql`${newCount}`
+        })
+        .where(eq(users.id, profileId));
+
+      res.json({ success: true, rating: newRating });
     } catch (error) {
       console.error('Profile energy rating error:', error);
       res.status(500).json({ message: 'Failed to submit rating' });
@@ -1564,8 +1588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid profile ID' });
       }
 
-      // Return user's current rating for this profile
-      res.json({ rating: 4 }); // Default to heart chakra
+      // Return user's current rating (default to heart chakra)
+      res.json({ rating: 4 });
     } catch (error) {
       console.error('Get profile energy error:', error);
       res.status(500).json({ message: 'Failed to get rating' });
@@ -1579,8 +1603,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid profile ID' });
       }
 
-      // Return stats for the profile's average energy rating
-      res.json({ average: 4, count: 0 });
+      // Get user's aura rating from users table
+      const [userResult] = await db.select({
+        auraRating: sql<number>`aura_rating`,
+        ratingCount: sql<number>`rating_count`
+      }).from(users).where(eq(users.id, profileId));
+
+      if (!userResult) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ 
+        average: userResult.auraRating || 4.0, 
+        count: userResult.ratingCount || 0 
+      });
     } catch (error) {
       console.error('Profile energy stats error:', error);
       res.status(500).json({ message: 'Failed to fetch energy stats' });

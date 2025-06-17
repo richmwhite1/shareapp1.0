@@ -3,23 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
+import { getAuraColor, getChakraLevel } from "@/utils/aura";
 
 interface EnergyRatingProps {
   postId?: number;
   profileId?: number;
   className?: string;
 }
-
-// Chakra colors and emojis for the 7-point scale
-const CHAKRA_COLORS = [
-  '#FF0000', // 1 - Root Chakra (Red)
-  '#FF8C00', // 2 - Sacral Chakra (Orange)
-  '#FFD700', // 3 - Solar Plexus (Yellow)
-  '#00FF00', // 4 - Heart Chakra (Green)
-  '#00BFFF', // 5 - Throat Chakra (Blue)
-  '#4B0082', // 6 - Third Eye (Indigo)
-  '#8A2BE2'  // 7 - Crown Chakra (Violet)
-];
 
 const ENERGY_EMOJIS = [
   '😐', // 1 - Neutral/Flat
@@ -31,8 +21,8 @@ const ENERGY_EMOJIS = [
   '🔮'  // 7 - Crystal ball/highest energy
 ];
 
-const AURA_LEVELS = [
-  'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5', 'Level 6', 'Level 7'
+const CHAKRA_NAMES = [
+  'Root', 'Sacral', 'Solar Plexus', 'Heart', 'Throat', 'Third Eye', 'Crown'
 ];
 
 export default function EnergyRating({ postId, profileId, className = "" }: EnergyRatingProps) {

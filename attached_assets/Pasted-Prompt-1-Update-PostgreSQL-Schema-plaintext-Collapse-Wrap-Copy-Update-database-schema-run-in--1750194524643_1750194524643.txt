@@ -1,0 +1,721 @@
+Prompt 1: Update PostgreSQL Schema
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update database schema (run in PostgreSQL client, e.g., psql)
+echo 'ALTER TABLE users
+ADD COLUMN IF NOT EXISTS aura_rating FLOAT DEFAULT 4.0 CHECK (aura_rating >= 1.0 AND aura_rating <= 7.0),
+ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0;
+' | psql -U postgres -d share_db
+Prompt 2: Update routes/users.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace routes/users.js
+echo 'const express = require("express");
+const router = express.Router();
+const { pool } = require("../server");
+
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
+  try {
+    const queryText = q
+      ? `SELECT id, display_name, profile_image, aura_rating FROM users WHERE LOWER(display_name) LIKE $1`
+      : `SELECT id, display_name, profile_image, aura_rating FROM users`;
+    const result = await pool.query(queryText, q ? [`%${q.toLowerCase()}%`] : []);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Search users error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/follow", async (req, res) => {
+  const { follower_id, followed_id } = req.body;
+  if (!follower_id || !followed_id || follower_id === followed_id) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [follower_id, followed_id]
+    );
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, from_user_id) VALUES ($1, 'follow', $2)`,
+      [followed_id, follower_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Follow error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.delete("/unfollow", async (req, res) => {
+  const { follower_id, followed_id } = req.body;
+  try {
+    await pool.query(
+      `DELETE FROM follows WHERE follower_id = $1 AND followed_id = $2`,
+      [follower_id, followed_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Unfollow error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/:userId/connections", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.display_name, u.profile_image, u.aura_rating
+       FROM users u
+       INNER JOIN follows f1 ON u.id = f1.followed_id AND f1.follower_id = $1
+       INNER JOIN follows f2 ON u.id = f2.follower_id AND f2.followed_id = $1`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Connections error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/:userId/notifications", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT n.id, n.type, n.from_user_id, n.post_id, u.display_name, n.read, n.created_at
+       FROM notifications n
+       INNER JOIN users u ON n.from_user_id = u.id
+       WHERE n.user_id = $1
+       ORDER BY n.created_at DESC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Notifications error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/:userId/rate", async (req, res) => {
+  const { userId } = req.params;
+  const { rating, rater_id } = req.body;
+  if (!rating || rating < 1 || rating > 7 || !rater_id || rater_id === userId) {
+    return res.status(400).json({ error: "Invalid rating or rater" });
+  }
+  try {
+    const userResult = await pool.query(
+      `SELECT aura_rating, rating_count FROM users WHERE id = $1 FOR UPDATE`,
+      [userId]
+    );
+    const { aura_rating, rating_count } = userResult.rows[0] || { aura_rating: 4.0, rating_count: 0 };
+    const newRatingCount = rating_count + 1;
+    const newAuraRating = ((aura_rating * rating_count) + rating) / newRatingCount;
+    await pool.query(
+      `UPDATE users SET aura_rating = $1, rating_count = $2 WHERE id = $3`,
+      [newAuraRating, newRatingCount, userId]
+    );
+    res.json({ success: true, aura_rating: newAuraRating });
+  } catch (err) {
+    console.error("Rate user error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+module.exports = router;
+' > routes/users.js
+Prompt 3: Create utils/aura.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create aura utility
+echo 'export const getAuraColor = (rating) => {
+  if (!rating || rating < 1) return "#ff0000"; // Red (default)
+  const chakraColors = [
+    "#ff0000", // 1: Root (Red)
+    "#ffa500", // 2: Sacral (Orange)
+    "#ffff00", // 3: Solar Plexus (Yellow)
+    "#008000", // 4: Heart (Green)
+    "#0000ff", // 5: Throat (Blue)
+    "#4b0082", // 6: Third Eye (Indigo)
+    "#ee82ee", // 7: Crown (Violet)
+  ];
+  const index = Math.min(Math.floor(rating - 1), 6);
+  return chakraColors[index];
+};
+
+export const getAuraStyle = (rating) => ({
+  border: `2px solid ${getAuraColor(rating)}`,
+  boxShadow: `0 0 8px ${getAuraColor(rating)}`,
+});
+' > client/src/utils/aura.js
+Prompt 4: Create Profile.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create Profile.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { getAuraColor, getAuraStyle } from "../utils/aura";
+
+const Profile = ({ userId, currentUserId }) => {
+  const [user, setUser] = useState(null);
+  const [rating, setRating] = useState(4);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`/api/users/search?q=${userId}`);
+        const foundUser = response.data.find((u) => u.id === userId);
+        if (foundUser) {
+          setUser(foundUser);
+          setRating(Math.round(foundUser.aura_rating));
+        } else {
+          setError("User not found");
+        }
+      } catch (err) {
+        setError("Failed to load user");
+        console.error(err);
+      }
+    };
+    fetchUser();
+  }, [userId]);
+
+  const handleRatingChange = async (e) => {
+    const newRating = parseInt(e.target.value);
+    setRating(newRating);
+    if (currentUserId && currentUserId !== userId) {
+      try {
+        const response = await axios.post(`/api/users/${userId}/rate`, {
+          rating: newRating,
+          rater_id: currentUserId,
+        });
+        setUser({ ...user, aura_rating: response.data.aura_rating });
+      } catch (err) {
+        setError("Failed to submit rating");
+        console.error(err);
+      }
+    }
+  };
+
+  if (error) return <p className="text-red-500">{error}</p>;
+  if (!user) return <p className="text-white">Loading...</p>;
+
+  return (
+    <div className="p-4 bg-navy text-white">
+      <div className="flex items-center mb-4">
+        <img
+          src={user.profile_image || "https://via.placeholder.com/48"}
+          alt={user.display_name}
+          className="w-16 h-16 rounded-full mr-4"
+          style={getAuraStyle(user.aura_rating)}
+        />
+        <div>
+          <h2 className="text-lg">{user.display_name}</h2>
+          <p>Aura Rating: {user.aura_rating.toFixed(1)}</p>
+        </div>
+      </div>
+      {currentUserId !== userId && (
+        <div className="mb-4">
+          <label htmlFor="aura-rating" className="block mb-1">
+            Rate Aura (1-7):
+          </label>
+          <input
+            type="range"
+            id="aura-rating"
+            min="1"
+            max="7"
+            step="1"
+            value={rating}
+            onChange={handleRatingChange}
+            className="w-full"
+            style={{
+              background: `linear-gradient(to right, ${getAuraColor(rating)} 0%, ${getAuraColor(rating)} ${(rating / 7) * 100}%, #d1d5db ${(rating / 7) * 100}%, #d1d5db 100%)`,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Profile;
+' > client/src/components/Profile.js
+Prompt 5: Update FriendManagement.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace FriendManagement.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { getAuraStyle } from "../utils/aura";
+
+const FriendManagement = ({ currentUserId }) => {
+  const [tab, setTab] = useState("find");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(`/api/users/search${searchTerm ? `?q=${searchTerm}` : ""}`);
+        setUsers(response.data.filter((user) => user.id !== currentUserId));
+      } catch (err) {
+        setError("Failed to load users");
+        console.error(err);
+      }
+    };
+    fetchUsers();
+  }, [searchTerm, currentUserId]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get(`/api/users/${currentUserId}/notifications`);
+        setNotifications(response.data);
+      } catch (err) {
+        setError("Failed to load notifications");
+        console.error(err);
+      }
+    };
+    fetchNotifications();
+  }, [currentUserId]);
+
+  const handleFollow = async (followedId) => {
+    try {
+      await axios.post("/api/users/follow", { follower_id: currentUserId, followed_id: followedId });
+      setUsers(users.filter((user) => user.id !== followedId));
+    } catch (err) {
+      setError("Failed to follow user");
+      console.error(err);
+    }
+  };
+
+  const handleUnfollow = async (followedId) => {
+    try {
+      await axios.delete("/api/users/unfollow", {
+        data: { follower_id: currentUserId, followed_id: followedId },
+      });
+      setUsers([...users, { id: followedId, display_name: "User", profile_image: null, aura_rating: 4.0 }]);
+    } catch (err) {
+      setError("Failed to unfollow user");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <div className="flex mb-4">
+        <button
+          onClick={() => setTab("find")}
+          className={`p-2 ${tab === "find" ? "bg-gold text-navy" : "text-gold"}`}
+        >
+          Find Friends
+        </button>
+        <button
+          onClick={() => setTab("notifications")}
+          className={`p-2 ${tab === "notifications" ? "bg-gold text-navy" : "text-gold"}`}
+        >
+          Notifications
+        </button>
+      </div>
+      {tab === "find" && (
+        <>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search users by name"
+            className="w-full p-2 mb-4 border border-gold rounded text-white bg-navy"
+          />
+          {error && <p className="text-red-500 mb-2">{error}</p>}
+          {users.length === 0 && !error && <p className="text-white">No users found</p>}
+          {users.map((user) => (
+            <div key={user.id} className="flex items-center mb-2">
+              <img
+                src={user.profile_image || "https://via.placeholder.com/48"}
+                alt={user.display_name}
+                className="w-10 h-10 rounded-full mr-2"
+                style={getAuraStyle(user.aura_rating)}
+              />
+              <span className="text-white">{user.display_name} (Aura: {user.aura_rating.toFixed(1)})</span>
+              <button
+                onClick={() => handleFollow(user.id)}
+                className="ml-auto p-1 bg-gold text-navy rounded text-sm"
+              >
+                Follow
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+      {tab === "notifications" && (
+        <>
+          {notifications.length === 0 && <p className="text-white">No notifications</p>}
+          {notifications.map((notification) => (
+            <div key={notification.id} className="flex items-center mb-2">
+              <span className="text-white">
+                {notification.type === "follow"
+                  ? `${notification.display_name} followed you`
+                  : `You were tagged in a post by ${notification.display_name}`}
+              </span>
+              {notification.type === "follow" && (
+                <>
+                  <button
+                    onClick={() => handleFollow(notification.from_user_id)}
+                    className="ml-2 p-1 bg-gold text-navy rounded text-sm"
+                  >
+                    Follow Back
+                  </button>
+                  <button
+                    onClick={() => handleUnfollow(notification.from_user_id)}
+                    className="ml-2 p-1 bg-red-500 text-white rounded text-sm"
+                  >
+                    Ignore
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default FriendManagement;
+' > client/src/components/FriendManagement.js
+Prompt 6: Update StoriesBar.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace StoriesBar.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { getAuraStyle } from "../utils/aura";
+
+const StoriesBar = ({ currentUserId, onSelectFeed, followPublic, togglePublicFeed }) => {
+  const [connections, setConnections] = useState([]);
+  const [activeFeed, setActiveFeed] = useState("public");
+  const [connectionIndex, setConnectionIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchConnections = async () => {
+      try {
+        const response = await axios.get(`/api/users/${currentUserId}/connections`);
+        const usersWithPosts = [];
+        for (const user of response.data) {
+          const postsResponse = await axios.get(`/api/posts/user/${user.id}`);
+          if (postsResponse.data.length > 0) {
+            usersWithPosts.push(user);
+          }
+        }
+        setConnections(usersWithPosts);
+      } catch (err) {
+        console.error("Connections error:", err);
+      }
+    };
+    fetchConnections();
+  }, [currentUserId]);
+
+  const handlePublicClick = () => {
+    setActiveFeed("public");
+    setConnectionIndex(0);
+    onSelectFeed("public", null);
+  };
+
+  const handleConnectionClick = (connectionId, index) => {
+    setActiveFeed(connectionId);
+    setConnectionIndex(index);
+    onSelectFeed("connection", connectionId);
+  };
+
+  const handleNextConnection = () => {
+    if (connectionIndex < connections.length - 1) {
+      const nextIndex = connectionIndex + 1;
+      setActiveFeed(connections[nextIndex].id);
+      setConnectionIndex(nextIndex);
+      onSelectFeed("connection", connections[nextIndex].id);
+    } else if (followPublic) {
+      setActiveFeed("public");
+      setConnectionIndex(0);
+      onSelectFeed("public", null);
+    }
+  };
+
+  return (
+    <div className="flex overflow-x-auto p-2 bg-navy relative">
+      <div className="flex items-center mr-4">
+        <div
+          className={`w-12 h-12 rounded-full bg-gold flex items-center justify-center cursor-pointer ${
+            activeFeed === "public" ? "ring-2 ring-white" : ""
+          }`}
+          onClick={handlePublicClick}
+        >
+          <span className="text-navy text-lg font-bold">P</span>
+        </div>
+        <button
+          onClick={togglePublicFeed}
+          className="ml-2 text-gold text-sm"
+        >
+          {followPublic ? "Unfollow Public" : "Follow Public"}
+        </button>
+      </div>
+      {connections.map((connection, index) => (
+        <div key={connection.id} className="flex items-center mr-4">
+          <img
+            src={connection.profile_image || "https://via.placeholder.com/48"}
+            alt={connection.display_name}
+            className={`w-12 h-12 rounded-full cursor-pointer ${
+              activeFeed === connection.id ? "ring-2 ring-white" : ""
+            }`}
+            style={getAuraStyle(connection.aura_rating)}
+            onClick={() => handleConnectionClick(connection.id, index)}
+          />
+        </div>
+      ))}
+      {activeFeed !== "public" && connections.length > 0 && (
+        <button
+          onClick={handleNextConnection}
+          className="absolute right-4 p-2 bg-gold text-navy rounded"
+        >
+          Next
+        </button>
+      )}
+    </div>
+  );
+};
+
+export default StoriesBar;
+' > client/src/components/StoriesBar.js
+Prompt 7: Update Feed.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace Feed.js
+echo 'import React, { useState } from "react";
+import { getAuraStyle } from "../utils/aura";
+
+const Feed = ({ posts = [], onEndReached }) => {
+  const [expandedPost, setExpandedPost] = useState(null);
+  const [playingVideo, setPlayingVideo] = useState(null);
+
+  const handleImageClick = (post) => {
+    if (post.youtube_url) {
+      setPlayingVideo(post.id);
+    } else {
+      setExpandedPost(expandedPost === post.id ? null : post.id);
+    }
+  };
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    if (scrollTop + clientHeight >= scrollHeight - 5 && onEndReached) {
+      onEndReached();
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-0" onScroll={handleScroll}>
+      {posts.map((post) => (
+        <div key={post.id} className="relative">
+          {playingVideo === post.id && post.youtube_url ? (
+            <iframe
+              className="w-full aspect-square"
+              src={`https://www.youtube.com/embed/${new URL(post.youtube_url).searchParams.get("v") || post.youtube_url.split("/").pop()}?autoplay=1`}
+              title="YouTube video"
+              allow="autoplay; encrypted-media"
+            />
+          ) : (
+            <img
+              src={post.image_url || (post.youtube_url ? `https://img.youtube.com/vi/${post.youtube_url.split("/").pop()}/hqdefault.jpg` : "")}
+              alt="Post"
+              className="w-full aspect-square object-cover cursor-pointer"
+              onClick={() => handleImageClick(post)}
+            />
+          )}
+          <div className="absolute top-2 left-2">
+            <img
+              src={post.profile_image || "https://via.placeholder.com/48"}
+              alt={post.display_name}
+              className="w-8 h-8 rounded-full"
+              style={getAuraStyle(post.aura_rating)}
+            />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 flex justify-between">
+            <span>{post.likes || 0} Likes</span>
+            <span>{post.comments?.length || 0} Comments</span>
+            <span>{post.shares || 0} Shares</span>
+            <span>Aura: {post.aura_rating?.toFixed(1) || 4.0}</span>
+          </div>
+          {expandedPost === post.id && (
+            <div className="p-4 bg-navy text-white">
+              <p>{post.text}</p>
+              {post.hashtags?.length > 0 && (
+                <p className="text-gold">
+                  {post.hashtags.map((tag) => `#${tag}`).join(" ")}
+                </p>
+              )}
+              {post.tagged_users?.length > 0 && (
+                <p className="text-gold">
+                  Tagged: {post.tagged_users.map((user) => `@${user.display_name || "User"}`).join(", ")}
+                </p>
+              )}
+              {post.spotify_url && (
+                <a href={post.spotify_url} target="_blank" rel="noopener noreferrer" className="text-gold">
+                  Spotify Link
+                </a>
+              )}
+              {post.youtube_url && (
+                <a href={post.youtube_url} target="_blank" rel="noopener noreferrer" className="text-gold">
+                  YouTube Link
+                </a>
+              )}
+              <button className="mt-2 p-2 bg-gold text-navy rounded">Share</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Feed;
+' > client/src/components/Feed.js
+Prompt 8: Update App.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace App.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+import CreatePost from "./components/CreatePost";
+import Feed from "./components/Feed";
+import StoriesBar from "./components/StoriesBar";
+import SearchBar from "./components/SearchBar";
+import HashtagSection from "./components/HashtagSection";
+import FriendManagement from "./components/FriendManagement";
+import Profile from "./components/Profile";
+
+const App = () => {
+  const [userId] = useState("user_id_placeholder"); // Replace with auth logic
+  const [posts, setPosts] = useState([]);
+  const [feedType, setFeedType] = useState("public");
+  const [selectedConnectionId, setSelectedConnectionId] = useState(null);
+  const [followPublic, setFollowPublic] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        if (feedType === "public" && followPublic) {
+          const response = await axios.get("/api/posts/public");
+          setPosts(response.data);
+        } else if (feedType === "connection" && selectedConnectionId) {
+          const response = await axios.get(`/api/posts/user/${selectedConnectionId}?currentUserId=${userId}`);
+          setPosts(response.data);
+        } else {
+          setPosts([]);
+        }
+      } catch (err) {
+        console.error("Posts error:", err);
+      }
+    };
+    fetchPosts();
+  }, [feedType, selectedConnectionId, followPublic, userId]);
+
+  const handleSelectFeed = (type, connectionId) => {
+    setFeedType(type);
+    setSelectedConnectionId(connectionId);
+  };
+
+  const handleEndReached = () => {
+    if (feedType === "connection") {
+      document.querySelector(".StoriesBar button")?.click();
+    }
+  };
+
+  if (!userId) return <div className="bg-navy text-white">Loading...</div>;
+
+  return (
+    <div className="bg-navy min-h-screen text-white">
+      <SearchBar />
+      <Profile userId={userId} currentUserId={userId} />
+      <StoriesBar
+        currentUserId={userId}
+        onSelectFeed={handleSelectFeed}
+        followPublic={followPublic}
+        togglePublicFeed={() => setFollowPublic(!followPublic)}
+      />
+      <HashtagSection userId={userId} />
+      <FriendManagement currentUserId={userId} />
+      <CreatePost userId={userId} />
+      <Feed posts={posts} onEndReached={handleEndReached} />
+    </div>
+  );
+};
+
+export default App;
+' > client/src/App.js
+Prompt 9: Update Dependencies
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update client/package.json
+echo '{
+  "name": "share-client",
+  "version": "0.1.0",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^1.6.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  }
+}' > client/package.json
+
+# Install client dependencies
+cd client && npm install
