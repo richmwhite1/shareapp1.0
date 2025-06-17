@@ -8,7 +8,7 @@ import {
   type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count, or, inArray, sql, like } from "drizzle-orm";
+import { eq, and, desc, count, or, inArray, sql, like, gt } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -504,6 +504,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async sharePost(postId: number, userId?: number): Promise<void> {
+    // Check if user has shared this post in the last 30 seconds
+    if (userId) {
+      const thirtySecondsAgo = new Date(Date.now() - 30 * 1000);
+      const [recentShare] = await db
+        .select()
+        .from(postShares)
+        .where(
+          and(
+            eq(postShares.postId, postId),
+            eq(postShares.userId, userId),
+            gt(postShares.createdAt, thirtySecondsAgo)
+          )
+        );
+      
+      if (recentShare) {
+        throw new Error('You can only share a post once every 30 seconds');
+      }
+    }
+    
     await db.insert(postShares).values({ postId, userId });
   }
 

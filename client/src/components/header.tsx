@@ -51,52 +51,18 @@ export default function Header() {
               </h1>
             </Link>
             
-            {/* Search Bar */}
-            <div className="relative flex-1 max-w-md mx-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  type="text"
-                  placeholder="Search friends or #hashtags"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-yellow-400"
-                />
-              </div>
-              
-              {/* Search Results Dropdown */}
-              {searchResults && Array.isArray(searchResults) && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-64 overflow-y-auto z-50">
-                  {(searchResults as any[]).map((user: any) => (
-                    <Link key={user.id} href={`/profile/${user.id}`}>
-                      <div className="flex items-center p-3 hover:bg-gray-700 cursor-pointer">
-                        <Avatar className="w-8 h-8 mr-3">
-                          <AvatarImage src={user.profilePictureUrl || undefined} />
-                          <AvatarFallback className="bg-gray-600 text-white">
-                            {user.name?.charAt(0).toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-white">{user.name}</div>
-                          <div className="text-sm text-gray-400">@{user.username}</div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+
           </div>
 
           {/* Navigation and Actions */}
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                {/* Search */}
+                {/* Hashtags Search */}
                 <Link href="/search">
                   <Button variant="ghost" className="text-yellow-400 hover:bg-gray-800">
-                    <Search className="w-4 h-4 mr-1" />
-                    <span className="hidden sm:inline">Search</span>
+                    <Hash className="w-4 h-4 mr-1" />
+                    <span className="hidden sm:inline">#hashtags</span>
                   </Button>
                 </Link>
 
