@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   profilePictureUrl: text("profile_picture_url"),
+  defaultPrivacy: text("default_privacy").notNull().default("public"), // public, connections
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -76,6 +76,11 @@ export default function ProfilePage() {
     enabled: Boolean(isOwnProfile && user?.id),
   });
 
+  // Update privacy state when data loads
+  if (userPrivacy?.defaultPrivacy && defaultPrivacy !== userPrivacy.defaultPrivacy) {
+    setDefaultPrivacy(userPrivacy.defaultPrivacy as 'public' | 'connections');
+  }
+
   // Fetch user's average aura rating
   const { data: auraData } = useQuery<{ average: number; count: number }>({
     queryKey: [`/api/users/${profileUserId}/aura/stats`],
@@ -211,6 +216,21 @@ export default function ProfilePage() {
     updatePrivacyMutation.mutate(privacy);
   };
 
+  const handleAuraRating = (rating: number) => {
+    setAuraRating(rating);
+    rateUserMutation.mutate(rating);
+  };
+
+  // Get aura color based on rating
+  const getAuraColor = (rating: number) => {
+    if (rating >= 4.5) return 'border-yellow-400'; // Gold
+    if (rating >= 4.0) return 'border-green-400'; // Green
+    if (rating >= 3.5) return 'border-blue-400'; // Blue
+    if (rating >= 3.0) return 'border-purple-400'; // Purple
+    if (rating >= 2.5) return 'border-orange-400'; // Orange
+    return 'border-red-400'; // Red
+  };
+
   // Handle file selection for profile picture
   const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -248,9 +268,9 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-black">
       <div className="w-full">
-        {/* Large Profile Picture */}
+        {/* Large Profile Picture with Aura Border */}
         <div className="relative">
-          <div className="w-full h-96 bg-gray-900 rounded-b-3xl overflow-hidden">
+          <div className={`w-full h-96 bg-gray-900 rounded-b-3xl overflow-hidden border-4 ${getAuraColor(auraData?.average || 4)}`}>
             {displayUser?.profilePictureUrl ? (
               <img 
                 src={displayUser.profilePictureUrl} 
@@ -372,6 +392,37 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Aura Rating Section - Only show when viewing other users */}
+        {!isOwnProfile && (
+          <div className="px-6 py-4 bg-gray-800 mx-4 rounded-lg mb-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-white mb-2">Rate {displayUser?.name}'s Aura</h3>
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-2xl font-bold text-white mr-2">{auraData?.average?.toFixed(1) || '4.0'}</span>
+                <div className={`w-4 h-4 rounded-full ${getAuraColor(auraData?.average || 4).replace('border-', 'bg-')}`}></div>
+                <span className="text-sm text-gray-400 ml-2">({auraData?.count || 0} ratings)</span>
+              </div>
+              <div className="flex justify-center space-x-2 mb-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    onClick={() => handleAuraRating(rating)}
+                    disabled={rateUserMutation.isPending}
+                    className={`w-8 h-8 rounded-full transition-all ${
+                      auraRating >= rating 
+                        ? 'bg-yellow-400 text-black' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    } ${rateUserMutation.isPending ? 'opacity-50' : ''}`}
+                  >
+                    {rating}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400">Rate their energy and vibe</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Lists Section */}
