@@ -1498,6 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid privacy setting' });
       }
 
+      console.log(`Privacy setting ${defaultPrivacy} saved for user ${userId}`);
       // Update user's default privacy setting
       await storage.updateUserPrivacy(userId, defaultPrivacy);
       
@@ -1505,6 +1506,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Privacy update error:', error);
       res.status(500).json({ message: 'Failed to update privacy setting' });
+    }
+  });
+
+  // Get user privacy settings endpoint
+  app.get('/api/user/:userId/privacy', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const requestingUserId = req.user.userId;
+
+      // Only allow users to view their own privacy settings
+      if (userId !== requestingUserId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({ defaultPrivacy: user.defaultPrivacy || 'public' });
+    } catch (error) {
+      console.error('Privacy fetch error:', error);
+      res.status(500).json({ message: 'Failed to fetch privacy setting' });
+    }
+  });
+
+  // Aura rating endpoints
+  app.post('/api/users/:userId/aura', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const ratingUserId = req.user.userId;
+      const { rating } = req.body;
+
+      if (isNaN(userId) || userId === ratingUserId) {
+        return res.status(400).json({ message: 'Cannot rate yourself' });
+      }
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+      }
+
+      // For now, just return success - we'll implement storage later
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Aura rating error:', error);
+      res.status(500).json({ message: 'Failed to submit rating' });
+    }
+  });
+
+  app.get('/api/users/:userId/aura/stats', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+
+      // For now, return default values - we'll implement storage later
+      res.json({ average: 4, count: 0 });
+    } catch (error) {
+      console.error('Aura stats error:', error);
+      res.status(500).json({ message: 'Failed to fetch aura stats' });
     }
   });
 

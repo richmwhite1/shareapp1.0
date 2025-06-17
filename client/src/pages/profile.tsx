@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const [defaultPrivacy, setDefaultPrivacy] = useState<'public' | 'connections'>('public');
+  const [auraRating, setAuraRating] = useState<number>(3);
   
   // If there's an ID param, we're viewing another user's profile
   const profileUserId = params.id ? parseInt(params.id) : user?.id;
@@ -68,23 +69,38 @@ export default function ProfilePage() {
     enabled: !!profileUserId,
   });
 
+  // Fetch user's current privacy settings
+  const { data: userPrivacy } = useQuery<{ defaultPrivacy: string }>({
+    queryKey: [`/api/user/${user?.id}/privacy`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: Boolean(isOwnProfile && user?.id),
+  });
+
+  // Fetch user's average aura rating
+  const { data: auraData } = useQuery<{ average: number; count: number }>({
+    queryKey: [`/api/users/${profileUserId}/aura/stats`],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !!profileUserId,
+  });
+
   // Share profile mutation
   const shareProfileMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('POST', `/api/user/${user?.id}/share`);
+      // Generate shareable link and copy to clipboard
+      const profileUrl = `${window.location.origin}/profile/${displayUser?.id}`;
+      await navigator.clipboard.writeText(profileUrl);
+      return { url: profileUrl };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Profile shared successfully",
-        description: "Your profile has been shared!",
+        title: "Profile link copied",
+        description: "Profile link has been copied to your clipboard!",
       });
-      // Invalidate the total shares query to update the count
-      queryClient.invalidateQueries({ queryKey: [`/api/user/total-shares/${user?.id}`] });
     },
     onError: (error: any) => {
       toast({
         title: "Share failed",
-        description: error.message || "Failed to share profile",
+        description: "Failed to copy profile link to clipboard",
         variant: "destructive",
       });
     },
@@ -100,11 +116,37 @@ export default function ProfilePage() {
         title: "Privacy setting updated",
         description: "Your default privacy preference has been saved.",
       });
+      // Invalidate privacy query to refresh the data
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id}/privacy`] });
     },
     onError: () => {
       toast({
         title: "Update failed",
         description: "Failed to update privacy setting",
+        variant: "destructive",
+      });
+      // Reset the UI state on error
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${user?.id}/privacy`] });
+    },
+  });
+
+  // Aura rating mutation
+  const rateUserMutation = useMutation({
+    mutationFn: async (rating: number) => {
+      return apiRequest('POST', `/api/users/${profileUserId}/aura`, { rating });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Rating submitted",
+        description: "Your aura rating has been recorded!",
+      });
+      // Invalidate aura stats to refresh the average
+      queryClient.invalidateQueries({ queryKey: [`/api/users/${profileUserId}/aura/stats`] });
+    },
+    onError: () => {
+      toast({
+        title: "Rating failed",
+        description: "Failed to submit rating",
         variant: "destructive",
       });
     },
