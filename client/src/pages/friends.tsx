@@ -164,6 +164,7 @@ export default function ConnectionsPage() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
       queryClient.invalidateQueries({ queryKey: ['/api/search/users', 'all'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/outgoing-friend-requests'] });
     },
     onError: (error: any) => {
       toast({
@@ -259,11 +260,10 @@ export default function ConnectionsPage() {
                       ) : (
                         filteredUsers.map((searchUser) => {
                           const friendship = friends.find((f: any) => f.id === searchUser.id);
-                          const isFollowing = !!friendship && friendship.status === "following";
-                          const isConnected = !!friendship && friendship.status === "connected";
+                          const isFollowing = !!friendship;
+                          const isConnected = !!friendship; // All friendships are connections in this system
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
-                          // Check if we have sent a request to this user (they would have a pending request from us)
-                          const hasOutgoingRequest = false; // This would need to be tracked separately
+                          const hasOutgoingRequest = outgoingRequests.some(req => req.toUser.id === searchUser.id);
                           
                           return (
                             <div
