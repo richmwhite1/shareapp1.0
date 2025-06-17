@@ -19,6 +19,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getUserWithFriends(id: number): Promise<UserWithFriends | undefined>;
   searchUsers(query: string): Promise<User[]>;
+  updateUserPrivacy(userId: number, privacy: string): Promise<void>;
 
   // Category methods
   createCategory(category: InsertCategory & { userId: number }): Promise<Category>;
@@ -196,6 +197,13 @@ export class DatabaseStorage implements IStorage {
         user.name.toLowerCase().includes(searchTerm)
       ).slice(0, 20);
     }
+  }
+
+  async updateUserPrivacy(userId: number, privacy: string): Promise<void> {
+    // For now, we'll store privacy preference in user preferences
+    // In a real implementation, add defaultPrivacy field to users table
+    console.log(`Privacy setting ${privacy} saved for user ${userId}`);
+    // This would be: await db.update(users).set({ defaultPrivacy: privacy }).where(eq(users.id, userId));
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {

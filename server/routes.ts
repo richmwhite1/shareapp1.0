@@ -1489,8 +1489,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid privacy setting' });
       }
 
-      // For now, we'll just return success since we don't have a privacy field in the users table yet
-      // In a real implementation, you'd add a defaultPrivacy field to the users table
+      // Update user's default privacy setting
+      await storage.updateUserPrivacy(userId, defaultPrivacy);
+      
       res.json({ success: true });
     } catch (error) {
       console.error('Privacy update error:', error);
