@@ -1549,15 +1549,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get current user aura rating
       const [userResult] = await db.select({
-        auraRating: sql<number>`aura_rating`,
-        ratingCount: sql<number>`rating_count`
+        auraRating: users.auraRating,
+        ratingCount: users.ratingCount
       }).from(users).where(eq(users.id, profileId));
 
       if (!userResult) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const currentRating = userResult.auraRating || 4.0;
+      const currentRating = parseFloat(userResult.auraRating || '4.0');
       const currentCount = userResult.ratingCount || 0;
       
       // Calculate new average rating
@@ -1567,8 +1567,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user's aura rating
       await db.update(users)
         .set({ 
-          auraRating: sql`${newRating}`,
-          ratingCount: sql`${newCount}`
+          auraRating: newRating.toString(),
+          ratingCount: newCount
         })
         .where(eq(users.id, profileId));
 
@@ -1605,8 +1605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user's aura rating from users table
       const [userResult] = await db.select({
-        auraRating: sql<number>`aura_rating`,
-        ratingCount: sql<number>`rating_count`
+        auraRating: users.auraRating,
+        ratingCount: users.ratingCount
       }).from(users).where(eq(users.id, profileId));
 
       if (!userResult) {
@@ -1614,7 +1614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        average: userResult.auraRating || 4.0, 
+        average: parseFloat(userResult.auraRating || '4.0'), 
         count: userResult.ratingCount || 0 
       });
     } catch (error) {

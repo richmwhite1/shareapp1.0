@@ -34,6 +34,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
   const isPost = !!postId;
   const targetId = postId || profileId;
   const endpoint = isPost ? `/api/posts/${targetId}/energy` : `/api/profiles/${targetId}/energy`;
+  const statsEndpoint = isPost ? `/api/posts/${targetId}/energy/stats` : `/api/profiles/${targetId}/energy/stats`;
 
   // Get current user's rating
   const { data: userRating } = useQuery({
@@ -41,20 +42,18 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     enabled: !!user && !!targetId,
   });
 
-  // Get average rating stats
+  // Get rating statistics
   const { data: ratingStats } = useQuery({
-    queryKey: [endpoint, 'stats'],
+    queryKey: [statsEndpoint],
     enabled: !!targetId,
   });
 
-  // Rating mutation
   const ratingMutation = useMutation({
     mutationFn: async (rating: number) => {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({ rating }),
       });
@@ -67,10 +66,10 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [endpoint, 'user'] });
-      queryClient.invalidateQueries({ queryKey: [endpoint, 'stats'] });
+      queryClient.invalidateQueries({ queryKey: [statsEndpoint] });
       toast({
         title: "Aura rating submitted",
-        description: `You rated this ${AURA_LEVELS[currentRating - 1]} aura`,
+        description: `You rated this ${CHAKRA_NAMES[currentRating - 1]} chakra`,
       });
     },
     onError: () => {
@@ -102,8 +101,9 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
   const averageRating = (ratingStats as any)?.average || 4;
   const totalRatings = (ratingStats as any)?.count || 0;
   
-  // Generate gradient background for slider
-  const sliderGradient = `linear-gradient(to right, ${CHAKRA_COLORS.join(', ')})`;
+  // Generate gradient background for slider using aura colors
+  const chakraColors = Array.from({length: 7}, (_, i) => getAuraColor(i + 1));
+  const sliderGradient = `linear-gradient(to right, ${chakraColors.join(', ')})`;
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -118,69 +118,66 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
         
         <div className="relative">
-          {/* Custom gradient background */}
+          {/* Custom slider track with chakra gradient */}
           <div 
-            className="h-2 rounded-full absolute w-full"
+            className="h-2 rounded-full mb-3"
             style={{ background: sliderGradient }}
           />
-          {/* Overlay showing current position */}
-          <div 
-            className="h-2 rounded-full absolute transition-all duration-200"
-            style={{ 
-              backgroundColor: CHAKRA_COLORS[currentRating - 1],
-              width: `${((currentRating - 1) / 6) * 100}%`
-            }}
-          />
+          
           <Slider
             value={[currentRating]}
             onValueChange={handleRatingChange}
-            min={1}
             max={7}
+            min={1}
             step={1}
-            className="absolute top-0 w-full h-2 z-10"
-            style={{ background: 'transparent' }}
+            className="relative -mt-5"
+            style={{
+              '--slider-thumb-color': getAuraColor(currentRating)
+            } as React.CSSProperties}
           />
         </div>
-
-        {/* Current selection display */}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: CHAKRA_COLORS[currentRating - 1] }}
-            />
-            <span className="text-gray-300">
-              {ENERGY_EMOJIS[currentRating - 1]}
-            </span>
-          </div>
-          <button
-            onClick={handleRatingSubmit}
-            disabled={ratingMutation.isPending}
-            className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
+        
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>Low</span>
+          <span 
+            className="font-medium"
+            style={{ color: getAuraColor(currentRating) }}
           >
-            {ratingMutation.isPending ? 'Rating...' : 'Rate'}
-          </button>
+            {CHAKRA_NAMES[currentRating - 1]} {ENERGY_EMOJIS[currentRating - 1]}
+          </span>
+          <span>High</span>
         </div>
       </div>
 
-      {/* Rating Stats */}
-      {totalRatings > 0 && (
-        <div className="text-xs text-gray-400 flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span 
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: CHAKRA_COLORS[Math.round(averageRating) - 1] }}
-            />
-            <span>Avg Level: {Math.round(averageRating)}</span>
-          </div>
-          <span>({totalRatings} rating{totalRatings !== 1 ? 's' : ''})</span>
+      {/* Rating Display & Submit */}
+      <div className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-4 h-4 rounded-full"
+            style={{ backgroundColor: getAuraColor(currentRating) }}
+          />
+          <span className="text-sm">
+            Level {currentRating} - {CHAKRA_NAMES[currentRating - 1]}
+          </span>
         </div>
-      )}
+        
+        <button
+          onClick={handleRatingSubmit}
+          disabled={ratingMutation.isPending}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm rounded-lg transition-colors"
+          style={{ 
+            backgroundColor: getAuraColor(currentRating),
+            borderColor: getAuraColor(currentRating)
+          }}
+        >
+          {ratingMutation.isPending ? 'Submitting...' : 'Rate'}
+        </button>
+      </div>
 
-      {/* User's current rating */}
-      {userRating && (
-        <div className="text-xs text-purple-300">
-          Your rating: {ENERGY_EMOJIS[(userRating as any).rating - 1]}
+      {/* Average Rating Display */}
+      {totalRatings > 0 && (
+        <div className="text-center text-sm text-gray-400">
+          Average: {averageRating.toFixed(1)} ({totalRatings} rating{totalRatings !== 1 ? 's' : ''})
         </div>
       )}
     </div>
