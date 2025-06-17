@@ -261,11 +261,18 @@ END:VCALENDAR`;
 
   // Event handling functions
   const toggleReminder = (reminder: string) => {
-    setReminders(prev => 
-      prev.includes(reminder) 
-        ? prev.filter(r => r !== reminder)
-        : [...prev, reminder]
-    );
+    setReminders(prev => {
+      if (prev.includes(reminder)) {
+        // Remove reminder if already selected
+        return prev.filter(r => r !== reminder);
+      } else {
+        // Add reminder if not selected and within limits
+        if (formData.privacy === 'public' && prev.length >= 3) {
+          return prev; // Don't add if public event already has 3 reminders
+        }
+        return [...prev, reminder];
+      }
+    });
   };
 
   const addTask = () => {
@@ -1072,23 +1079,43 @@ END:VCALENDAR`;
 
                   {/* Event Reminders */}
                   <div>
-                    <Label className="text-purple-200">Event Reminders</Label>
+                    <Label className="text-purple-200">Event Reminders {formData.privacy === 'public' ? '(Pick up to 3)' : ''}</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {['1 hour before', '1 day before', '1 week before'].map((reminder) => (
-                        <button
-                          key={reminder}
-                          type="button"
-                          onClick={() => toggleReminder(reminder)}
-                          className={`text-xs px-3 py-1 rounded border ${
-                            reminders.includes(reminder)
-                              ? 'bg-purple-600 border-purple-400 text-white'
-                              : 'bg-gray-700 border-purple-300 text-purple-200'
-                          }`}
-                        >
-                          {reminder}
-                        </button>
-                      ))}
+                      {['1_month', '2_weeks', '1_week', '3_days', '1_day', 'day_of'].map((reminderValue) => {
+                        const reminderLabel = {
+                          '1_month': '1 month',
+                          '2_weeks': '2 weeks', 
+                          '1_week': '1 week',
+                          '3_days': '3 days',
+                          '1_day': '1 day',
+                          'day_of': 'day of'
+                        }[reminderValue];
+                        
+                        const isSelected = reminders.includes(reminderValue);
+                        const canSelect = formData.privacy !== 'public' || reminders.length < 3 || isSelected;
+                        
+                        return (
+                          <button
+                            key={reminderValue}
+                            type="button"
+                            onClick={() => toggleReminder(reminderValue)}
+                            disabled={!canSelect}
+                            className={`text-xs px-3 py-1 rounded border ${
+                              isSelected
+                                ? 'bg-purple-600 border-purple-400 text-white'
+                                : canSelect
+                                ? 'bg-gray-700 border-purple-300 text-purple-200 hover:bg-gray-600'
+                                : 'bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed'
+                            }`}
+                          >
+                            {reminderLabel}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {formData.privacy === 'public' && reminders.length >= 3 && (
+                      <p className="text-xs text-yellow-400 mt-1">Public events can only have 3 reminder options</p>
+                    )}
                   </div>
 
                   {/* Recurring Event */}

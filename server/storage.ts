@@ -939,6 +939,35 @@ export class DatabaseStorage implements IStorage {
     })) as UserWithFriends[];
   }
 
+  async getFriendsOrderedByRecentTags(userId: number): Promise<User[]> {
+    const result = await db
+      .select({
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+          createdAt: users.createdAt,
+          password: users.password,
+        },
+        lastTagged: max(taggedPosts.createdAt),
+      })
+      .from(friendships)
+      .innerJoin(users, eq(friendships.friendId, users.id))
+      .leftJoin(taggedPosts, and(
+        eq(taggedPosts.fromUserId, userId),
+        eq(taggedPosts.toUserId, users.id)
+      ))
+      .where(and(
+        eq(friendships.userId, userId),
+        eq(friendships.status, 'accepted')
+      ))
+      .groupBy(users.id, users.username, users.name, users.profilePictureUrl, users.createdAt, users.password)
+      .orderBy(desc(max(taggedPosts.createdAt)));
+
+    return result.map(r => r.user as User);
+  }
+
   async getFriendRequests(userId: number): Promise<Array<{ id: number; fromUser: User; createdAt: Date }>> {
     const result = await db
       .select({
