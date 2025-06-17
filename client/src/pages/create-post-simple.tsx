@@ -1155,7 +1155,7 @@ END:VCALENDAR`;
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
-                                className="w-full justify-start text-left font-normal bg-white border-purple-300"
+                                className="w-full justify-start text-left font-normal bg-black text-white border-purple-300 hover:bg-gray-800"
                               >
                                 <Calendar className="mr-2 h-4 w-4" />
                                 {selectedDate ? selectedDate.toDateString() : "Pick a date"}
@@ -1168,7 +1168,7 @@ END:VCALENDAR`;
                                 onSelect={handleDateSelect}
                                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
-                                className="bg-black"
+                                className="bg-black text-white"
                               />
                             </PopoverContent>
                           </Popover>

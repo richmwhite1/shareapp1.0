@@ -48,6 +48,7 @@
   --rdp-outline-selected: 3px solid var(--rdp-accent-color);
   background-color: #000 !important;
   color: white !important;
+  padding: 16px !important;
 }
 
 .rdp-button {
@@ -110,6 +111,35 @@
 }
 
 .rdp-table {
+  background-color: #000 !important;
+}
+
+/* Additional calendar styling for complete dark theme */
+.rdp-dropdown_month,
+.rdp-dropdown_year {
+  background-color: #000 !important;
+  color: white !important;
+  border: 1px solid #374151 !important;
+}
+
+.rdp-dropdown_month option,
+.rdp-dropdown_year option {
+  background-color: #000 !important;
+  color: white !important;
+}
+
+/* Ensure calendar wrapper is always dark */
+[data-radix-popper-content-wrapper] {
+  background-color: #000 !important;
+}
+
+/* Force dark background on popover content */
+.rdp-root {
+  background-color: #000 !important;
+  color: white !important;
+}
+
+.rdp-month {
   background-color: #000 !important;
 }
 
