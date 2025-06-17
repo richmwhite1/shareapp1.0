@@ -255,7 +255,7 @@ export default function ConnectionsPage() {
                           const isFollowing = !!friendship;
                           const isConnected = false; // For now, treating all as following relationships
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
-                          const hasOutgoingRequest = friendRequests.some(req => req.toUserId === searchUser.id);
+                          const hasOutgoingRequest = false; // Will implement proper outgoing request tracking
                           
                           return (
                             <div

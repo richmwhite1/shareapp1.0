@@ -147,9 +147,10 @@ export const commentHashtags = pgTable("comment_hashtags", {
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  type: text("type").notNull(), // tag, friend_request, like, comment
+  type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept
   postId: integer("post_id"),
   fromUserId: integer("from_user_id"),
+  message: text("message"),
   viewed: boolean("viewed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -418,9 +419,10 @@ export const createRsvpSchema = z.object({
 // Notification schemas
 export const createNotificationSchema = z.object({
   userId: z.number(),
-  type: z.enum(["tag", "friend_request", "like", "comment"]),
+  type: z.enum(["tag", "friend_request", "like", "comment", "share", "friend_accept"]),
   postId: z.number().optional(),
   fromUserId: z.number().optional(),
+  message: z.string().optional(),
 });
 
 // Types

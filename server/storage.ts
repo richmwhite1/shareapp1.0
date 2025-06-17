@@ -1113,8 +1113,72 @@ export class DatabaseStorage implements IStorage {
 
   // Notification methods
   async createNotification(notification: CreateNotificationData): Promise<Notification> {
-    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    // Check if a similar notification exists within the last 24 hours to avoid spam
+    if (notification.type === 'like' || notification.type === 'comment' || notification.type === 'share') {
+      const existingNotification = await db
+        .select()
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.userId, notification.userId),
+            eq(notifications.type, notification.type),
+            eq(notifications.postId, notification.postId!),
+            gt(notifications.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)) // Last 24 hours
+          )
+        )
+        .limit(1);
+
+      if (existingNotification.length > 0) {
+        // Update the existing notification instead of creating a new one
+        await db
+          .update(notifications)
+          .set({ 
+            createdAt: new Date(),
+            message: this.getConsolidatedMessage(notification.type, notification.fromUserId!)
+          })
+          .where(eq(notifications.id, existingNotification[0].id));
+        
+        return existingNotification[0];
+      }
+    }
+
+    const [newNotification] = await db.insert(notifications).values({
+      ...notification,
+      message: notification.message || this.getNotificationMessage(notification)
+    }).returning();
     return newNotification;
+  }
+
+  private getNotificationMessage(notification: CreateNotificationData): string {
+    switch (notification.type) {
+      case 'like':
+        return 'liked your post';
+      case 'comment':
+        return 'commented on your post';
+      case 'share':
+        return 'shared your post';
+      case 'friend_request':
+        return 'sent you a friend request';
+      case 'friend_accept':
+        return 'accepted your friend request';
+      case 'tag':
+        return 'tagged you in a post';
+      default:
+        return 'interacted with your content';
+    }
+  }
+
+  private getConsolidatedMessage(type: string, fromUserId: number): string {
+    switch (type) {
+      case 'like':
+        return 'and others liked your post';
+      case 'comment':
+        return 'and others commented on your post';
+      case 'share':
+        return 'and others shared your post';
+      default:
+        return 'and others interacted with your content';
+    }
   }
 
   async getNotifications(userId: number): Promise<NotificationWithUser[]> {
@@ -1496,8 +1560,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTaggedPosts(userId: number): Promise<PostWithUser[]> {
-    const taggedByUser = alias(users, 'taggedByUser');
-    
     const result = await db
       .select({
         post: posts,
@@ -1511,17 +1573,10 @@ export class DatabaseStorage implements IStorage {
           id: categories.id,
           name: categories.name,
         },
-        taggedBy: {
-          id: taggedByUser.id,
-          username: taggedByUser.username,
-          name: taggedByUser.name,
-          profilePictureUrl: taggedByUser.profilePictureUrl,
-        },
       })
       .from(taggedPosts)
       .innerJoin(posts, eq(taggedPosts.postId, posts.id))
       .innerJoin(users, eq(posts.userId, users.id))
-      .innerJoin(taggedByUser, eq(taggedPosts.fromUserId, taggedByUser.id))
       .leftJoin(categories, eq(posts.categoryId, categories.id))
       .where(eq(taggedPosts.toUserId, userId))
       .orderBy(desc(taggedPosts.createdAt));
@@ -1531,7 +1586,6 @@ export class DatabaseStorage implements IStorage {
       additionalPhotoData: r.post.additionalPhotoData as any,
       user: r.user as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
       category: r.category as Pick<Category, 'id' | 'name'> | undefined,
-      taggedBy: r.taggedBy as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
     })) as PostWithUser[];
   }
 
