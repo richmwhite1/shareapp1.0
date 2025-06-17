@@ -9,7 +9,7 @@ import BottomNav from "@/components/bottom-nav";
 import Home from "@/pages/home";
 import PostPage from "@/pages/post";
 import AuthPage from "@/pages/auth";
-import CreatePostPage from "@/pages/create-post-simple";
+import CreatePostPage from "@/pages/create-post-minimal";
 import ProfilePage from "@/pages/profile";
 import CategoryPage from "@/pages/category";
 import SearchPage from "@/pages/search";
