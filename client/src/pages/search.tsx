@@ -1,18 +1,20 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search as SearchIcon, Hash, TrendingUp } from "lucide-react";
+import { Search as SearchIcon, Hash, TrendingUp, X, SortAsc } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth.tsx";
 import PostCard from "@/components/post-card";
 import Header from "@/components/header";
 import { Link, useLocation } from "wouter";
 
 export default function SearchPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [hashtagInput, setHashtagInput] = useState("");
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<"popular" | "recent">("popular");
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
 
@@ -21,20 +23,48 @@ export default function SearchPage() {
     const params = new URLSearchParams(location.split('?')[1] || '');
     const hashtagParam = params.get('hashtag');
     if (hashtagParam) {
-      setSearchTerm(`#${hashtagParam}`);
-      setSearchQuery(hashtagParam);
+      setSelectedHashtags([hashtagParam]);
     }
   }, [location]);
 
-  // Search posts by hashtag
+  // Hashtag input handling
+  const addHashtag = (tag: string) => {
+    const cleanTag = tag.replace(/^#/, '').toLowerCase().trim();
+    if (cleanTag && !selectedHashtags.includes(cleanTag) && selectedHashtags.length < 10) {
+      setSelectedHashtags(prev => [...prev, cleanTag]);
+    }
+  };
+
+  const removeHashtag = (tag: string) => {
+    setSelectedHashtags(prev => prev.filter(t => t !== tag));
+  };
+
+  const handleHashtagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (hashtagInput.trim()) {
+        addHashtag(hashtagInput.trim());
+        setHashtagInput('');
+      }
+    }
+  };
+
+  const handleHashtagClick = (hashtag: string) => {
+    addHashtag(hashtag);
+  };
+
+  // Search posts by multiple hashtags
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ['/api/hashtags', searchQuery, 'posts'],
+    queryKey: ['/api/search/hashtags', selectedHashtags, sortBy],
     queryFn: async () => {
-      const response = await fetch(`/api/hashtags/${searchQuery}/posts`);
+      if (selectedHashtags.length === 0) return [];
+      
+      const hashtagsParam = selectedHashtags.join(',');
+      const response = await fetch(`/api/search/hashtags?tags=${hashtagsParam}&sort=${sortBy}`);
       if (!response.ok) throw new Error('Failed to search posts');
       return response.json();
     },
-    enabled: !!searchQuery,
+    enabled: selectedHashtags.length > 0,
   });
 
   // Get trending hashtags
@@ -47,19 +77,6 @@ export default function SearchPage() {
     },
     select: (data: any) => Array.isArray(data) ? data.slice(0, 10) : [],
   });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      const hashtag = searchTerm.replace('#', '').toLowerCase();
-      setSearchQuery(hashtag);
-    }
-  };
-
-  const handleHashtagClick = (hashtag: string) => {
-    setSearchTerm(`#${hashtag}`);
-    setSearchQuery(hashtag);
-  };
 
   if (!isAuthenticated) {
     return (
@@ -93,32 +110,69 @@ export default function SearchPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-pinterest-red">
               <SearchIcon className="h-6 w-6" />
-              Search Posts by Hashtag
+              Search Posts by Hashtags
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative flex-1">
-                <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <CardContent className="space-y-4">
+            {/* Hashtag Input */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Enter hashtag (e.g., #travel, #food)"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  placeholder="Type hashtags and press Enter or Space (up to 10)"
+                  className="pl-10 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                  value={hashtagInput}
+                  onChange={(e) => setHashtagInput(e.target.value)}
+                  onKeyDown={handleHashtagKeyDown}
+                  disabled={selectedHashtags.length >= 10}
                 />
               </div>
-              <Button 
-                type="submit" 
-                disabled={!searchTerm.trim() || isSearching}
-                className="bg-pinterest-red hover:bg-red-700"
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </Button>
-            </form>
-            <p className="text-xs text-muted-foreground mt-2">
-              Search for posts containing specific hashtags to discover content
-            </p>
+              
+              {/* Selected Hashtags */}
+              {selectedHashtags.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  {selectedHashtags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="flex items-center gap-1 bg-pinterest-red text-white hover:bg-red-700"
+                    >
+                      <Hash className="h-3 w-3" />
+                      {tag}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeHashtag(tag)}
+                        className="h-4 w-4 p-0 ml-1 hover:bg-red-700 text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Options */}
+            {selectedHashtags.length > 0 && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <SortAsc className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium">Sort by:</span>
+                </div>
+                <Select value={sortBy} onValueChange={(value: "popular" | "recent") => setSortBy(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="popular">Most Popular</SelectItem>
+                    <SelectItem value="recent">Most Recent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -132,32 +186,38 @@ export default function SearchPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(trendingHashtags) && trendingHashtags.length > 0 ? (
-                trendingHashtags.map((hashtag: any) => (
-                  <Badge
-                    key={hashtag.id}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-pinterest-red hover:text-white transition-colors"
-                    onClick={() => handleHashtagClick(hashtag.name)}
-                  >
-                    <Hash className="h-3 w-3 mr-1" />
-                    {hashtag.name} ({hashtag.count})
+              {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
+                <Button
+                  key={hashtag.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleHashtagClick(hashtag.name)}
+                  className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                  disabled={selectedHashtags.includes(hashtag.name)}
+                >
+                  <Hash className="h-3 w-3" />
+                  {hashtag.name}
+                  <Badge variant="secondary" className="ml-1">
+                    {hashtag.count}
                   </Badge>
-                ))
-              ) : (
-                <p className="text-muted-foreground">No trending hashtags yet</p>
-              )}
+                </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         {/* Search Results */}
-        {searchQuery && (
-          <Card className="mb-8">
+        {selectedHashtags.length > 0 && (
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Hash className="h-5 w-5" />
-                Results for #{searchQuery}
+                <SearchIcon className="h-5 w-5" />
+                Search Results
+                {searchResults && (
+                  <Badge variant="secondary">
+                    {searchResults.length} posts found
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -166,7 +226,7 @@ export default function SearchPage() {
                   <p className="text-muted-foreground">Searching posts...</p>
                 </div>
               ) : searchResults && searchResults.length > 0 ? (
-                <div className="grid gap-0">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {searchResults.map((post: any) => (
                     <PostCard key={post.id} post={post} />
                   ))}
@@ -174,10 +234,7 @@ export default function SearchPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
-                    No posts found for #{searchQuery}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Try searching for a different hashtag or browse trending hashtags above
+                    No posts found with the selected hashtags.
                   </p>
                 </div>
               )}
@@ -185,20 +242,19 @@ export default function SearchPage() {
           </Card>
         )}
 
-        {/* Instructions */}
-        {!searchQuery && (
+        {/* Empty State */}
+        {selectedHashtags.length === 0 && (
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <Hash className="h-12 w-12 text-muted-foreground mx-auto" />
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Discover Content with Hashtags</h3>
-                  <p className="text-muted-foreground">
-                    Search for specific hashtags to find posts about topics you're interested in.
-                    Click on trending hashtags above or type your own search term.
-                  </p>
-                </div>
-              </div>
+            <CardContent className="text-center py-12">
+              <Hash className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Search Posts by Hashtags</h3>
+              <p className="text-muted-foreground mb-6">
+                Add up to 10 hashtags to find posts that match your interests.
+                Use multiple hashtags to narrow your search.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Try clicking on trending hashtags above to get started!
+              </p>
             </CardContent>
           </Card>
         )}

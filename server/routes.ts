@@ -1196,6 +1196,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multiple hashtag search with sorting
+  app.get('/api/search/hashtags', async (req, res) => {
+    try {
+      const tags = req.query.tags as string;
+      const sort = req.query.sort as string || 'popular';
+      
+      if (!tags) {
+        return res.json([]);
+      }
+
+      const hashtagNames = tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
+      if (hashtagNames.length === 0) {
+        return res.json([]);
+      }
+
+      const posts = await storage.getPostsByMultipleHashtags(hashtagNames, sort);
+      res.json(posts);
+    } catch (error) {
+      console.error('Hashtag search error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Tagged posts endpoint
   app.get('/api/tagged-posts', authenticateToken, async (req: any, res) => {
     try {

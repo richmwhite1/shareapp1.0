@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, X, Clock } from "lucide-react";
 import Header from "@/components/header";
@@ -52,6 +53,16 @@ export default function NotificationsPage() {
     },
   });
 
+  // Auto-mark notifications as viewed when page loads
+  React.useEffect(() => {
+    if (notifications.length > 0) {
+      const unreadNotifications = notifications.filter(n => !n.viewed);
+      unreadNotifications.forEach(notification => {
+        markViewedMutation.mutate(notification.id);
+      });
+    }
+  }, [notifications]);
+
   const handleMarkAsViewed = (notificationId: number) => {
     markViewedMutation.mutate(notificationId);
   };
@@ -75,7 +86,7 @@ export default function NotificationsPage() {
     }
 
     switch (notification.type) {
-      case 'friendRequest':
+      case 'friend_request':
         return `${notification.fromUser?.name || 'Someone'} sent you a friend request`;
       case 'like':
         return `${notification.fromUser?.name || 'Someone'} liked your post`;
