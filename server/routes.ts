@@ -1549,26 +1549,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get current user aura rating
       const [userResult] = await db.select({
-        auraRating: sql<number>`aura_rating`,
-        ratingCount: sql<number>`rating_count`
+        auraRating: users.auraRating,
+        ratingCount: users.ratingCount
       }).from(users).where(eq(users.id, profileId));
 
       if (!userResult) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const currentRating = userResult.auraRating || 4.0;
+      const currentRating = userResult.auraRating || 4;
       const currentCount = userResult.ratingCount || 0;
       
       // Calculate new average rating
       const newCount = currentCount + 1;
-      const newRating = ((currentRating * currentCount) + rating) / newCount;
+      const newRating = Math.round(((currentRating * currentCount) + rating) / newCount);
 
       // Update user's aura rating
       await db.update(users)
         .set({ 
-          auraRating: sql`${newRating}`,
-          ratingCount: sql`${newCount}`
+          auraRating: newRating,
+          ratingCount: newCount
         })
         .where(eq(users.id, profileId));
 

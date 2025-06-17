@@ -66,9 +66,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           <ProfileIconWithAura userId={post.userId} userName={post.user.name} profilePicture={post.user.profilePictureUrl} />
         </div>
         
-        {/* Event date overlay - top left corner */}
+        {/* Event date overlay - top right corner */}
         {post.isEvent && post.eventDate && (
-          <div className="absolute top-3 left-3 bg-purple-600/90 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 backdrop-blur-sm">
+          <div className="absolute top-3 right-3 bg-purple-600/90 text-white px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 backdrop-blur-sm">
             <Calendar className="w-3 h-3" />
             <span>{new Date(post.eventDate).toLocaleDateString()}</span>
           </div>
@@ -322,21 +322,18 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   };
 
   return (
-    <AuricField postId={post.id}>
-      <div className="bg-black overflow-hidden transition-all duration-300 relative">
+    <div className="bg-black overflow-hidden transition-all duration-300 relative">
       {/* Post Header */}
       <div className={`${isDetailView ? 'p-6' : 'p-4'} bg-black`}>
         <div className="flex items-center justify-between">
           <Link href={`/profile/${post.user.id}`}>
             <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
-              <AuricField profileId={post.user.id} intensity={0.3}>
-                <Avatar className={isDetailView ? 'w-12 h-12' : 'w-10 h-10'}>
-                  <AvatarImage src={post.user.profilePictureUrl || undefined} />
-                  <AvatarFallback className="bg-gray-600 text-white">
-                    {post.user.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </AuricField>
+              <ProfileIconWithAura 
+                userId={post.user.id} 
+                userName={post.user.name} 
+                profilePicture={post.user.profilePictureUrl}
+                size={isDetailView ? "md" : "sm"}
+              />
               <div>
                 <h3 className={`font-semibold text-white hover:text-yellow-400 transition-colors ${isDetailView ? 'text-base' : 'text-sm'}`}>
                   {post.user.name}
@@ -949,7 +946,6 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           )}
         </div>
       )}
-      </div>
-    </AuricField>
+    </div>
   );
 }
