@@ -200,6 +200,8 @@ export const createPostRequestSchema = z.object({
   spotifyUrl: z.string().optional(),
   youtubeUrl: z.string().optional(),
   hashtags: z.string().optional(),
+  privacy: z.enum(["public", "friends", "private"]).default("public"),
+  taggedUsers: z.string().optional(), // JSON string of user IDs
 }).refine(
   (data) => {
     // At least one of primaryLink, spotifyUrl, or youtubeUrl must be provided

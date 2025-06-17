@@ -292,7 +292,7 @@ export class DatabaseStorage implements IStorage {
     } as PostWithUser;
   }
 
-  async getAllPosts(): Promise<PostWithUser[]> {
+  async getAllPosts(viewerId?: number): Promise<PostWithUser[]> {
     const result = await db
       .select({
         post: posts,
@@ -312,11 +312,45 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(categories, eq(posts.categoryId, categories.id))
       .orderBy(desc(posts.createdAt));
 
-    return result.map(r => ({
+    const allPosts = result.map(r => ({
       ...r.post,
       user: r.user,
       category: r.category
     })) as PostWithUser[];
+
+    // Filter posts based on privacy settings
+    if (!viewerId) {
+      // Anonymous users can only see public posts
+      return allPosts.filter(post => post.privacy === 'public');
+    }
+
+    const filteredPosts = [];
+    for (const post of allPosts) {
+      if (post.privacy === 'public') {
+        filteredPosts.push(post);
+      } else if (post.privacy === 'friends' && post.userId !== viewerId) {
+        // Check if viewer is a friend of the post author
+        const areFriends = await this.areFriends(viewerId, post.userId);
+        if (areFriends) {
+          filteredPosts.push(post);
+        }
+      } else if (post.privacy === 'private' && post.userId !== viewerId) {
+        // Check if viewer is tagged in the post
+        const taggedUsers = await db
+          .select({ userId: postTags.userId })
+          .from(postTags)
+          .where(eq(postTags.postId, post.id));
+        
+        if (taggedUsers.some(tag => tag.userId === viewerId)) {
+          filteredPosts.push(post);
+        }
+      } else if (post.userId === viewerId) {
+        // Users can always see their own posts
+        filteredPosts.push(post);
+      }
+    }
+
+    return filteredPosts;
   }
 
   async getPostsByUserId(userId: number): Promise<PostWithUser[]> {

@@ -237,7 +237,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1,
         spotifyUrl: req.body.spotifyUrl || undefined,
         youtubeUrl: req.body.youtubeUrl || undefined,
-        hashtags: req.body.hashtags || undefined
+        hashtags: req.body.hashtags || undefined,
+        privacy: req.body.privacy || 'public',
+        taggedUsers: req.body.taggedUsers || undefined
       };
       
       let validatedData;
@@ -254,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data" });
       }
       
-      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl, hashtags } = validatedData;
+      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers } = validatedData;
       
       // Parse hashtags from the hashtags string
       const parseHashtags = (input: string): string[] => {
@@ -480,6 +482,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Parse tagged users from JSON string
+      let taggedUsersArray: number[] = [];
+      if (taggedUsers) {
+        try {
+          taggedUsersArray = JSON.parse(taggedUsers);
+        } catch (error) {
+          console.error('Failed to parse taggedUsers:', error);
+        }
+      }
+
       // Create post
       const post = await storage.createPost({
         userId: req.user.userId,
@@ -493,7 +505,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         spotifyUrl,
         youtubeUrl,
         mediaMetadata,
-        hashtags: hashtagArray
+        hashtags: hashtagArray,
+        privacy,
+        taggedUsers: taggedUsersArray
       });
 
       // Get post with user data

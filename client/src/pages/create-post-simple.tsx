@@ -908,6 +908,167 @@ export default function CreatePostPage() {
                 </p>
               </div>
 
+              {/* Privacy Settings */}
+              <div className="space-y-4">
+                <Label>Post Privacy</Label>
+                <div className="space-y-3">
+                  {/* Public Option */}
+                  <div 
+                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                      formData.privacy === 'public' 
+                        ? 'border-pinterest-red bg-red-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => handlePrivacyChange('public')}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        formData.privacy === 'public' 
+                          ? 'bg-pinterest-red border-pinterest-red' 
+                          : 'border-gray-300'
+                      }`}>
+                        {formData.privacy === 'public' && (
+                          <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                        )}
+                      </div>
+                      <Globe className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <div className="font-medium">Public</div>
+                        <div className="text-sm text-gray-500">Everyone can see this post</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Friends Only Option */}
+                  <div 
+                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                      formData.privacy === 'friends' 
+                        ? 'border-pinterest-red bg-red-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => handlePrivacyChange('friends')}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        formData.privacy === 'friends' 
+                          ? 'bg-pinterest-red border-pinterest-red' 
+                          : 'border-gray-300'
+                      }`}>
+                        {formData.privacy === 'friends' && (
+                          <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                        )}
+                      </div>
+                      <Users className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <div className="font-medium">Friends Only</div>
+                        <div className="text-sm text-gray-500">Only your friends can see this post</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Private Option */}
+                  <div 
+                    className={`border-2 rounded-lg p-3 cursor-pointer transition-colors ${
+                      formData.privacy === 'private' 
+                        ? 'border-pinterest-red bg-red-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => handlePrivacyChange('private')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 ${
+                          formData.privacy === 'private' 
+                            ? 'bg-pinterest-red border-pinterest-red' 
+                            : 'border-gray-300'
+                        }`}>
+                          {formData.privacy === 'private' && (
+                            <div className="w-full h-full rounded-full bg-white scale-50"></div>
+                          )}
+                        </div>
+                        <Lock className="h-5 w-5 text-gray-600" />
+                        <div>
+                          <div className="font-medium">Private</div>
+                          <div className="text-sm text-gray-500">Only tagged friends can see this post</div>
+                        </div>
+                      </div>
+                      {formData.privacy === 'private' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowFriendSelector(true);
+                          }}
+                          className="flex items-center space-x-1"
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span>Tag Friends</span>
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {formData.privacy === 'private' && taggedUsers.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="text-sm text-gray-600">
+                          Tagged friends: {getTaggedFriendNames()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Friend Selector Dialog */}
+              <Dialog open={showFriendSelector} onOpenChange={setShowFriendSelector}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Tag Friends</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {Array.isArray(friends) && friends.length > 0 ? (
+                      friends.map((friend: any) => (
+                        <div
+                          key={friend.id}
+                          className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                          onClick={() => toggleFriendTag(friend.id)}
+                        >
+                          <div className={`w-4 h-4 rounded border-2 ${
+                            taggedUsers.includes(friend.id)
+                              ? 'bg-pinterest-red border-pinterest-red'
+                              : 'border-gray-300'
+                          }`}>
+                            {taggedUsers.includes(friend.id) && (
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{friend.name}</div>
+                            <div className="text-sm text-gray-500">@{friend.username}</div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        No friends to tag. Add friends first!
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowFriendSelector(false)}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               {/* Discount Code */}
               <div>
                 <Label htmlFor="discountCode">Discount Code (Optional)</Label>
