@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe, Calendar, CheckSquare, Repeat } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe, Calendar, CheckSquare, Repeat, CalendarPlus } from "lucide-react";
+import { DayPicker } from 'react-day-picker';
 import Header from "@/components/header";
 import MediaProcessor from "@/components/media-processor";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.tsx";
 import { getAuthToken } from "@/lib/auth";
 import { getQueryFn } from "@/lib/queryClient";
+import 'react-day-picker/dist/style.css';
 
 export default function CreatePostPage() {
   const [formData, setFormData] = useState({
@@ -36,11 +39,55 @@ export default function CreatePostPage() {
   // Event functionality state
   const [isEvent, setIsEvent] = useState(false);
   const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("12:00");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [reminders, setReminders] = useState<string[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringType, setRecurringType] = useState<"weekly" | "monthly" | "annually" | "">("");
   const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
+
+  // Calendar integration functions
+  const generateCalendarUrl = (type: 'google' | 'apple') => {
+    if (!selectedDate || !eventTime) return '';
+    
+    const eventDateTime = new Date(selectedDate);
+    const [hours, minutes] = eventTime.split(':');
+    eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+    
+    const startDate = eventDateTime.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const endDate = new Date(eventDateTime.getTime() + 60 * 60 * 1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    const title = encodeURIComponent(formData.primaryDescription.substring(0, 50));
+    const details = encodeURIComponent(formData.primaryDescription);
+    
+    if (type === 'google') {
+      return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}`;
+    } else {
+      // Apple Calendar (webcal format)
+      return `data:text/calendar;charset=utf8,BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:${startDate}
+DTEND:${endDate}
+SUMMARY:${formData.primaryDescription.substring(0, 50)}
+DESCRIPTION:${formData.primaryDescription}
+END:VEVENT
+END:VCALENDAR`;
+    }
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      const eventDateTime = new Date(date);
+      const [hours, minutes] = eventTime.split(':');
+      eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+      setEventDate(eventDateTime.toISOString());
+    } else {
+      setEventDate('');
+    }
+  };
 
   // Hashtag handling functions
   const addHashtag = (tag: string) => {
@@ -1093,28 +1140,95 @@ export default function CreatePostPage() {
 
                 {/* Event Configuration */}
                 {isEvent && (
-                  <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
-                    <h3 className="font-medium text-purple-800 flex items-center gap-2">
+                  <div className="mt-6 p-4 bg-black border border-purple-400 rounded-lg space-y-4">
+                    <h3 className="font-medium text-white flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Event Configuration
                     </h3>
 
-                    {/* Event Date */}
-                    <div>
-                      <Label htmlFor="eventDate">Event Date</Label>
-                      <Input
-                        id="eventDate"
-                        type="datetime-local"
-                        value={eventDate}
-                        onChange={(e) => setEventDate(e.target.value)}
-                        min={new Date().toISOString().slice(0, 16)}
-                        className="focus:ring-2 focus:ring-purple-500"
-                      />
+                    {/* Interactive Calendar Date Picker */}
+                    <div className="space-y-3">
+                      <Label className="text-white">Event Date & Time</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal bg-white border-purple-300"
+                              >
+                                <Calendar className="mr-2 h-4 w-4" />
+                                {selectedDate ? selectedDate.toDateString() : "Pick a date"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-white" align="start">
+                              <DayPicker
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={handleDateSelect}
+                                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                initialFocus
+                                className="bg-white"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div>
+                          <Input
+                            type="time"
+                            value={eventTime}
+                            onChange={(e) => {
+                              setEventTime(e.target.value);
+                              if (selectedDate) {
+                                const eventDateTime = new Date(selectedDate);
+                                const [hours, minutes] = e.target.value.split(':');
+                                eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+                                setEventDate(eventDateTime.toISOString());
+                              }
+                            }}
+                            className="bg-white border-purple-300 focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Calendar Integration Buttons */}
+                      {selectedDate && eventTime && formData.primaryDescription && (
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(generateCalendarUrl('google'), '_blank')}
+                            className="bg-blue-600 text-white hover:bg-blue-700 border-blue-600"
+                          >
+                            <CalendarPlus className="h-4 w-4 mr-1" />
+                            Add to Google Calendar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const url = generateCalendarUrl('apple');
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.download = 'event.ics';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            className="bg-gray-600 text-white hover:bg-gray-700 border-gray-600"
+                          >
+                            <CalendarPlus className="h-4 w-4 mr-1" />
+                            Download for Apple Calendar
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Reminders */}
                     <div>
-                      <Label>Reminder Notifications</Label>
+                      <Label className="text-white">Reminder Notifications</Label>
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         {[
                           { value: "2_weeks", label: "2 weeks before" },
@@ -1130,7 +1244,7 @@ export default function CreatePostPage() {
                               onChange={() => toggleReminder(reminder.value)}
                               className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                             />
-                            <Label htmlFor={reminder.value} className="text-sm">
+                            <Label htmlFor={reminder.value} className="text-sm text-white">
                               {reminder.label}
                             </Label>
                           </div>
@@ -1148,14 +1262,14 @@ export default function CreatePostPage() {
                           onChange={(e) => setIsRecurring(e.target.checked)}
                           className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                         />
-                        <Label htmlFor="isRecurring" className="flex items-center gap-2">
+                        <Label htmlFor="isRecurring" className="flex items-center gap-2 text-white">
                           <Repeat className="h-4 w-4" />
                           Recurring Event
                         </Label>
                       </div>
                       {isRecurring && (
                         <Select value={recurringType} onValueChange={(value: "weekly" | "monthly" | "annually") => setRecurringType(value)}>
-                          <SelectTrigger className="focus:ring-2 focus:ring-purple-500">
+                          <SelectTrigger className="focus:ring-2 focus:ring-purple-500 bg-white">
                             <SelectValue placeholder="Select frequency" />
                           </SelectTrigger>
                           <SelectContent>
