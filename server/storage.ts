@@ -122,15 +122,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchUsers(query: string): Promise<User[]> {
-    const searchTerm = `%${query.toLowerCase()}%`;
-    const foundUsers = await db.select().from(users).where(
-      or(
-        sql`LOWER(${users.username}) LIKE ${searchTerm}`,
-        sql`LOWER(${users.name}) LIKE ${searchTerm}`
-      )
-    ).limit(20);
-    
-    return foundUsers;
+    try {
+      const searchTerm = `%${query.toLowerCase()}%`;
+      const foundUsers = await db.select().from(users).where(
+        or(
+          sql`LOWER(${users.username}) LIKE ${searchTerm}`,
+          sql`LOWER(${users.name}) LIKE ${searchTerm}`
+        )
+      ).limit(20);
+      
+      return foundUsers;
+    } catch (error) {
+      console.error('Database search error:', error);
+      // Fallback to return existing users for testing
+      const allUsers = await db.select().from(users);
+      const searchTerm = query.toLowerCase();
+      return allUsers.filter(user => 
+        user.username.toLowerCase().includes(searchTerm) || 
+        user.name.toLowerCase().includes(searchTerm)
+      ).slice(0, 20);
+    }
   }
 
   async createCategory(categoryData: InsertCategory & { userId: number }): Promise<Category> {

@@ -1,0 +1,434 @@
+Prompt 1: Update Firestore Rules and Create Index
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update Firestore rules (manually apply in Firebase Console)
+echo 'rules_version = "2";
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /posts/{postId} {
+      allow read: if resource.data.visibility == "public" || 
+                    (resource.data.visibility == "friends" && exists(/databases/$(database)/documents/users/$(resource.data.userId)/friends/$(request.auth.uid)));
+      allow write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth.uid == userId;
+    }
+    match /users/{userId}/{subcollection}/{doc} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    match /hashtags/{hashtag}/posts/{postId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}' > firestore.rules
+
+# Create Firestore index (manually apply in Firebase Console)
+echo '{
+  "fieldOverrides": [
+    {
+      "collectionGroup": "users",
+      "fieldPath": "displayName",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    }
+  ]
+}' > firestore.indexes.json
+Prompt 2: Update firebase.js with Provided Config
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace firebase.js to ensure correct config
+echo 'import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDBYgkWQjf9Fxt28JklkOnITBSbRDdILkA",
+  authDomain: "share-3f94b.firebaseapp.com",
+  projectId: "share-3f94b",
+  storageBucket: "share-3f94b.firebasestorage.app",
+  messagingSenderId: "927972049756",
+  appId: "1:927972049756:web:19e53a8b91ce05f023f799",
+  measurementId: "G-HL77JB4RKS"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+export { auth, db, storage };' > src/firebase.js
+Prompt 3: Update App.js for Robust User Profiles
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace App.js
+echo 'import React, { useState, useEffect } from "react";
+import { auth, db } from "./firebase";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import { doc, setDoc, onSnapshot, collection, query, where, orderBy, getDocs } from "firebase/firestore";
+import CreatePost from "./components/CreatePost";
+import Feed from "./components/Feed";
+import StoriesBar from "./components/StoriesBar";
+import SearchBar from "./components/SearchBar";
+import HashtagSection from "./components/HashtagSection";
+import FriendManagement from "./components/FriendManagement";
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [feedType, setFeedType] = useState("public");
+  const [selectedFriendId, setSelectedFriendId] = useState(null);
+  const [followPublic, setFollowPublic] = useState(true);
+
+  useEffect(() => {
+    onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), {
+            displayName: `user_${currentUser.uid.slice(0, 6)}`.toLowerCase(),
+            profileImage: "https://via.placeholder.com/48",
+            createdAt: new Date(),
+          }, { merge: true });
+          setUser(currentUser);
+        } catch (err) {
+          console.error("User profile setup error:", err.message, err.code);
+        }
+      } else {
+        try {
+          await signInAnonymously(auth);
+        } catch (err) {
+          console.error("Anonymous auth error:", err.message, err.code);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe;
+    if (feedType === "public" && followPublic) {
+      const q = query(collection(db, "posts"), where("visibility", "==", "public"), orderBy("createdAt", "desc"));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      }, (err) => console.error("Public feed error:", err.message, err.code));
+    } else if (feedType === "friend" && selectedFriendId) {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const q = query(
+        collection(db, "posts"),
+        where("userId", "==", selectedFriendId),
+        where("createdAt", ">=", threeDaysAgo),
+        where("visibility", "in", ["public", "friends"]),
+        orderBy("createdAt", "desc")
+      );
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      }, (err) => console.error("Friend feed error:", err.message, err.code));
+    } else {
+      setPosts([]);
+    }
+    return () => unsubscribe && unsubscribe();
+  }, [feedType, selectedFriendId, followPublic]);
+
+  const handleSelectFeed = (type, friendId) => {
+    setFeedType(type);
+    setSelectedFriendId(friendId);
+  };
+
+  const handleEndReached = () => {
+    if (feedType === "friend") {
+      document.querySelector(".StoriesBar button")?.click();
+    }
+  };
+
+  const togglePublicFeed = () => {
+    setFollowPublic(!followPublic);
+    if (!followPublic && feedType === "public") {
+      setFeedType(null);
+      setPosts([]);
+    }
+  };
+
+  if (!user) return <div className="bg-navy text-white">Loading...</div>;
+
+  return (
+    <div className="bg-navy min-h-screen text-white">
+      <SearchBar />
+      <StoriesBar currentUserId={user.uid} onSelectFeed={handleSelectFeed} followPublic={followPublic} togglePublicFeed={togglePublicFeed} />
+      <HashtagSection userId={user.uid} />
+      <FriendManagement currentUserId={user.uid} />
+      <CreatePost userId={user.uid} />
+      <Feed posts={posts} onEndReached={handleEndReached} />
+    </div>
+  );
+};
+
+export default App;' > src/App.js
+Prompt 4: Patch FriendManagement.js for Search Fix
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace FriendManagement.js
+echo 'import React, { useState, useEffect } from "react";
+import { db } from "../firebase";
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+
+const FriendManagement = ({ currentUserId }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, `users/${currentUserId}/notifications`), (snapshot) => {
+      setNotifications(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    }, (err) => console.error("Notifications error:", err.message, err.code));
+    return () => unsubscribe();
+  }, [currentUserId]);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSearchResults([]);
+
+    if (!searchTerm.trim()) {
+      setError("Please enter a name to search");
+      return;
+    }
+
+    try {
+      const normalizedTerm = searchTerm.toLowerCase().trim();
+      const q = query(
+        collection(db, "users"),
+        where("displayName", ">=", normalizedTerm),
+        where("displayName", "<=", normalizedTerm + "\uf8ff")
+      );
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          displayName: doc.data().displayName || `user_${doc.id.slice(0, 6)}`,
+          profileImage: doc.data().profileImage || "https://via.placeholder.com/48",
+        }))
+        .filter((user) => user.id !== currentUserId);
+      setSearchResults(results);
+      if (results.length === 0) {
+        setError("No users found. Try a different name or check Firestore data.");
+      }
+    } catch (err) {
+      setError(`Search failed: ${err.message}`);
+      console.error("Search error:", err.message, err.code, { searchTerm: normalizedTerm });
+    }
+  };
+
+  const sendFriendRequest = async (targetUserId) => {
+    try {
+      const requestId = `${currentUserId}_${targetUserId}`;
+      const targetUserDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", targetUserId)));
+      if (targetUserDoc.empty) {
+        setError("User not found");
+        return;
+      }
+      await setDoc(doc(db, `users/${targetUserId}/friendRequests`, requestId), {
+        fromUserId: currentUserId,
+        createdAt: new Date(),
+      });
+      await setDoc(doc(db, `users/${targetUserId}/notifications`, requestId), {
+        type: "friendRequest",
+        fromUserId: currentUserId,
+        createdAt: new Date(),
+        read: false,
+      });
+      await setDoc(doc(db, `users/${currentUserId}/friends`, targetUserId), {
+        friendId: targetUserId,
+        addedAt: new Date(),
+      });
+      setSearchTerm("");
+      setSearchResults([]);
+    } catch (err) {
+      setError(`Failed to send friend request: ${err.message}`);
+      console.error("Friend request error:", err.message, err.code);
+    }
+  };
+
+  const acceptFriendRequest = async (notification) => {
+    try {
+      const requestId = notification.id;
+      await setDoc(doc(db, `users/${notification.fromUserId}/friends`, currentUserId), {
+        friendId: currentUserId,
+        addedAt: new Date(),
+      });
+      await deleteDoc(doc(db, `users/${currentUserId}/friendRequests`, requestId));
+      await deleteDoc(doc(db, `users/${currentUserId}/notifications`, requestId));
+    } catch (err) {
+      setError(`Failed to accept friend request: ${err.message}`);
+      console.error("Accept request error:", err.message, err.code);
+    }
+  };
+
+  const declineFriendRequest = async (notification) => {
+    try {
+      const requestId = notification.id;
+      await deleteDoc(doc(db, `users/${currentUserId}/friendRequests`, requestId));
+      await deleteDoc(doc(db, `users/${currentUserId}/notifications`, requestId));
+    } catch (err) {
+      setError(`Failed to decline friend request: ${err.message}`);
+      console.error("Decline request error:", err.message, err.code);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <h2 className="text-white text-lg mb-2">Manage Friends</h2>
+      <form onSubmit={handleSearch} className="flex items-center mb-4">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search users by name (e.g., user_123)"
+          className="w-full p-2 border border-gold rounded-l text-white bg-navy"
+        />
+        <button type="submit" className="p-2 bg-gold text-navy rounded-r">
+          Search
+        </button>
+      </form>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      {searchResults.map((user) => (
+        <div key={user.id} className="flex items-center mb-2">
+          <img
+            src={user.profileImage}
+            alt={user.displayName}
+            className="w-10 h-10 rounded-full mr-2"
+          />
+          <span className="text-white">{user.displayName}</span>
+          <button
+            onClick={() => sendFriendRequest(user.id)}
+            className="ml-auto p-1 bg-gold text-navy rounded text-sm"
+          >
+            Add Friend
+          </button>
+        </div>
+      ))}
+      <h3 className="text-white text-md mb-2">Notifications</h3>
+      {notifications.length === 0 && <p className="text-white">No notifications</p>}
+      {notifications.map((notification) => (
+        <div key={notification.id} className="flex items-center mb-2">
+          <span className="text-white">
+            Friend request from {notification.fromUserId}
+          </span>
+          <button
+            onClick={() => acceptFriendRequest(notification)}
+            className="ml-2 p-1 bg-gold text-navy rounded text-sm"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => declineFriendRequest(notification)}
+            className="ml-2 p-1 bg-red-500 text-white rounded text-sm"
+          >
+            Decline
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default FriendManagement;' > src/components/FriendManagement.js
+Prompt 5: Add Debug Script for Firestore Users
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create debug-users.js to list all users
+echo 'import { db } from "./firebase";
+import { collection, getDocs } from "firebase/firestore";
+
+const debugUsers = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+    console.log("Users in Firestore:");
+    snapshot.docs.forEach((doc) => {
+      console.log(`ID: ${doc.id}, Data:`, doc.data());
+    });
+    if (snapshot.empty) {
+      console.log("No users found in Firestore.");
+    }
+  } catch (err) {
+    console.error("Debug users error:", err.message, err.code);
+  }
+};
+
+debugUsers();' > src/debug-users.js
+
+# Run debug script in Replit console
+echo 'node -e "require(\"./src/debug-users.js\")"' > debug.sh
+chmod +x debug.sh
+./debug.sh
+Prompt 6: Fix Existing Firestore User Data
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create fix-users.js to normalize user data
+echo 'import { db } from "./firebase";
+import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+
+const fixUsers = async () => {
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+    for (const userDoc of snapshot.docs) {
+      const data = userDoc.data();
+      if (!data.displayName || typeof data.displayName !== "string") {
+        console.log(`Fixing user: ${userDoc.id}`);
+        await setDoc(doc(db, "users", userDoc.id), {
+          displayName: `user_${userDoc.id.slice(0, 6)}`.toLowerCase(),
+          profileImage: data.profileImage || "https://via.placeholder.com/48",
+          createdAt: data.createdAt || new Date(),
+        }, { merge: true });
+      }
+    }
+    console.log("User data fix complete.");
+  } catch (err) {
+    console.error("Fix users error:", err.message, err.code);
+  }
+};
+
+fixUsers();' > src/fix-users.js
+
+# Run fix script in Replit console
+echo 'node -e "require(\"./src/fix-users.js\")"' > fix.sh
+chmod +x fix.sh
+./fix.sh
