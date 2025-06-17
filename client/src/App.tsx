@@ -13,7 +13,7 @@ import CreatePostPage from "@/pages/create-post-simple";
 import ProfilePage from "@/pages/profile";
 import CategoryPage from "@/pages/category";
 import SearchPage from "@/pages/search";
-import FriendsPage from "@/pages/friends";
+import ConnectionsPage from "@/pages/friends";
 import NotificationsPage from "@/pages/notifications";
 import SharedWithMePage from "@/pages/shared-with-me";
 import NotFound from "@/pages/not-found";
@@ -29,7 +29,7 @@ function Router() {
       <Route path="/profile/:id" component={ProfilePage} />
       <Route path="/category/:id" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
-      <Route path="/friends" component={FriendsPage} />
+      <Route path="/friends" component={ConnectionsPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/shared-with-me" component={SharedWithMePage} />
       <Route component={NotFound} />

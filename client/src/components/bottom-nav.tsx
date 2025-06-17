@@ -29,7 +29,7 @@ export default function BottomNav() {
     },
     {
       icon: Users,
-      label: "Friends",
+      label: "Connections",
       href: "/friends",
       active: location === "/friends"
     },

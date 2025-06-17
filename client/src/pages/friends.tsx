@@ -19,7 +19,7 @@ interface FriendRequest {
   createdAt: Date;
 }
 
-export default function FriendsPage() {
+export default function ConnectionsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -77,28 +77,28 @@ export default function FriendsPage() {
     }
   }, [searchTerm, allUsers, user?.id]);
 
-  // Send friend request mutation
+  // Send follow request mutation
   const sendRequestMutation = useMutation({
     mutationFn: async (toUserId: number) => {
       return apiRequest('POST', '/api/friend-request', { friendId: toUserId });
     },
     onSuccess: () => {
       toast({
-        title: "Friend request sent",
-        description: "Your friend request has been sent successfully.",
+        title: "Follow request sent",
+        description: "Your follow request has been sent successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
     },
     onError: (error: any) => {
       toast({
         title: "Failed to send request",
-        description: error.message || "Could not send friend request.",
+        description: error.message || "Could not send follow request.",
         variant: "destructive",
       });
     },
   });
 
-  // Accept friend request mutation
+  // Accept follow request mutation
   const acceptRequestMutation = useMutation({
     mutationFn: async (requestId: number) => {
       return apiRequest('POST', `/api/friend-request/${requestId}/respond`, { 
@@ -107,8 +107,8 @@ export default function FriendsPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Friend request accepted",
-        description: "You are now friends!",
+        title: "Follow request accepted",
+        description: "You are now connected!",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
       queryClient.invalidateQueries({ queryKey: ['/api/friend-requests'] });
@@ -116,7 +116,7 @@ export default function FriendsPage() {
     onError: (error: any) => {
       toast({
         title: "Failed to accept request",
-        description: error.message || "Could not accept friend request.",
+        description: error.message || "Could not accept follow request.",
         variant: "destructive",
       });
     },
@@ -181,11 +181,11 @@ export default function FriendsPage() {
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="find" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
-                Find Friends
+                Find People
               </TabsTrigger>
               <TabsTrigger value="friends" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                My Friends ({friends.length})
+                Connections ({friends.length})
               </TabsTrigger>
               <TabsTrigger value="requests" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
