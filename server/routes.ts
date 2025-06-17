@@ -504,6 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let eventReminders: string[] = [];
       let isRecurringBool = false;
       let eventTaskList: any[] = [];
+      let eventDateObj: Date | undefined = undefined;
 
       if (isEventBool) {
         if (reminders) {
@@ -521,6 +522,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             eventTaskList = JSON.parse(taskList);
           } catch (error) {
             console.error('Failed to parse taskList:', error);
+          }
+        }
+
+        // Parse event date properly
+        if (eventDate) {
+          try {
+            eventDateObj = new Date(eventDate);
+            if (isNaN(eventDateObj.getTime())) {
+              eventDateObj = undefined;
+            }
+          } catch (error) {
+            console.error('Failed to parse event date:', error);
+            eventDateObj = undefined;
           }
         }
       }
@@ -543,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         taggedUsers: taggedUsersArray,
         // Event data
         isEvent: isEventBool,
-        eventDate: isEventBool && eventDate ? eventDate : undefined,
+        eventDate: eventDateObj,
         reminders: isEventBool ? eventReminders : undefined,
         isRecurring: isEventBool ? isRecurringBool : undefined,
         recurringType: isEventBool && isRecurringBool ? recurringType : undefined,

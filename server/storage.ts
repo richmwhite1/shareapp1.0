@@ -25,7 +25,7 @@ export interface IStorage {
   getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[] }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
@@ -202,7 +202,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any }): Promise<Post> {
+  async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[] }): Promise<Post> {
     let categoryId = postData.categoryId;
     
     // If no category specified or category is 0, find user's "General" category
@@ -235,6 +235,13 @@ export class DatabaseStorage implements IStorage {
       spotifyUrl: postData.spotifyUrl || null,
       youtubeUrl: postData.youtubeUrl || null,
       mediaMetadata: postData.mediaMetadata || null,
+      // Event fields
+      isEvent: postData.isEvent || false,
+      eventDate: postData.eventDate || null,
+      reminders: postData.reminders || null,
+      isRecurring: postData.isRecurring || false,
+      recurringType: postData.recurringType || null,
+      taskList: postData.taskList || null,
     }).returning();
 
     // Handle hashtags

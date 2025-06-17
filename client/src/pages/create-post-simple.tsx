@@ -1161,14 +1161,14 @@ END:VCALENDAR`;
                                 {selectedDate ? selectedDate.toDateString() : "Pick a date"}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 bg-white" align="start">
+                            <PopoverContent className="w-auto p-0 bg-black border-purple-400" align="start">
                               <DayPicker
                                 mode="single"
                                 selected={selectedDate}
                                 onSelect={handleDateSelect}
                                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                                 initialFocus
-                                className="bg-white"
+                                className="bg-black"
                               />
                             </PopoverContent>
                           </Popover>
