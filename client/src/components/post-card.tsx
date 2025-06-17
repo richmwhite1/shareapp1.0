@@ -557,19 +557,6 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   </DialogContent>
                 </Dialog>
               )}
-
-              {/* Delete Button - Only for post owner */}
-              {isAuthenticated && user && post.user.id === user.id && (
-                <Button
-                  onClick={handleDelete}
-                  variant="ghost"
-                  size="sm"
-                  disabled={deleteMutation.isPending}
-                  className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
             </div>
           )}
         </div>

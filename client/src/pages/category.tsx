@@ -118,7 +118,7 @@ export default function CategoryPage() {
             className="text-muted-foreground hover:text-foreground"
           >
             <Share2 className="h-4 w-4 mr-2" />
-            Share Category
+            Share List
           </Button>
         </div>
 
@@ -139,7 +139,7 @@ export default function CategoryPage() {
               <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No posts yet</h3>
               <p className="text-muted-foreground mb-4">
-                This category is empty. Create your first post and assign it to this category.
+                This list is empty. Create your first post and assign it to this list.
               </p>
               <Link href="/create">
                 <Button className="bg-pinterest-red hover:bg-red-700 text-white">
