@@ -729,34 +729,7 @@ export class DatabaseStorage implements IStorage {
     })) as PostWithUser[];
   }
 
-  async getTaggedPosts(userId: number): Promise<PostWithUser[]> {
-    const result = await db
-      .select({
-        post: posts,
-        user: {
-          id: users.id,
-          username: users.username,
-          name: users.name,
-          profilePictureUrl: users.profilePictureUrl
-        },
-        category: {
-          id: categories.id,
-          name: categories.name
-        }
-      })
-      .from(posts)
-      .innerJoin(postTags, eq(posts.id, postTags.postId))
-      .leftJoin(users, eq(posts.userId, users.id))
-      .leftJoin(categories, eq(posts.categoryId, categories.id))
-      .where(eq(postTags.userId, userId))
-      .orderBy(desc(posts.createdAt));
 
-    return result.map(r => ({
-      ...r.post,
-      user: r.user!,
-      category: r.category || undefined
-    })) as PostWithUser[];
-  }
 
   async updatePostEngagement(postId: number, increment: number): Promise<void> {
     await db
