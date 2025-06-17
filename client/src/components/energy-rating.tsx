@@ -128,10 +128,18 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
         
         <div className="relative">
-          {/* Custom slider with current color */}
+          {/* Custom gradient background */}
           <div 
-            className="h-2 rounded-full"
-            style={{ backgroundColor: CHAKRA_COLORS[currentRating - 1] }}
+            className="h-2 rounded-full absolute w-full"
+            style={{ background: sliderGradient }}
+          />
+          {/* Overlay showing current position */}
+          <div 
+            className="h-2 rounded-full absolute transition-all duration-200"
+            style={{ 
+              backgroundColor: CHAKRA_COLORS[currentRating - 1],
+              width: `${((currentRating - 1) / 6) * 100}%`
+            }}
           />
           <Slider
             value={[currentRating]}
@@ -139,7 +147,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
             min={1}
             max={7}
             step={1}
-            className="absolute top-0 w-full h-2"
+            className="absolute top-0 w-full h-2 z-10"
             style={{ background: 'transparent' }}
           />
         </div>

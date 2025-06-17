@@ -692,7 +692,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                           </span>
                           {task.completedBy && (
                             <span className="text-xs text-purple-300 bg-purple-900/30 px-2 py-1 rounded">
-                              Assigned to User {task.completedBy}
+                              Claimed by {user?.id === task.completedBy ? 'You' : `User ${task.completedBy}`}
                             </span>
                           )}
                         </div>
