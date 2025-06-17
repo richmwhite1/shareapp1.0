@@ -96,7 +96,7 @@ export default function Home() {
         onNextFriend={handleNextFriend}
       />
       
-      <main className="max-w-lg mx-auto">
+      <main className="w-full">
 
         {/* Content */}
         {isLoading ? (

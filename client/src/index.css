@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ensure full screen width with no margins/padding */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   --background: hsl(0, 0%, 0%);
   --foreground: hsl(0, 0%, 96%);

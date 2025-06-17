@@ -40,9 +40,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen bg-black w-full">
             <Header />
-            <main className="pb-20"> {/* Add bottom padding for bottom nav */}
+            <main className="pb-20 w-full"> {/* Add bottom padding for bottom nav */}
               <Router />
             </main>
             <BottomNav />
