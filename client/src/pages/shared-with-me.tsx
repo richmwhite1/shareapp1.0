@@ -78,7 +78,17 @@ export default function SharedWithMe() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sharedPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <div key={post.id} className="space-y-3">
+                {(post as any).taggedBy && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400 px-2">
+                    <span className="font-medium text-[#ba9971]">
+                      {(post as any).taggedBy.name || (post as any).taggedBy.username}
+                    </span>
+                    {" tagged you in this post"}
+                  </div>
+                )}
+                <PostCard post={post} />
+              </div>
             ))}
           </div>
         )}
