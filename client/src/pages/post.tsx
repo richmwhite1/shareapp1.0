@@ -131,9 +131,7 @@ export default function PostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-gray">
-      <Header />
-      
+    <div className="min-h-screen bg-black">
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Back Button */}
         <div className="mb-6">
@@ -141,7 +139,7 @@ export default function PostPage() {
             onClick={handleGoBack}
             variant="ghost"
             size="sm"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-gray-400 hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back

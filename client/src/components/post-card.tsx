@@ -339,92 +339,37 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </Link>
           
           <div className="flex items-center space-x-2">
-            <Button
-              onClick={handleShare}
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
-            >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-            
-            {/* Report Button */}
-            {isAuthenticated && post.user.id !== user?.id && (
-              <Dialog>
-                <DialogTrigger asChild>
+            {/* Individual Action Buttons for Detail View */}
+            {isDetailView ? (
+              <>
+                <Button
+                  onClick={handleShare}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
+                
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="tag" />
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="repost" />
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="save" />
+                
+                {user && post.user.id === user.id && (
                   <Button
+                    onClick={handleDelete}
                     variant="ghost"
                     size="sm"
-                    className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                    disabled={deleteMutation.isPending}
+                    className="text-red-400 hover:text-red-600 hover:bg-gray-700"
                   >
-                    <Flag className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-gray-800 border-gray-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Report Post</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Reason for reporting
-                      </label>
-                      <Select value={reportReason} onValueChange={setReportReason}>
-                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                          <SelectValue placeholder="Select a reason" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-700 border-gray-600">
-                          <SelectItem value="spam">Spam</SelectItem>
-                          <SelectItem value="inappropriate">Inappropriate content</SelectItem>
-                          <SelectItem value="harassment">Harassment</SelectItem>
-                          <SelectItem value="fake">Fake or misleading</SelectItem>
-                          <SelectItem value="copyright">Copyright violation</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Additional details (optional)
-                      </label>
-                      <Textarea
-                        value={reportDescription}
-                        onChange={(e) => setReportDescription(e.target.value)}
-                        placeholder="Provide more details about the issue..."
-                        className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <DialogTrigger asChild>
-                        <Button variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                          Cancel
-                        </Button>
-                      </DialogTrigger>
-                      <Button
-                        onClick={handleReport}
-                        disabled={reportMutation.isPending}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        {reportMutation.isPending ? "Submitting..." : "Submit Report"}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-            
-            {user && post.user.id === user.id && !isDetailView && (
-              <Button
-                onClick={handleDelete}
-                variant="ghost"
-                size="sm"
-                disabled={deleteMutation.isPending}
-                className="text-red-400 hover:text-red-600 hover:bg-gray-700"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+                )}
+              </>
+            ) : (
+              /* Feed View - Use Hamburger Menu */
+              <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} />
             )}
           </div>
         </div>
