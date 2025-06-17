@@ -78,6 +78,59 @@ export default function SearchPage() {
     select: (data: any) => Array.isArray(data) ? data.slice(0, 10) : [],
   });
 
+  // Get followed hashtags
+  const { data: followedHashtags, refetch: refetchFollowed } = useQuery({
+    queryKey: ['/api/hashtags/followed'],
+    queryFn: async () => {
+      const response = await fetch('/api/hashtags/followed');
+      if (!response.ok) throw new Error('Failed to fetch followed hashtags');
+      return response.json();
+    },
+    select: (data: any) => Array.isArray(data) ? data.slice(0, 30) : [],
+    enabled: isAuthenticated,
+  });
+
+  // Follow/unfollow hashtag
+  const followHashtag = async (hashtagId: number) => {
+    try {
+      const response = await fetch(`/api/hashtags/${hashtagId}/follow`, {
+        method: 'POST',
+      });
+      if (response.ok) {
+        refetchFollowed();
+      }
+    } catch (error) {
+      console.error('Failed to follow hashtag:', error);
+    }
+  };
+
+  const unfollowHashtag = async (hashtagId: number) => {
+    try {
+      const response = await fetch(`/api/hashtags/${hashtagId}/follow`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        refetchFollowed();
+      }
+    } catch (error) {
+      console.error('Failed to unfollow hashtag:', error);
+    }
+  };
+
+  // Check if following hashtag
+  const useIsFollowingHashtag = (hashtagId: number) => {
+    return useQuery({
+      queryKey: ['/api/hashtags', hashtagId, 'following'],
+      queryFn: async () => {
+        const response = await fetch(`/api/hashtags/${hashtagId}/following`);
+        if (!response.ok) throw new Error('Failed to check follow status');
+        const data = await response.json();
+        return data.isFollowing;
+      },
+      enabled: isAuthenticated && !!hashtagId,
+    });
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
@@ -176,6 +229,47 @@ export default function SearchPage() {
           </CardContent>
         </Card>
 
+        {/* My Saved Hashtags */}
+        {followedHashtags && followedHashtags.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Hash className="h-5 w-5" />
+                My Saved Hashtags
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {followedHashtags.map((hashtag: any) => (
+                  <div key={hashtag.id} className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleHashtagClick(hashtag.name)}
+                      className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                      disabled={selectedHashtags.includes(hashtag.name)}
+                    >
+                      <Hash className="h-3 w-3" />
+                      {hashtag.name}
+                      <Badge variant="secondary" className="ml-1">
+                        {hashtag.count}
+                      </Badge>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => unfollowHashtag(hashtag.id)}
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Trending Hashtags */}
         <Card className="mb-8">
           <CardHeader>
@@ -186,22 +280,48 @@ export default function SearchPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => (
-                <Button
-                  key={hashtag.id}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleHashtagClick(hashtag.name)}
-                  className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
-                  disabled={selectedHashtags.includes(hashtag.name)}
-                >
-                  <Hash className="h-3 w-3" />
-                  {hashtag.name}
-                  <Badge variant="secondary" className="ml-1">
-                    {hashtag.count}
-                  </Badge>
-                </Button>
-              ))}
+              {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => {
+                const FollowButton = () => {
+                  const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
+                  
+                  const handleToggleFollow = async () => {
+                    if (isFollowing) {
+                      await unfollowHashtag(hashtag.id);
+                    } else {
+                      await followHashtag(hashtag.id);
+                    }
+                    refetch();
+                  };
+
+                  return (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleHashtagClick(hashtag.name)}
+                        className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                        disabled={selectedHashtags.includes(hashtag.name)}
+                      >
+                        <Hash className="h-3 w-3" />
+                        {hashtag.name}
+                        <Badge variant="secondary" className="ml-1">
+                          {hashtag.count}
+                        </Badge>
+                      </Button>
+                      <Button
+                        variant={isFollowing ? "default" : "outline"}
+                        size="sm"
+                        onClick={handleToggleFollow}
+                        className={`h-8 px-2 ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
+                      >
+                        {isFollowing ? 'Following' : 'Follow'}
+                      </Button>
+                    </div>
+                  );
+                };
+
+                return <FollowButton key={hashtag.id} />;
+              })}
             </div>
           </CardContent>
         </Card>

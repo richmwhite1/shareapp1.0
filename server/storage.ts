@@ -67,6 +67,12 @@ export interface IStorage {
   getHashtag(name: string): Promise<Hashtag | undefined>;
   getTrendingHashtags(limit?: number): Promise<Hashtag[]>;
   incrementHashtagCount(name: string): Promise<void>;
+  
+  // Hashtag following methods
+  followHashtag(userId: number, hashtagId: number): Promise<void>;
+  unfollowHashtag(userId: number, hashtagId: number): Promise<void>;
+  isFollowingHashtag(userId: number, hashtagId: number): Promise<boolean>;
+  getFollowedHashtags(userId: number, limit?: number): Promise<Hashtag[]>;
 
   // Notification methods
   createNotification(notification: CreateNotificationData): Promise<Notification>;
@@ -970,6 +976,49 @@ export class DatabaseStorage implements IStorage {
         .set({ count: sql`${hashtags.count} + 1` })
         .where(eq(hashtags.id, hashtag.id));
     }
+  }
+
+  async followHashtag(userId: number, hashtagId: number): Promise<void> {
+    // Check if already following
+    const existing = await db
+      .select()
+      .from(hashtagFollows)
+      .where(and(eq(hashtagFollows.userId, userId), eq(hashtagFollows.hashtagId, hashtagId)))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await db.insert(hashtagFollows).values({ userId, hashtagId });
+    }
+  }
+
+  async unfollowHashtag(userId: number, hashtagId: number): Promise<void> {
+    await db
+      .delete(hashtagFollows)
+      .where(and(eq(hashtagFollows.userId, userId), eq(hashtagFollows.hashtagId, hashtagId)));
+  }
+
+  async isFollowingHashtag(userId: number, hashtagId: number): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(hashtagFollows)
+      .where(and(eq(hashtagFollows.userId, userId), eq(hashtagFollows.hashtagId, hashtagId)))
+      .limit(1);
+
+    return result.length > 0;
+  }
+
+  async getFollowedHashtags(userId: number, limit: number = 30): Promise<Hashtag[]> {
+    const result = await db
+      .select({
+        hashtag: hashtags
+      })
+      .from(hashtagFollows)
+      .innerJoin(hashtags, eq(hashtagFollows.hashtagId, hashtags.id))
+      .where(eq(hashtagFollows.userId, userId))
+      .orderBy(desc(hashtagFollows.createdAt))
+      .limit(limit);
+
+    return result.map(r => r.hashtag);
   }
 
   // Notification methods

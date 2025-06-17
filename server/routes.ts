@@ -1196,6 +1196,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hashtag following endpoints
+  app.post('/api/hashtags/:id/follow', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      await storage.followHashtag(req.user.userId, hashtagId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/hashtags/:id/follow', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      await storage.unfollowHashtag(req.user.userId, hashtagId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/hashtags/:id/following', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      const isFollowing = await storage.isFollowingHashtag(req.user.userId, hashtagId);
+      res.json({ isFollowing });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/hashtags/followed', authenticateToken, async (req: any, res) => {
+    try {
+      const followed = await storage.getFollowedHashtags(req.user.userId);
+      res.json(followed);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Multiple hashtag search with sorting
   app.get('/api/search/hashtags', async (req, res) => {
     try {
