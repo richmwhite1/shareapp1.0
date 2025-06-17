@@ -1,11 +1,11 @@
 import { 
   users, posts, comments, categories, postLikes, postShares, friendships, friendRequests, hashtags, 
-  postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows,
+  postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows, rsvps,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
   type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
   type Notification, type CreateNotificationData, type Report, type CreateReportData,
-  type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow
+  type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count, or, inArray, sql, like } from "drizzle-orm";
@@ -25,7 +25,7 @@ export interface IStorage {
   getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[] }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
@@ -89,6 +89,13 @@ export interface IStorage {
   addToBlacklist(type: string, value: string): Promise<void>;
   getBlacklist(): Promise<BlacklistItem[]>;
   isBlacklisted(type: string, value: string): Promise<boolean>;
+
+  // RSVP methods
+  createRsvp(postId: number, userId: number, status: string): Promise<void>;
+  updateRsvp(postId: number, userId: number, status: string): Promise<void>;
+  getRsvp(postId: number, userId: number): Promise<{ status: string } | undefined>;
+  getRsvpStats(postId: number): Promise<{ going: number; maybe: number; not_going: number }>;
+  getRsvpList(postId: number, status: string): Promise<Array<{ user: User; createdAt: Date }>>;
 
   // Admin methods
   getAnalytics(): Promise<{ userCount: number; postCount: number; trendingHashtags: Hashtag[] }>;
@@ -242,6 +249,7 @@ export class DatabaseStorage implements IStorage {
       isRecurring: postData.isRecurring || false,
       recurringType: postData.recurringType || null,
       taskList: postData.taskList || null,
+      allowRsvp: postData.allowRsvp || false,
     }).returning();
 
     // Handle hashtags
@@ -1132,6 +1140,76 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(blacklist)
       .where(and(eq(blacklist.type, 'user'), eq(blacklist.value, userId.toString())));
+  }
+
+  // RSVP methods
+  async createRsvp(postId: number, userId: number, status: string): Promise<void> {
+    await db.insert(rsvps).values({
+      postId,
+      userId,
+      status,
+    });
+  }
+
+  async updateRsvp(postId: number, userId: number, status: string): Promise<void> {
+    await db
+      .update(rsvps)
+      .set({ 
+        status,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(rsvps.postId, postId), eq(rsvps.userId, userId)));
+  }
+
+  async getRsvp(postId: number, userId: number): Promise<{ status: string } | undefined> {
+    const [rsvp] = await db
+      .select({ status: rsvps.status })
+      .from(rsvps)
+      .where(and(eq(rsvps.postId, postId), eq(rsvps.userId, userId)));
+    
+    return rsvp;
+  }
+
+  async getRsvpStats(postId: number): Promise<{ going: number; maybe: number; not_going: number }> {
+    const stats = await db
+      .select({
+        status: rsvps.status,
+        count: count(),
+      })
+      .from(rsvps)
+      .where(eq(rsvps.postId, postId))
+      .groupBy(rsvps.status);
+
+    const result = { going: 0, maybe: 0, not_going: 0 };
+    stats.forEach(stat => {
+      if (stat.status === 'going') result.going = stat.count;
+      else if (stat.status === 'maybe') result.maybe = stat.count;
+      else if (stat.status === 'not_going') result.not_going = stat.count;
+    });
+
+    return result;
+  }
+
+  async getRsvpList(postId: number, status: string): Promise<Array<{ user: User; createdAt: Date }>> {
+    const result = await db
+      .select({
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        createdAt: rsvps.createdAt,
+      })
+      .from(rsvps)
+      .innerJoin(users, eq(rsvps.userId, users.id))
+      .where(and(eq(rsvps.postId, postId), eq(rsvps.status, status)))
+      .orderBy(desc(rsvps.createdAt));
+
+    return result.map(r => ({
+      user: r.user as User,
+      createdAt: r.createdAt,
+    }));
   }
 }
 
