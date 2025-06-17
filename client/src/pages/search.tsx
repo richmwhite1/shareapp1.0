@@ -82,7 +82,11 @@ export default function SearchPage() {
   const { data: followedHashtags, refetch: refetchFollowed } = useQuery({
     queryKey: ['/api/hashtags/followed'],
     queryFn: async () => {
-      const response = await fetch('/api/hashtags/followed');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/hashtags/followed', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch followed hashtags');
       return response.json();
     },
@@ -93,8 +97,11 @@ export default function SearchPage() {
   // Follow/unfollow hashtag
   const followHashtag = async (hashtagId: number) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`/api/hashtags/${hashtagId}/follow`, {
         method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
       if (response.ok) {
         refetchFollowed();
@@ -106,8 +113,11 @@ export default function SearchPage() {
 
   const unfollowHashtag = async (hashtagId: number) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`/api/hashtags/${hashtagId}/follow`, {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
       if (response.ok) {
         refetchFollowed();
@@ -122,8 +132,12 @@ export default function SearchPage() {
     return useQuery({
       queryKey: ['/api/hashtags', hashtagId, 'following'],
       queryFn: async () => {
-        const response = await fetch(`/api/hashtags/${hashtagId}/following`);
-        if (!response.ok) throw new Error('Failed to check follow status');
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/hashtags/${hashtagId}/following`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          credentials: 'include'
+        });
+        if (!response.ok) return false;
         const data = await response.json();
         return data.isFollowing;
       },
@@ -218,7 +232,7 @@ export default function SearchPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Hash className="h-5 w-5" />
-                My Hashtags
+                Following
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -362,22 +376,7 @@ export default function SearchPage() {
           </Card>
         )}
 
-        {/* Empty State */}
-        {selectedHashtags.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Hash className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Search Posts by Hashtags</h3>
-              <p className="text-muted-foreground mb-6">
-                Add up to 10 hashtags to find posts that match your interests.
-                Use multiple hashtags to narrow your search.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Try clicking on trending hashtags above to get started!
-              </p>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     </div>
   );
