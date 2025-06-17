@@ -33,6 +33,15 @@ export default function CreatePostPage() {
   const [taggedUsers, setTaggedUsers] = useState<number[]>([]);
   const [showFriendSelector, setShowFriendSelector] = useState(false);
 
+  // Event functionality state
+  const [isEvent, setIsEvent] = useState(false);
+  const [eventDate, setEventDate] = useState("");
+  const [reminders, setReminders] = useState<string[]>([]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringType, setRecurringType] = useState<"weekly" | "monthly" | "annually" | "">("");
+  const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
+  const [newTaskText, setNewTaskText] = useState("");
+
   // Hashtag handling functions
   const addHashtag = (tag: string) => {
     const cleanTag = tag.replace(/^#/, '').toLowerCase().trim();
@@ -57,6 +66,39 @@ export default function CreatePostPage() {
         setHashtagInput('');
       }
     }
+  };
+
+  // Event handling functions
+  const toggleReminder = (reminder: string) => {
+    setReminders(prev => 
+      prev.includes(reminder) 
+        ? prev.filter(r => r !== reminder)
+        : [...prev, reminder]
+    );
+  };
+
+  const addTask = () => {
+    if (newTaskText.trim()) {
+      const newTask = {
+        id: Date.now().toString(),
+        text: newTaskText.trim(),
+        completed: false
+      };
+      setTaskList(prev => [...prev, newTask]);
+      setNewTaskText("");
+    }
+  };
+
+  const removeTask = (taskId: string) => {
+    setTaskList(prev => prev.filter(task => task.id !== taskId));
+  };
+
+  const toggleTaskComplete = (taskId: string) => {
+    setTaskList(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, completed: !task.completed }
+        : task
+    ));
   };
 
   // Privacy and friend tagging functions
@@ -672,6 +714,24 @@ export default function CreatePostPage() {
       if (formData.privacy === 'private' && taggedUsers.length > 0) {
         formDataToSend.append('taggedUsers', JSON.stringify(taggedUsers));
       }
+
+      // Add event data
+      formDataToSend.append('isEvent', isEvent.toString());
+      if (isEvent) {
+        if (eventDate) {
+          formDataToSend.append('eventDate', eventDate);
+        }
+        if (reminders.length > 0) {
+          formDataToSend.append('reminders', JSON.stringify(reminders));
+        }
+        formDataToSend.append('isRecurring', isRecurring.toString());
+        if (isRecurring && recurringType) {
+          formDataToSend.append('recurringType', recurringType);
+        }
+        if (taskList.length > 0) {
+          formDataToSend.append('taskList', JSON.stringify(taskList));
+        }
+      }
       
       additionalPhotos.forEach((photoData, index) => {
         formDataToSend.append('additionalPhotos', photoData.file);
@@ -910,7 +970,19 @@ export default function CreatePostPage() {
 
               {/* Privacy Settings */}
               <div className="space-y-4">
-                <Label>Post Privacy</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Post Privacy</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEvent(!isEvent)}
+                    className={`flex items-center space-x-2 ${isEvent ? 'bg-purple-50 border-purple-300 text-purple-700' : ''}`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span>{isEvent ? 'Event Mode' : 'Make Event'}</span>
+                  </Button>
+                </div>
                 <div className="space-y-3">
                   {/* Public Option */}
                   <div 
@@ -1018,6 +1090,134 @@ export default function CreatePostPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Event Configuration */}
+                {isEvent && (
+                  <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-4">
+                    <h3 className="font-medium text-purple-800 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Event Configuration
+                    </h3>
+
+                    {/* Event Date */}
+                    <div>
+                      <Label htmlFor="eventDate">Event Date</Label>
+                      <Input
+                        id="eventDate"
+                        type="datetime-local"
+                        value={eventDate}
+                        onChange={(e) => setEventDate(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    {/* Reminders */}
+                    <div>
+                      <Label>Reminder Notifications</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {[
+                          { value: "2_weeks", label: "2 weeks before" },
+                          { value: "1_week", label: "1 week before" },
+                          { value: "2_days", label: "2 days before" },
+                          { value: "1_day", label: "1 day before" }
+                        ].map((reminder) => (
+                          <div key={reminder.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={reminder.value}
+                              checked={reminders.includes(reminder.value)}
+                              onChange={() => toggleReminder(reminder.value)}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <Label htmlFor={reminder.value} className="text-sm">
+                              {reminder.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Recurring Event */}
+                    <div>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="checkbox"
+                          id="isRecurring"
+                          checked={isRecurring}
+                          onChange={(e) => setIsRecurring(e.target.checked)}
+                          className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <Label htmlFor="isRecurring" className="flex items-center gap-2">
+                          <Repeat className="h-4 w-4" />
+                          Recurring Event
+                        </Label>
+                      </div>
+                      {isRecurring && (
+                        <Select value={recurringType} onValueChange={(value: "weekly" | "monthly" | "annually") => setRecurringType(value)}>
+                          <SelectTrigger className="focus:ring-2 focus:ring-purple-500">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="annually">Annually</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {isRecurring && formData.privacy === 'public' && (
+                        <p className="text-sm text-amber-600 mt-1">
+                          Note: Recurring events won't appear in public feed to prevent clutter
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Task List */}
+                    <div>
+                      <Label>Event Task List</Label>
+                      <div className="space-y-2 mt-2">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Add a task for this event..."
+                            value={newTaskText}
+                            onChange={(e) => setNewTaskText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
+                            className="focus:ring-2 focus:ring-purple-500"
+                          />
+                          <Button
+                            type="button"
+                            onClick={addTask}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {taskList.length > 0 && (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {taskList.map((task) => (
+                              <div key={task.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                                <CheckSquare className="h-4 w-4 text-purple-600" />
+                                <span className={`flex-1 text-sm ${task.completed ? 'line-through text-gray-500' : ''}`}>
+                                  {task.text}
+                                </span>
+                                <Button
+                                  type="button"
+                                  onClick={() => removeTask(task.id)}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Friend Selector Dialog */}
