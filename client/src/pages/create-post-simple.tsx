@@ -3,7 +3,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe, Calendar, CheckSquare, Repeat, CalendarPlus } from "lucide-react";
 import { DayPicker } from 'react-day-picker';
-import Header from "@/components/header";
+
 import MediaProcessor from "@/components/media-processor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -879,10 +879,9 @@ END:VCALENDAR`;
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-pinterest-light">
-        <Header />
-        <div className="container mx-auto px-4 py-8">
-          <Card className="max-w-md mx-auto">
+      <div className="w-full bg-black px-4 py-8">
+        <div className="max-w-md mx-auto">
+          <Card className="bg-card border-border">
             <CardContent className="pt-6">
               <p className="text-center text-pinterest-gray">
                 Please sign in to create a post.
@@ -901,9 +900,8 @@ END:VCALENDAR`;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <div className="container mx-auto px-4 py-8">
+    <div className="w-full bg-black">
+      <div className="w-full px-4 py-8">
         <Card className="max-w-2xl mx-auto bg-card border-border">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-pinterest-red flex items-center gap-2">
