@@ -244,10 +244,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const reportMutation = useMutation({
     mutationFn: async (data: { reason: string; description: string }) => {
       return apiRequest('POST', '/api/reports', {
-        type: 'post',
-        targetId: post.id,
+        postId: post.id,
         reason: data.reason,
-        description: data.description,
+        comment: data.description,
       });
     },
     onSuccess: () => {
@@ -360,13 +359,13 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   <Share2 className="w-4 h-4" />
                 </Button>
                 
-                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="tag" />
-                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="repost" />
-                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} actionType="save" />
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} postUserId={post.userId} actionType="tag" />
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} postUserId={post.userId} actionType="repost" />
+                <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} postUserId={post.userId} actionType="save" />
               </>
             ) : (
               /* Feed View - Use Hamburger Menu */
-              <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} />
+              <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} postUserId={post.userId} />
             )}
           </div>
         </div>

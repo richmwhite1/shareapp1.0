@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/auth.tsx';
 
 interface PostActionsMenuProps {
   postId: number;
@@ -38,7 +39,7 @@ interface Category {
   name: string;
 }
 
-export function PostActionsMenu({ postId, postTitle, className, actionType = 'all' }: PostActionsMenuProps) {
+export function PostActionsMenu({ postId, postTitle, postUserId, className, actionType = 'all' }: PostActionsMenuProps) {
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
@@ -49,6 +50,9 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  const isOwner = user?.id === postUserId;
 
   // Fetch friends for tagging (with recent tagging history)
   const { data: friends = [] } = useQuery<User[]>({
@@ -158,6 +162,20 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
     },
     onError: () => {
       toast({ title: 'Failed to flag post', variant: 'destructive' });
+    },
+  });
+
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('DELETE', `/api/posts/${postId}`);
+    },
+    onSuccess: () => {
+      toast({ title: 'Post deleted successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+    },
+    onError: () => {
+      toast({ title: 'Failed to delete post', variant: 'destructive' });
     },
   });
 
@@ -421,14 +439,16 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
             <Flag className="h-4 w-4 mr-2" />
             Flag
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            if (confirm('Are you sure you want to delete this post?')) {
-              console.log('Delete post:', postId);
-            }
-          }} className="text-red-600">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
+          {isOwner && (
+            <DropdownMenuItem onClick={() => {
+              if (confirm('Are you sure you want to delete this post?')) {
+                deletePostMutation.mutate();
+              }
+            }} className="text-red-600">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
