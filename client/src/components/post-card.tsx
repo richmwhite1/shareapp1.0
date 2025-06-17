@@ -37,7 +37,16 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
   // Delete post mutation
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/posts/${post.id}`, { method: 'DELETE' }),
+    mutationFn: async () => {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to delete post');
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: "Post deleted",
