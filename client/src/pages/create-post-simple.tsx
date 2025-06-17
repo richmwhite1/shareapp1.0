@@ -67,7 +67,7 @@ export default function CreatePostPage() {
   // Image processing functions
   const resizeImage = (file: File, maxSizeMB: number = 5): Promise<File> => {
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = document.createElement('img');
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -1312,7 +1312,7 @@ END:VCALENDAR`;
             <Dialog open={showFriendSelector} onOpenChange={setShowFriendSelector}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Tag Friends</DialogTitle>
+                  <DialogTitle>Tag Connections</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-60 overflow-y-auto">
                   {Array.isArray(friends) && friends.length > 0 ? (

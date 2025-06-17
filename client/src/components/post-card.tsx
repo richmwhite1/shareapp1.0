@@ -632,7 +632,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 )}
                 
                 {/* Task List */}
-                {post.taskList && Array.isArray(post.taskList) && post.taskList.length > 0 && (
+                {post.taskList && Array.isArray(post.taskList) && (post.taskList as any[]).length > 0 && (
                   <div className="mt-3">
                     <h4 className="text-sm font-medium text-purple-300 mb-2">Event Tasks:</h4>
                     <div className="space-y-2">

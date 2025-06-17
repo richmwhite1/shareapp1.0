@@ -1299,7 +1299,8 @@ export class DatabaseStorage implements IStorage {
     let whereCondition = eq(savedPosts.userId, userId);
     
     if (categoryId) {
-      whereCondition = and(eq(savedPosts.userId, userId), eq(savedPosts.categoryId, categoryId));
+      const categoryCondition = eq(savedPosts.categoryId, categoryId);
+      whereCondition = and(whereCondition, categoryCondition) || whereCondition;
     }
 
     const result = await db
@@ -1492,9 +1493,10 @@ export class DatabaseStorage implements IStorage {
 
     return result.map(r => ({
       ...r.post,
+      additionalPhotoData: r.post.additionalPhotoData as any,
       user: r.user as Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>,
       category: r.category as Pick<Category, 'id' | 'name'> | undefined,
-    }));
+    })) as PostWithUser[];
   }
 
   async getSharedWithMePosts(userId: number): Promise<PostWithUser[]> {
