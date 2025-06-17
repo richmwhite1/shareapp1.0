@@ -11,6 +11,7 @@ import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
 import EnergyRating from "@/components/energy-rating";
+import AuricField from "@/components/auric-field";
 import type { User, PostWithUser, CategoryWithPosts } from "@shared/schema";
 
 interface UserResponse {
@@ -451,12 +452,14 @@ export default function ProfilePage() {
               {(userFriends || []).slice(0, 10).map((friend: any) => (
                 <Link key={friend.id} href={`/profile/${friend.id}`}>
                   <div className="flex-shrink-0 text-center">
-                    <Avatar className="w-12 h-12 mx-auto mb-1">
-                      <AvatarImage src={friend.profilePictureUrl || ""} />
-                      <AvatarFallback className="bg-gray-800 text-white text-sm">
-                        {friend.name?.charAt(0) || friend.username?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <AuricField profileId={friend.id} intensity={0.2}>
+                      <Avatar className="w-12 h-12 mx-auto mb-1">
+                        <AvatarImage src={friend.profilePictureUrl || ""} />
+                        <AvatarFallback className="bg-gray-800 text-white text-sm">
+                          {friend.name?.charAt(0) || friend.username?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </AuricField>
                     <div className="text-xs text-white font-medium truncate w-14">
                       {friend.name || friend.username}
                     </div>

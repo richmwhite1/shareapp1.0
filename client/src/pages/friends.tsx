@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth.tsx";
+import AuricField from "@/components/auric-field";
 import type { User } from "@shared/schema";
 
 interface FriendRequest {
@@ -269,15 +270,17 @@ export default function ConnectionsPage() {
                               className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                               <div className="flex items-center space-x-3">
-                                <Avatar>
-                                  <AvatarImage 
-                                    src={searchUser.profilePictureUrl || undefined} 
-                                    alt={searchUser.name}
-                                  />
-                                  <AvatarFallback>
-                                    {searchUser.name.charAt(0).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
+                                <AuricField profileId={searchUser.id} intensity={0.2}>
+                                  <Avatar>
+                                    <AvatarImage 
+                                      src={searchUser.profilePictureUrl || undefined} 
+                                      alt={searchUser.name}
+                                    />
+                                    <AvatarFallback>
+                                      {searchUser.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </AuricField>
                                 <div>
                                   <p className="font-medium text-gray-900 dark:text-white">
                                     {searchUser.name}
@@ -432,15 +435,17 @@ export default function ConnectionsPage() {
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
-                            <Avatar>
-                              <AvatarImage 
-                                src={request.fromUser.profilePictureUrl || undefined} 
-                                alt={request.fromUser.name}
-                              />
-                              <AvatarFallback>
-                                {request.fromUser.name.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
+                            <AuricField profileId={request.fromUser.id} intensity={0.2}>
+                              <Avatar>
+                                <AvatarImage 
+                                  src={request.fromUser.profilePictureUrl || undefined} 
+                                  alt={request.fromUser.name}
+                                />
+                                <AvatarFallback>
+                                  {request.fromUser.name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            </AuricField>
                             <div>
                               <p className="font-medium text-gray-900 dark:text-white">
                                 {request.fromUser.name}
