@@ -1,0 +1,393 @@
+Prompt 1: Create Backend Server (backend/server.js)
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create backend/server.js for Node.js/Express with PostgreSQL
+mkdir backend
+echo 'const express = require("express");
+const { Pool } = require("pg");
+const cors = require("cors");
+require("dotenv").config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const pool = new Pool({
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT,
+});
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const { search } = req.query;
+    let query = "SELECT id, displayName, profileImage FROM users";
+    let values = [];
+    if (search) {
+      query += " WHERE LOWER(displayName) LIKE $1";
+      values = [`%${search.toLowerCase()}%`];
+    }
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("User fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));' > backend/server.js
+
+# Create backend/.env.example
+echo 'PG_USER=your_pg_user
+PG_HOST=localhost
+PG_DATABASE=share_db
+PG_PASSWORD=your_pg_password
+PG_PORT=5432
+PORT=5000' > backend/.env.example
+
+# Create backend/package.json
+echo '{
+  "name": "share-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  }
+}' > backend/package.json
+Prompt 2: Initialize PostgreSQL Database
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Create backend/init-db.sql to set up users table
+echo 'CREATE DATABASE share_db;
+\\c share_db
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  displayName VARCHAR(50) NOT NULL,
+  profileImage TEXT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert test users (replace with your user IDs if using Firebase Auth)
+INSERT INTO users (id, displayName, profileImage) VALUES
+  (\'user1-uuid\', \'user_one\', \'https://via.placeholder.com/48\'),
+  (\'user2-uuid\', \'user_two\', \'https://via.placeholder.com/48\');' > backend/init-db.sql
+Prompt 3: Update .env for Frontend
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update .env to include backend API URL
+echo 'REACT_APP_FIREBASE_API_KEY=AIzaSyDBYgkWQjf9Fxt28JklkOnITBSbRDdILkA
+REACT_APP_FIREBASE_AUTH_DOMAIN=share-3f94b.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=share-3f94b
+REACT_APP_FIREBASE_STORAGE_BUCKET=share-3f94b.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=927972049756
+REACT_APP_FIREBASE_APP_ID=1:927972049756:web:19e53a8b91ce05f023f799
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-HL77JB4RKS
+REACT_APP_API_URL=http://localhost:5000' > .env
+Prompt 4: Fix FriendManagement.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace FriendManagement.js to use backend API
+echo 'import React, { useState, useEffect } from "react";
+import { db } from "../firebase";
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+
+const FriendManagement = ({ currentUserId }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Fetch all users on mount
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/users`);
+        if (!response.ok) throw new Error("Failed to fetch users");
+        const data = await response.json();
+        setUsers(data);
+        setFilteredUsers(data.filter((user) => user.id !== currentUserId));
+      } catch (err) {
+        setError("Failed to load users. Check console for details.");
+        console.error("User fetch error:", err.message);
+      }
+    };
+    fetchUsers();
+
+    // Subscribe to notifications
+    const unsubscribe = onSnapshot(collection(db, `users/${currentUserId}/notifications`), (snapshot) => {
+      setNotifications(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, [currentUserId]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchTerm.trim()) {
+      setFilteredUsers(users.filter((user) => user.id !== currentUserId));
+      return;
+    }
+    const filtered = users.filter(
+      (user) =>
+        user.id !== currentUserId &&
+        user.displayName.toLowerCase().includes(searchTerm.toLowerCase().trim())
+    );
+    setFilteredUsers(filtered);
+    if (filtered.length === 0) {
+      setError("No users found. Try a different name.");
+    } else {
+      setError("");
+    }
+  };
+
+  const sendFriendRequest = async (targetUserId) => {
+    try {
+      const requestId = `${currentUserId}_${targetUserId}`;
+      const targetUser = users.find((user) => user.id === targetUserId);
+      if (!targetUser) {
+        setError("User not found");
+        return;
+      }
+      await setDoc(doc(db, `users/${targetUserId}/friendRequests`, requestId), {
+        fromUserId: currentUserId,
+        createdAt: new Date(),
+      });
+      await setDoc(doc(db, `users/${targetUserId}/notifications`, requestId), {
+        type: "friendRequest",
+        fromUserId: currentUserId,
+        createdAt: new Date(),
+        read: false,
+      });
+      await setDoc(doc(db, `users/${currentUserId}/friends`, targetUserId), {
+        friendId: targetUserId,
+        addedAt: new Date(),
+      });
+      setSearchTerm("");
+      setFilteredUsers(users.filter((user) => user.id !== currentUserId));
+    } catch (err) {
+      setError("Failed to send friend request");
+      console.error("Friend request error:", err.message);
+    }
+  };
+
+  const acceptFriendRequest = async (notification) => {
+    try {
+      const requestId = notification.id;
+      await setDoc(doc(db, `users/${notification.fromUserId}/friends`, currentUserId), {
+        friendId: currentUserId,
+        addedAt: new Date(),
+      });
+      await deleteDoc(doc(db, `users/${currentUserId}/friendRequests`, requestId));
+      await deleteDoc(doc(db, `users/${currentUserId}/notifications`, requestId));
+    } catch (err) {
+      setError("Failed to accept friend request");
+      console.error("Accept request error:", err.message);
+    }
+  };
+
+  const declineFriendRequest = async (notification) => {
+    try {
+      const requestId = notification.id;
+      await deleteDoc(doc(db, `users/${currentUserId}/friendRequests`, requestId));
+      await deleteDoc(doc(db, `users/${currentUserId}/notifications`, requestId));
+    } catch (err) {
+      setError("Failed to decline friend request");
+      console.error("Decline request error:", err.message);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <h2 className="text-white text-lg mb-2">Find Friends</h2>
+      <form onSubmit={handleSearch} className="flex items-center mb-4">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search users by name (e.g., user_one)"
+          className="w-full p-2 border border-gold rounded-l text-white bg-navy"
+        />
+        <button type="submit" className="p-2 bg-gold text-navy rounded-r">
+          Search
+        </button>
+      </form>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      <div className="mb-4">
+        <h3 className="text-white text-md mb-2">All Users</h3>
+        {filteredUsers.length === 0 && !error && (
+          <p className="text-white">No users available</p>
+        )}
+        {filteredUsers.map((user) => (
+          <div key={user.id} className="flex items-center mb-2">
+            <img
+              src={user.profileImage || "https://via.placeholder.com/48"}
+              alt={user.displayName}
+              className="w-10 h-10 rounded-full mr-2"
+            />
+            <span className="text-white">{user.displayName}</span>
+            <button
+              onClick={() => sendFriendRequest(user.id)}
+              className="ml-auto p-1 bg-gold text-navy rounded text-sm"
+            >
+              Add Friend
+            </button>
+          </div>
+        ))}
+      </div>
+      <h3 className="text-white text-md mb-2">Notifications</h3>
+      {notifications.length === 0 && <p className="text-white">No notifications</p>}
+      {notifications.map((notification) => (
+        <div key={notification.id} className="flex items-center mb-2">
+          <span className="text-white">
+            Friend request from {notification.fromUserId}
+          </span>
+          <button
+            onClick={() => acceptFriendRequest(notification)}
+            className="ml-2 p-1 bg-gold text-navy rounded text-sm"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => declineFriendRequest(notification)}
+            className="ml-2 p-1 bg-red-500 text-white rounded text-sm"
+          >
+            Decline
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default FriendManagement;' > src/components/FriendManagement.js
+Prompt 5: Update App.js for Compatibility
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace App.js to ensure compatibility
+echo 'import React, { useState, useEffect } from "react";
+import { auth, db } from "./firebase";
+import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import { doc, setDoc, onSnapshot, collection, query, where, orderBy } from "firebase/firestore";
+import CreatePost from "./components/CreatePost";
+import Feed from "./components/Feed";
+import StoriesBar from "./components/StoriesBar";
+import SearchBar from "./components/SearchBar";
+import HashtagSection from "./components/HashtagSection";
+import FriendManagement from "./components/FriendManagement";
+
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [feedType, setFeedType] = useState("public");
+  const [selectedFriendId, setSelectedFriendId] = useState(null);
+  const [followPublic, setFollowPublic] = useState(true);
+
+  useEffect(() => {
+    onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        await setDoc(doc(db, "users", currentUser.uid), {
+          displayName: `user_${currentUser.uid.slice(0, 6)}`.toLowerCase(),
+          profileImage: "https://via.placeholder.com/48",
+          createdAt: new Date(),
+        }, { merge: true });
+      } else {
+        signInAnonymously(auth).catch((error) => console.error("Auth error:", error));
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    let unsubscribe;
+    if (feedType === "public" && followPublic) {
+      const q = query(collection(db, "posts"), where("visibility", "==", "public"), orderBy("createdAt", "desc"));
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      });
+    } else if (feedType === "friend" && selectedFriendId) {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const q = query(
+        collection(db, "posts"),
+        where("userId", "==", selectedFriendId),
+        where("createdAt", ">=", threeDaysAgo),
+        where("visibility", "in", ["public", "friends"]),
+        orderBy("createdAt", "desc")
+      );
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setPosts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      });
+    } else {
+      setPosts([]);
+    }
+    return () => unsubscribe && unsubscribe();
+  }, [feedType, selectedFriendId, followPublic]);
+
+  const handleSelectFeed = (type, friendId) => {
+    setFeedType(type);
+    setSelectedFriendId(friendId);
+  };
+
+  const handleEndReached = () => {
+    if (feedType === "friend") {
+      document.querySelector(".StoriesBar button")?.click();
+    }
+  };
+
+  const togglePublicFeed = () => {
+    setFollowPublic(!followPublic);
+    if (!followPublic && feedType === "public") {
+      setFeedType(null);
+      setPosts([]);
+    }
+  };
+
+  if (!user) return <div className="bg-navy text-white">Loading...</div>;
+
+  return (
+    <div className="bg-navy min-h-screen text-white">
+      <SearchBar />
+      <StoriesBar currentUserId={user.uid} onSelectFeed={handleSelectFeed} followPublic={followPublic} togglePublicFeed={togglePublicFeed} />
+      <HashtagSection userId={user.uid} />
+      <FriendManagement currentUserId={user.uid} />
+      <CreatePost userId={user.uid} />
+      <Feed posts={posts} onEndReached={handleEndReached} />
+    </div>
+  );
+};
+
+export default App;' > src/App.js
