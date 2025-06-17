@@ -153,7 +153,6 @@ export default function SearchPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <Card className="max-w-md mx-auto">
             <CardContent className="pt-6">

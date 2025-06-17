@@ -1,7 +1,7 @@
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, X, Clock } from "lucide-react";
-import Header from "@/components/header-simple";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -100,7 +100,6 @@ export default function NotificationsPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header />
         <div className="container mx-auto px-4 py-8">
           <p className="text-center text-gray-600 dark:text-gray-400">
             Please sign in to view your notifications.
@@ -112,7 +111,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">

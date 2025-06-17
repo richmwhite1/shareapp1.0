@@ -109,7 +109,6 @@ export default function ProfilePage() {
   if (isOwnProfile && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="p-8 bg-card border-border">
             <p className="text-foreground text-center">Please sign in to view your profile</p>
@@ -122,7 +121,6 @@ export default function ProfilePage() {
   if (categoriesLoading || postsLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-foreground">Loading your profile...</div>
         </div>
