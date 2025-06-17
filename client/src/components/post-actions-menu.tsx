@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal, Share2, Users, Repeat2, Bookmark, Flag, X } from 'lucide-react';
+import { MoreHorizontal, Share2, Users, Repeat2, Bookmark, Flag, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -188,6 +188,14 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
     setFlagDialogOpen(true);
   };
 
+  const handleDelete = () => {
+    // For now, just show a confirmation dialog
+    if (confirm('Are you sure you want to delete this post?')) {
+      // TODO: Implement actual delete functionality
+      console.log('Delete post:', postId);
+    }
+  };
+
   const toggleFriendSelection = (friendId: number) => {
     setSelectedFriends(prev =>
       prev.includes(friendId)
@@ -248,11 +256,7 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
                 {filteredFriends.map((friend) => (
                   <div
                     key={friend.id}
-                    className={`flex items-center p-2 rounded cursor-pointer ${
-                      selectedFriends.includes(friend.id)
-                        ? 'bg-blue-100 dark:bg-blue-900'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                    className="flex items-center p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                     onClick={() => toggleFriendSelection(friend.id)}
                   >
                     <img
@@ -423,6 +427,10 @@ export function PostActionsMenu({ postId, postTitle, className, actionType = 'al
           <DropdownMenuItem onClick={handleFlag} className="text-red-600">
             <Flag className="h-4 w-4 mr-2" />
             Flag
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -247,8 +247,41 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Profile Settings Toggle - Only for own profile */}
+        {isOwnProfile && (
+          <div className="px-6 py-4 bg-gray-900 border-b border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-medium">Connection Privacy</h3>
+                <p className="text-gray-400 text-sm">Default privacy for new posts</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input 
+                    type="radio" 
+                    name="defaultPrivacy" 
+                    value="public" 
+                    className="text-blue-600"
+                    defaultChecked 
+                  />
+                  Public
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input 
+                    type="radio" 
+                    name="defaultPrivacy" 
+                    value="connections" 
+                    className="text-blue-600"
+                  />
+                  Connections Only
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
-        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg -mt-6 relative z-10 mb-6">
+        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg mt-4 relative z-10 mb-6">
           <div className="flex justify-around text-center">
             <div>
               <div className="text-xl font-bold text-white">{totalPosts}</div>

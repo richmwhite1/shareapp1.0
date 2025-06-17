@@ -48,7 +48,7 @@ export default function Home() {
     enabled: feedType !== 'shared' || isAuthenticated,
   });
 
-  const handleSelectFeed = (type: 'public' | 'friend', friendId?: number) => {
+  const handleSelectFeed = (type: 'public' | 'friend' | 'shared', friendId?: number) => {
     setFeedType(type);
     setSelectedFriend(friendId || null);
     
