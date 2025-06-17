@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "./lib/auth.tsx";
+import Header from "@/components/header-simple";
+import BottomNav from "@/components/bottom-nav";
 import Home from "@/pages/home";
 import PostPage from "@/pages/post";
 import AuthPage from "@/pages/auth";
@@ -21,7 +23,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/post/:id" component={PostPage} />
       <Route path="/auth" component={AuthPage} />
-      <Route path="/create" component={CreatePostPage} />
+      <Route path="/create-post" component={CreatePostPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/profile/:id" component={ProfilePage} />
       <Route path="/category/:id" component={CategoryPage} />
@@ -38,8 +40,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <div className="min-h-screen bg-background">
+            <Header />
+            <main className="pb-20"> {/* Add bottom padding for bottom nav */}
+              <Router />
+            </main>
+            <BottomNav />
+            <Toaster />
+          </div>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

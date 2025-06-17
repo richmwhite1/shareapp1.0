@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import Header from "@/components/header";
 import PostCard from "@/components/post-card";
 import FriendsStoriesBar from "@/components/friends-stories-bar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,27 +71,23 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900">
-        <Header />
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-8 text-center">
-              <h2 className="text-xl font-semibold text-white mb-2">
-                Something went wrong
-              </h2>
-              <p className="text-gray-400">
-                Failed to load posts. Please try again later.
-              </p>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="max-w-md mx-auto px-4 py-8">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-semibold text-white mb-2">
+              Something went wrong
+            </h2>
+            <p className="text-gray-400">
+              Failed to load posts. Please try again later.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <Header />
+    <div className="bg-black"">
       
       {/* Friends Stories Bar */}
       <FriendsStoriesBar
