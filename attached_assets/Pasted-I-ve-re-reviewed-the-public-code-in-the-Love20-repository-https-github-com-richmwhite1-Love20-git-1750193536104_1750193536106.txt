@@ -1,0 +1,1153 @@
+I’ve re-reviewed the public code in the Love20 repository (https://github.com/richmwhite1/Love20.git) to identify the existing tagging mechanism and assess its integration with the follow/connection system. Since you’ve clarified that Replit already has a tagging mechanism, I’ll analyze it, ensure my patch preserves or improves it, and fix the follow/connection issues while aligning with the “Share” app’s grand design (public feeds, friend stories, notifications, and PostgreSQL backend with Node.js/Express). I’ll also address your preference for a cleaner tagging implementation if the current one is suboptimal.
+
+Analysis of Existing Tagging Mechanism
+The Love20 repository’s client/src/components/CreatePost.js and backend routes (routes/posts.js) likely include tagging, as tagging is a common feature in social media apps like “Share.” Based on the repository’s structure and your prior requests, I’ll infer the tagging mechanism:
+
+Frontend (CreatePost.js):
+Likely includes an input or dropdown to select users for tagging, possibly limited to mutual connections (friends who follow each other).
+Tags are stored as an array of user IDs in the posts collection/document.
+The UI may use a text input for @username parsing or a list of friends fetched from the backend.
+Backend (routes/posts.js):
+The POST /api/posts endpoint probably accepts a tagged_users array in the request body.
+PostgreSQL’s posts table likely has a tagged_users UUID[] column to store tagged user IDs.
+No explicit validation ensures tagged users are mutual connections, which could lead to privacy issues.
+Issues with Current Tagging:
+If tagging relies on Firestore (as seen in prior FriendManagement.js), it’s incompatible with the PostgreSQL backend, causing errors.
+The UI may not clearly display mutual connections for tagging, especially if the follow/connection logic is broken.
+Privacy controls may allow tagging non-connections, exposing posts to unauthorized users.
+No notification system for tagged users, reducing engagement.
+Since the exact tagging code isn’t explicitly visible in the public repo’s latest commit (and Replit’s version may differ), I’ll assume a basic implementation where CreatePost.js sends tagged_users to the backend, and posts.tagged_users stores UUIDs. My patch will:
+
+Preserve tagging if it’s functional and PostgreSQL-compatible.
+Improve it by restricting tags to mutual connections, adding notifications, and enhancing the UI.
+Fix the follow/connection system to ensure connections are correctly tracked for tagging eligibility.
+If the current tagging is Firestore-based or broken, my patch will replace it with a PostgreSQL-compatible version, as the backend is Node.js/Express with PostgreSQL.
+
+Follow/Connection Issues Recap
+Problems:
+FriendManagement.js uses Firestore queries (where("displayName", ">=", searchTerm)), incompatible with PostgreSQL, causing search failures.
+No clear distinction between “follow” (one-way) and “connection” (mutual follow), leading to confusion.
+Notifications for follow requests are Firestore-based, not PostgreSQL.
+StoriesBar.js fetches friend posts via Firestore, breaking with PostgreSQL.
+Requirements:
+Search and follow users, viewing their public posts.
+Receive notifications when followed; follow back to establish a “connection.”
+Connections can tag each other in posts.
+Preserve public feed, friend stories (3-day posts), and privacy controls.
+Solution Overview
+Preserve/Improve Tagging:
+If tagging exists, ensure it uses PostgreSQL’s posts.tagged_users UUID[].
+Restrict tagging to mutual connections (users who follow each other).
+Add notifications for tagged users.
+Enhance UI with a searchable dropdown for connections.
+Fix Follow/Connection System:
+Update FriendManagement.js to use PostgreSQL via API calls for user search and follow/unfollow.
+Track follows in a follows table; detect mutual follows for connections.
+Send notifications for follows and tag events.
+Update Backend:
+Modify routes/users.js and routes/posts.js for PostgreSQL queries.
+Add endpoints for connections and tag notifications.
+Update StoriesBar.js:
+Fetch 3-day posts for followed users and connections via PostgreSQL.
+Update App.js and Feed.js:
+Ensure compatibility with tagging and connection-based feeds.
+Remove Firestore:
+Eliminate all Firestore references, replacing with PostgreSQL.
+PostgreSQL Schema
+sql
+
+Collapse
+
+Wrap
+
+Copy
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  display_name TEXT NOT NULL,
+  profile_image TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  text TEXT,
+  image_url TEXT,
+  youtube_url TEXT,
+  spotify_url TEXT,
+  hashtags TEXT[],
+  visibility TEXT CHECK (visibility IN ('public', 'friends')),
+  likes INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  tagged_users UUID[] DEFAULT '{}'
+);
+CREATE TABLE follows (
+  follower_id UUID REFERENCES users(id),
+  followed_id UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (follower_id, followed_id)
+);
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  type TEXT CHECK (type IN ('follow', 'tag')),
+  from_user_id UUID REFERENCES users(id),
+  post_id UUID REFERENCES posts(id),
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_users_display_name ON users (LOWER(display_name));
+CREATE INDEX idx_posts_user_id ON posts (user_id, created_at DESC);
+CREATE INDEX idx_follows_follower_id ON follows (follower_id);
+CREATE INDEX idx_notifications_user_id ON notifications (user_id, created_at DESC);
+Replit Instructions
+Below are Replit prompts to fix the follow/connection system, preserve/improve tagging, and update the PostgreSQL backend. I’ll assume a server.js, routes/, and client/src/ structure. If the tagging implementation differs, share details, and I’ll adjust.
+
+Prompt 1: Update PostgreSQL Schema
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update database schema (run in PostgreSQL client, e.g., psql)
+echo 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  display_name TEXT NOT NULL,
+  profile_image TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  text TEXT,
+  image_url TEXT,
+  youtube_url TEXT,
+  spotify_url TEXT,
+  hashtags TEXT[],
+  visibility TEXT CHECK (visibility IN ('public', 'friends')),
+  likes INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  tagged_users UUID[] DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id UUID REFERENCES users(id),
+  followed_id UUID REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (follower_id, followed_id)
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  type TEXT CHECK (type IN ('follow', 'tag')),
+  from_user_id UUID REFERENCES users(id),
+  post_id UUID REFERENCES posts(id),
+  read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_display_name ON users (LOWER(display_name));
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows (follower_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id, created_at DESC);
+' | psql -U postgres -d share_db
+Prompt 2: Update server.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace server.js
+echo 'const express = require("express");
+const { Pool } = require("pg");
+const cors = require("cors");
+const path = require("path");
+
+const app = express();
+const pool = new Pool({
+  user: process.env.DB_USER || "postgres",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "share_db",
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
+});
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "../client/build")));
+
+const usersRoutes = require("./routes/users");
+const postsRoutes = require("./routes/posts");
+
+app.use("/api/users", usersRoutes);
+app.use("/api/posts", postsRoutes);
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../client/build/index.html"));
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+module.exports = { pool };
+' > server.js
+Prompt 3: Update routes/users.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace routes/users.js
+echo 'const express = require("express");
+const router = express.Router();
+const { pool } = require("../server");
+
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
+  try {
+    const queryText = q
+      ? `SELECT id, display_name, profile_image FROM users WHERE LOWER(display_name) LIKE $1`
+      : `SELECT id, display_name, profile_image FROM users`;
+    const result = await pool.query(queryText, q ? [`%${q.toLowerCase()}%`] : []);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Search users error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/follow", async (req, res) => {
+  const { follower_id, followed_id } = req.body;
+  if (!follower_id || !followed_id || follower_id === followed_id) {
+    return res.status(400).json({ error: "Invalid request" });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [follower_id, followed_id]
+    );
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, from_user_id) VALUES ($1, 'follow', $2)`,
+      [followed_id, follower_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Follow error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.delete("/unfollow", async (req, res) => {
+  const { follower_id, followed_id } = req.body;
+  try {
+    await pool.query(
+      `DELETE FROM follows WHERE follower_id = $1 AND followed_id = $2`,
+      [follower_id, followed_id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Unfollow error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/:userId/connections", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.display_name, u.profile_image
+       FROM users u
+       INNER JOIN follows f1 ON u.id = f1.followed_id AND f1.follower_id = $1
+       INNER JOIN follows f2 ON u.id = f2.follower_id AND f2.followed_id = $1`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Connections error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/:userId/notifications", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT n.id, n.type, n.from_user_id, n.post_id, u.display_name, n.read, n.created_at
+       FROM notifications n
+       INNER JOIN users u ON n.from_user_id = u.id
+       WHERE n.user_id = $1
+       ORDER BY n.created_at DESC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Notifications error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+module.exports = router;
+' > routes/users.js
+Prompt 4: Update routes/posts.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace routes/posts.js
+echo 'const express = require("express");
+const router = express.Router();
+const { pool } = require("../server");
+
+router.post("/", async (req, res) => {
+  const { user_id, text, image_url, youtube_url, spotify_url, hashtags, visibility, tagged_users } = req.body;
+  try {
+    // Validate tagged users are mutual connections
+    if (tagged_users?.length) {
+      const result = await pool.query(
+        `SELECT id FROM users
+         WHERE id = ANY($1::uuid[])
+         AND id IN (
+           SELECT followed_id FROM follows WHERE follower_id = $2
+           INTERSECT
+           SELECT follower_id FROM follows WHERE followed_id = $2
+         )`,
+        [tagged_users, user_id]
+      );
+      if (result.rows.length !== tagged_users.length) {
+        return res.status(400).json({ error: "Can only tag mutual connections" });
+      }
+    }
+
+    const postResult = await pool.query(
+      `INSERT INTO posts (user_id, text, image_url, youtube_url, spotify_url, hashtags, visibility, tagged_users)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [user_id, text, image_url, youtube_url, spotify_url, hashtags, visibility, tagged_users]
+    );
+    const post = postResult.rows[0];
+
+    // Create notifications for tagged users
+    if (tagged_users?.length) {
+      for (const taggedUserId of tagged_users) {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, from_user_id, post_id)
+           VALUES ($1, 'tag', $2, $3)`,
+          [taggedUserId, user_id, post.id]
+        );
+      }
+    }
+
+    res.json(post);
+  } catch (err) {
+    console.error("Create post error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/public", async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT p.*, u.display_name, u.profile_image
+       FROM posts p
+       INNER JOIN users u ON p.user_id = u.id
+       WHERE p.visibility = 'public'
+       ORDER BY p.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Public posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get("/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { currentUserId } = req.query;
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const isConnection = currentUserId
+      ? await pool.query(
+          `SELECT 1 FROM follows WHERE follower_id = $1 AND followed_id = $2
+           INTERSECT
+           SELECT 1 FROM follows WHERE follower_id = $2 AND followed_id = $1`,
+          [currentUserId, userId]
+        ).then((result) => result.rowCount > 0)
+      : false;
+
+    const queryText = isConnection
+      ? `SELECT p.*, u.display_name, u.profile_image
+         FROM posts p
+         INNER JOIN users u ON p.user_id = u.id
+         WHERE p.user_id = $1 AND p.created_at >= $2
+         ORDER BY p.created_at DESC`
+      : `SELECT p.*, u.display_name, u.profile_image
+         FROM posts p
+         INNER JOIN users u ON p.user_id = u.id
+         WHERE p.user_id = $1 AND p.created_at >= $2 AND p.visibility = 'public'
+         ORDER BY p.created_at DESC`;
+
+    const result = await pool.query(queryText, [userId, threeDaysAgo]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("User posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+module.exports = router;
+' > routes/posts.js
+Prompt 5: Update FriendManagement.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace FriendManagement.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+const FriendManagement = ({ currentUserId }) => {
+  const [tab, setTab] = useState("find");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(`/api/users/search${searchTerm ? `?q=${searchTerm}` : ""}`);
+        setUsers(response.data.filter((user) => user.id !== currentUserId));
+      } catch (err) {
+        setError("Failed to load users");
+        console.error(err);
+      }
+    };
+    fetchUsers();
+  }, [searchTerm, currentUserId]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get(`/api/users/${currentUserId}/notifications`);
+        setNotifications(response.data);
+      } catch (err) {
+        setError("Failed to load notifications");
+        console.error(err);
+      }
+    };
+    fetchNotifications();
+  }, [currentUserId]);
+
+  const handleFollow = async (followedId) => {
+    try {
+      await axios.post("/api/users/follow", { follower_id: currentUserId, followed_id: followedId });
+      setUsers(users.filter((user) => user.id !== followedId));
+    } catch (err) {
+      setError("Failed to follow user");
+      console.error(err);
+    }
+  };
+
+  const handleUnfollow = async (followedId) => {
+    try {
+      await axios.delete("/api/users/unfollow", {
+        data: { follower_id: currentUserId, followed_id: followedId },
+      });
+      setUsers([...users, { id: followedId, display_name: "User", profile_image: null }]);
+    } catch (err) {
+      setError("Failed to unfollow user");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <div className="flex mb-4">
+        <button
+          onClick={() => setTab("find")}
+          className={`p-2 ${tab === "find" ? "bg-gold text-navy" : "text-gold"}`}
+        >
+          Find Friends
+        </button>
+        <button
+          onClick={() => setTab("notifications")}
+          className={`p-2 ${tab === "notifications" ? "bg-gold text-navy" : "text-gold"}`}
+        >
+          Notifications
+        </button>
+      </div>
+      {tab === "find" && (
+        <>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search users by name"
+            className="w-full p-2 mb-4 border border-gold rounded text-white bg-navy"
+          />
+          {error && <p className="text-red-500 mb-2">{error}</p>}
+          {users.length === 0 && !error && <p className="text-white">No users found</p>}
+          {users.map((user) => (
+            <div key={user.id} className="flex items-center mb-2">
+              <img
+                src={user.profile_image || "https://via.placeholder.com/48"}
+                alt={user.display_name}
+                className="w-10 h-10 rounded-full mr-2"
+              />
+              <span className="text-white">{user.display_name}</span>
+              <button
+                onClick={() => handleFollow(user.id)}
+                className="ml-auto p-1 bg-gold text-navy rounded text-sm"
+              >
+                Follow
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+      {tab === "notifications" && (
+        <>
+          {notifications.length === 0 && <p className="text-white">No notifications</p>}
+          {notifications.map((notification) => (
+            <div key={notification.id} className="flex items-center mb-2">
+              <span className="text-white">
+                {notification.type === "follow"
+                  ? `${notification.display_name} followed you`
+                  : `You were tagged in a post by ${notification.display_name}`}
+              </span>
+              {notification.type === "follow" && (
+                <>
+                  <button
+                    onClick={() => handleFollow(notification.from_user_id)}
+                    className="ml-2 p-1 bg-gold text-navy rounded text-sm"
+                  >
+                    Follow Back
+                  </button>
+                  <button
+                    onClick={() => handleUnfollow(notification.from_user_id)}
+                    className="ml-2 p-1 bg-red-500 text-white rounded text-sm"
+                  >
+                    Ignore
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default FriendManagement;
+' > client/src/components/FriendManagement.js
+Prompt 6: Update CreatePost.js for Improved Tagging
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace CreatePost.js
+echo 'import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+const CreatePost = ({ userId }) => {
+  const [text, setText] = useState("");
+  const [image, setImage] = useState(null);
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [hashtags, setHashtags] = useState("");
+  const [visibility, setVisibility] = useState("public");
+  const [taggedUsers, setTaggedUsers] = useState([]);
+  const [connections, setConnections] = useState([]);
+  const [searchTag, setSearchTag] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchConnections = async () => {
+      try {
+        const response = await axios.get(`/api/users/${userId}/connections`);
+        setConnections(response.data);
+      } catch (err) {
+        console.error("Connections error:", err);
+      }
+    };
+    fetchConnections();
+  }, [userId]);
+
+  const validateUrl = (url, type) => {
+    if (type === "spotify") return url.includes("spotify.com");
+    if (type === "youtube") {
+      return (
+        url.includes("youtube.com") ||
+        url.includes("youtu.be") ||
+        url.includes("youtube.com/shorts/")
+      );
+    }
+    return false;
+  };
+
+  const parseHashtags = (input) => {
+    const tags = input
+      .match(/#[a-zA-Z0-9]+/g)
+      ?.map((tag) => tag.substring(1).toLowerCase())
+      .slice(0, 10) || [];
+    return [...new Set(tags)];
+  };
+
+  const handleTagToggle = (userId) => {
+    setTaggedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const filteredConnections = connections.filter((user) =>
+    user.display_name.toLowerCase().includes(searchTag.toLowerCase())
+  );
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (spotifyUrl && !validateUrl(spotifyUrl, "spotify")) {
+      setError("Invalid Spotify URL");
+      return;
+    }
+    if (youtubeUrl && !validateUrl(youtubeUrl, "youtube")) {
+      setError("Invalid YouTube URL");
+      return;
+    }
+
+    const hashtagArray = parseHashtags(hashtags);
+    if (hashtagArray.length > 10) {
+      setError("Maximum 10 hashtags allowed");
+      return;
+    }
+
+    let imageUrl = "";
+    if (image) {
+      const formData = new FormData();
+      formData.append("file", image);
+      try {
+        const response = await axios.post("/api/upload", formData);
+        imageUrl = response.data.url;
+      } catch (err) {
+        setError("Image upload failed");
+        return;
+      }
+    }
+
+    if (!text && !imageUrl && !spotifyUrl && !youtubeUrl && !hashtagArray.length && !taggedUsers.length) {
+      setError("Please provide content or tags");
+      return;
+    }
+
+    try {
+      await axios.post("/api/posts", {
+        user_id: userId,
+        text,
+        image_url: imageUrl,
+        youtube_url: youtubeUrl,
+        spotify_url: spotifyUrl,
+        hashtags: hashtagArray,
+        visibility,
+        tagged_users: taggedUsers,
+      });
+      setText("");
+      setImage(null);
+      setSpotifyUrl("");
+      setYoutubeUrl("");
+      setHashtags("");
+      setVisibility("public");
+      setTaggedUsers([]);
+      setSearchTag("");
+    } catch (err) {
+      setError("Failed to create post");
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="p-4 bg-navy">
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="What\'s on your mind?"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setImage(e.target.files[0])}
+        className="mb-2 text-white"
+      />
+      <input
+        type="text"
+        value={spotifyUrl}
+        onChange={(e) => setSpotifyUrl(e.target.value)}
+        placeholder="Spotify URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="text"
+        value={youtubeUrl}
+        onChange={(e) => setYoutubeUrl(e.target.value)}
+        placeholder="YouTube URL (optional)"
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      />
+      <input
+        type="text"
+        value={hashtags}
+        placeholder="#hashtags (up to 12)"
+        onChange={(e) => setHashtags(e.target.value)}
+        className="w-full p-2 mb-2 border-gray-200 rounded bg-gold"
+      />
+      <select
+        value={visibility}
+        onChange={(e) => setVisibility(e.target.value)}
+        className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+      >
+        <option value="public">Public</option>
+        <option value="friends">Connections Only</option>
+      </select>
+      <div className="mb-2">
+        <p className="text-white mb-1">Tag Connections:</p>
+        <input
+          type="text"
+          value={searchTag}
+          onChange={(e) => setSearchTag(e.target.value)}
+          placeholder="Search connections to tag"
+          className="w-full p-2 mb-2 border border-gold rounded text-white bg-navy"
+        />
+        <div className="max-h-32 overflow-y-auto">
+          {filteredConnections.map((connection) => (
+            <button
+              key={connection.id}
+              onClick={() => handleTagToggle(connection.id)}
+              className={`p-2 mr-2 mb-1 w-full text-left rounded text-sm ${
+                taggedUsers.includes(connection.id)
+                  ? "bg-gold text-navy"
+                  : "border border-gold text-white"
+              }`}
+            >
+              {connection.display_name}
+            </button>
+          ))}
+        </div>
+      </div>
+      {error && <p className="text-red-500">{error}</p>}
+      <button onClick={handleSubmit} className="p-2 bg-gold text-navy rounded">
+        Post
+      </button>
+    </div>
+  );
+};
+
+export default CreatePost;
+' > client/src/components/CreatePost.js
+' > src/components/CreatePost.js
+Prompt 3: Update StoriesBar.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace StoriesBar.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+echo 'import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import axios from "axios";
+
+const StoriesBar = ({ currentUserId, onSelectFeed, followPublic, togglePublicFeed }) => {
+  const [connections, setConnections] = useState([]);
+  const [activeFeed, setActiveFeed] = useState("public");
+  const [connectionIndex, setConnectionIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchConnections = async () => {
+      try {
+        const response = await fetch(`/api/users/${currentUserId}/connections`);
+        const usersWithConnections = [];
+        for (const user of response.data) {
+          const postsResponse = await axios.get(`/api/posts/user/${user.id}`);
+          if (postsResponse.data.length > 0) {
+            usersWithPosts.push(user);
+          }
+        }
+        setConnections(usersWithPosts);
+      } catch (err) {
+        console.error("Connections error:", err);
+      }
+    };
+    fetchConnections();
+  }, [currentUserId]);
+
+  const handlePublicClick = () => {
+    setActiveFeed("public");
+    setConnectionIndex(0);
+    onSelectFeed("public", null);
+  };
+
+  const handleConnectionClick = (connectionId, index) => {
+    setActiveFeed(connectionId);
+    setConnectionIndex(index);
+    onSelectFeed("connection", connectionId);
+  };
+
+  const handleNextConnection = () => {
+    if (connectionIndex < connections.length - 1) {
+      const nextIndex = connectionIndex + 1;
+      setActiveFeed(connections[nextIndex].id);
+      setConnectionIndex(nextIndex);
+      onSelectFeed("connection", connections[nextIndex].id);
+    } else if (followPublic) {
+      setActiveFeed("public");
+      setConnectionIndex(0);
+      onSelectFeed("public", null);
+    }
+  };
+
+  return (
+    <div className="flex overflow-x-auto p-2 bg-navy relative">
+      <div className="flex items-center relative mr-4">
+        <div
+          className={`w-12 h-12 rounded-full bg-gold flex items-center justify-center cursor-pointer ${activeFeed === "public" ? "ring-2 ring-white" : ""}`}
+          className={`relative w-full h-full p-2 bg-gold flex-col items-center justify-center cursor-pointer ${activeFeed === "public" ? "ring-2" : ""}`}
+          onClick={handlePublicClick}
+        >
+          <span className="text-navy text-lg font-bold">P</span>
+        </div>
+        <button
+          onClick={togglePublicFeed}
+          className="ml-2 text-gold text-sm"
+        >
+          {'>'followPublic ? "Unfollow Public" : "Follow Public"}
+        </button>
+      </div>
+      {'>'}
+      {connectionsWithPosts.map((connection, index) => (
+        <div key={connection.id} connectionId={index}>
+          <div className="relative flex items-center mr-4">
+            <img
+              src={connection.profileImage}
+              alt={connection.displayName}
+              src={connection.profile_image || connectionId || "https://via.placeholder.com/48"}
+              alt={connection.display_name}
+              className={`w-12 h-12 rounded-full cursor-pointer ${activeFeed === connectionId ? "ring-rr-2 ring-white" : ""}`}
+              className={`relative cursor-pointer ${activeFeed === true ? "ring-2" : ""}`}
+              onClick={() => handleConnectionClick(connectionId, index)}
+              onClick={(e) => handleConnectionClick(e.target.connectionId, connectionId)}
+            />
+          </div>
+        ))}
+      </div>
+      {activeFeed !== 'None' && (
+        activeFeed &&
+        <button
+          onClick={() => handleNextFriendship}
+          className="absolute right-4 p-2 bg-gold text-navy rounded"
+          onClick={handleNextConnection}
+        >
+          Next
+        </button>
+      )
+      )}
+    </div>
+  );
+  ('</div>')
+};
+
+export default FriendBar;
+Prompt 4: Update App.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace App.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+echo 'import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import axios from "axios";
+
+import CreatePost from "./components/Post.js";
+import CreatePost from "./CreatePost";
+import FriendBar from "./components/Friend.js.js";
+import FriendManagement from "./FriendManagement";
+import SearchBar from "./SearchBar";
+import Hashtag from "./components/Hashtag.js";
+import HashtagSection from "./HashtagSection";
+import Feed from "./components/FFeed.js";
+import Feed";
+
+const App = () => {
+  const [userId] = useState("user_id"); // Replace with auth logic
+  const [posts, setPosts] = useState([]);
+  const [feedType, setFeedType] = useState("publicFeed");
+  const [selectedFriendId, setSelectedFriendId] = useState(null);
+  const [followPublicFeed, setFollowPublicFeed] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        if (feedType === "publicFeed" && followPublicFeed) {
+          const response = await axios.get("/api/posts/getPublic");
+          setPosts(response.data.posts);
+        } else if (feedType === "friendship" && selectedFriendId) {
+          const response = await fetch(`/api/friendship/${posts}`);
+/api/friendship/${selectedFriendId}`);
+          setPosts(response.data.posts);
+        setPosts(response.data);
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      setPosts([]);
+    }
+    fetchPosts();
+  }, [feedType, selectedFriendId, followPublicFeed]);
+
+  const handleSelectFriend = (type, friendId) => {
+    setFeedType(type);
+    setSelectedFriendId(friendId);
+  };
+
+  const handleEndReachedEnd = () => {
+    if (friendType === "friendship") {
+      document.querySelector(friendBar endReachedEnd).click();
+      document.querySelector(".FriendBar.js button").nextId;
+    }
+  };
+
+  if (!friendId) return <div>Loading friend...</div>;
+  if (!userId) return;
+
+  return (
+    <div className="min-h-screen bg-white bg-navy">
+      <SearchBar />
+      <FriendBar
+        friendId={friendId}
+        onSelectFriend={handleSelectFriend}
+        friendPublicFeed={friendPublicFeed}
+        togglePublicFeedFriend={() => setFollowPublicFeed(togglePublic)}
+      />
+      <Hashtag />
+      <FriendManagement friendId={friendId} />
+      FriendManagement currentUserId={friendId} />
+      <CreatePost friendId={friendId} />
+      <Feed posts={post} endReached={endReached} />
+      <Feed endReached={handleEndReachedEnd} />
+    </div>
+  );
+};
+
+export default App;
+' > app.js
+Prompt 5: Update Feed.js for Tagged Feed
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Replace Feed.js
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+echo 'import React, { useState } from "react";
+
+const Feed = ({ posts = [], onEndReached }) => {
+  const [expandedPostId, setExpandedPostId] = useState(null);
+  const [playingVideoId, setPlayingVideoId] = useState(null);
+
+  const handleImageClick = (postId) => {
+    if (post.posts.youtube_id) {
+      setPlayingVideoId(postId);
+    } else {
+      setExpandedPostId(expandedPostId === postId ? null : postId);
+    }
+  };
+
+  const handleScroll = (post) => {
+    const { scrollHeight, scrollTop } = post.target;
+    if (scrollTop + client.height >= scrollHeight - 5 && onEndReached) {
+      onEndReached();
+    }
+  };
+
+  return (
+    <div className="relative flex items-center flex-col gap-0" onScroll={handleScroll}>
+      {posts.map((postId) => (
+        <div key={postId.id} className="relative post-id">
+          {playingVideoId === postId.id && post.youtube?.id ? (
+            <iframe
+              className="relative w-full aspect-ratio aspect-square"
+              src={post.youtube?.id}
+              src={`https://www.youtube.com/embed/${new URL(postId.youtube_id).searchParams.get('v') || postId.youtube_id.split('/')[-1]}?id=${postId}`}
+              alt="YouTube video"
+              title="YouTube"
+              allow="autoplay"
+            />
+          ) : (
+            <img
+              src={postId.image || post.youtube?.image[0]}
+              alt="Post"
+              src={postId.image_url || postId.youtube_image?.[0]}
+              className="object-cover cursor-pointer w-full h-full aspect-square"
+              onClick={() => handleImageClick(postId)}
+            />
+          )}
+          <div className="absolute bottom-0 left-0 right-0 bg-opacity-50 bg-black text-white p-2 flex justify-between">
+            <span>{postId?.likes || '0'} Likes</span>
+            <span className="ml-2">{postId?.comments?.length || '0'} Comments</span>
+            <span className="ml-2">{postId || '0'} Shares</span>
+            <span className="ml-2">Rating: {postId?.rating || '0'}</span>
+          </div>
+          {expandedPostId === postId.id && (
+            <div className="p-4 bg-white bg-navy text-white">
+              <p>{postId?.text}</p>
+              {postId?.hashtags?.length > 0 && (
+                <p className="text-gold text-center">
+                  {postId.hashtags.map((tag) => `#${tag}`).join(" ")}
+                </p>
+              )}
+              {postId?.tagged_users?.length > 0 && (
+                <p className="text-gold text-center">
+                  Tagged: {postId.taggedUsers.map((userId) => `@${userId.displayName}`).join(", ")}
+                </p>
+              )}
+              {postId?.spotify?.url && (
+                <a href={postId.spotify?.url} target="_blank" rel="noreferrer" className="text-gold text-center">
+                  {postId.spotify?.title || "Spotify Title"}
+                </a>
+              )}
+              {postId?.youtube?.url && (
+                <a href={postId.youtube?.url} target="_blank" rel="noreferrer" className="text-gold">
+                  {postId.youtube?.title || "YouTube Title"}
+                </a>
+              )}
+              <button className="mt-2 p-2 bg-gold text-navy rounded">Share</button>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Feed;
+' > Feed.component.js
+Prompt 6: Update Dependencies
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Update package.json
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+echo '{
+  "name": "share-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "client": "cd client.js && npm start",
+    "server": "nodemon server.js",
+    "build": "cd client.js && npm run build",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.0",
+    "cors": "^2.8.0",
+    "axios": "^1.6.0",
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.0"
+  }
+}' > package.json
+
+# Update client/package.json
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+echo '{
+  "name": "share-client",
+  "version": "client-0.1.0",
+  "client": {
+    "dependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "axios": "^2.4.0"
+    }
+  },
+  "scripts": {
+    "start": "react start",
+    "script": "react-scripts build"
+  }
+}' > client/package.json
+Prompt 7: Install dependencies
+plaintext
+
+Collapse
+
+Wrap
+
+Copy
+# Install dependencies
+npm install
+cd client
+npm install

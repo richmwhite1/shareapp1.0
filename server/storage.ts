@@ -10,7 +10,7 @@ import {
   type PostView, type SavedPost, type Repost, type PostFlag, type TaggedPost, type PostWithStats
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count, or, inArray, sql, like, gt, max, ne } from "drizzle-orm";
+import { eq, and, desc, count, or, inArray, sql, like, gt, max, ne, exists } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -965,40 +965,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriendsOrderedByRecentTags(userId: number): Promise<User[]> {
+    // Get all connected friends using direct join approach
     const result = await db
-      .select({
-        user: {
-          id: users.id,
-          username: users.username,
-          name: users.name,
-          profilePictureUrl: users.profilePictureUrl,
-          createdAt: users.createdAt,
-          password: users.password,
-          defaultPrivacy: users.defaultPrivacy,
-        },
-        lastTagged: max(taggedPosts.createdAt),
+      .selectDistinct({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        profilePictureUrl: users.profilePictureUrl,
+        createdAt: users.createdAt,
+        password: users.password,
+        defaultPrivacy: users.defaultPrivacy,
       })
-      .from(friendships)
-      .innerJoin(users, or(
-        and(eq(friendships.userId, userId), eq(users.id, friendships.friendId)),
-        and(eq(friendships.friendId, userId), eq(users.id, friendships.userId))
-      ))
-      .leftJoin(taggedPosts, and(
-        eq(taggedPosts.fromUserId, userId),
-        eq(taggedPosts.toUserId, users.id)
-      ))
-      .where(and(
+      .from(users)
+      .innerJoin(friendships, 
         or(
-          eq(friendships.userId, userId),
-          eq(friendships.friendId, userId)
-        ),
-        eq(friendships.status, 'accepted'),
-        ne(users.id, userId) // Exclude self
-      ))
-      .groupBy(users.id, users.username, users.name, users.profilePictureUrl, users.createdAt, users.password, users.defaultPrivacy)
-      .orderBy(desc(max(taggedPosts.createdAt)));
+          and(eq(friendships.userId, userId), eq(friendships.friendId, users.id)),
+          and(eq(friendships.friendId, userId), eq(friendships.userId, users.id))
+        )
+      )
+      .where(
+        and(
+          ne(users.id, userId), // Exclude self
+          inArray(friendships.status, ['accepted', 'connected'])
+        )
+      )
+      .orderBy(users.name);
 
-    return result.map(r => r.user as User);
+    return result as User[];
   }
 
   async getFriendRequests(userId: number): Promise<Array<{ id: number; fromUser: User; createdAt: Date }>> {
