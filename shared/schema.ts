@@ -35,6 +35,13 @@ export const posts = pgTable("posts", {
   mediaMetadata: json("media_metadata"), // Stores metadata from link previews
   privacy: text("privacy").notNull().default("public"), // public, friends, private
   engagement: integer("engagement").notNull().default(0),
+  // Event functionality
+  isEvent: boolean("is_event").notNull().default(false),
+  eventDate: timestamp("event_date"),
+  reminders: text("reminders").array(), // ["2_weeks", "1_week", "2_days", "1_day"]
+  isRecurring: boolean("is_recurring").notNull().default(false),
+  recurringType: text("recurring_type"), // "weekly", "monthly", "annually"
+  taskList: json("task_list"), // Array of {id, text, completed, completedBy: userId}
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -198,6 +205,18 @@ export const createPostSchema = insertPostSchema.extend({
     (url) => !url || url.includes("youtube.com") || url.includes("youtu.be"),
     "Must be a valid YouTube URL"
   ),
+  // Event fields
+  isEvent: z.boolean().optional(),
+  eventDate: z.string().optional(),
+  reminders: z.array(z.enum(["2_weeks", "1_week", "2_days", "1_day"])).optional(),
+  isRecurring: z.boolean().optional(),
+  recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
+  taskList: z.array(z.object({
+    id: z.string(),
+    text: z.string(),
+    completed: z.boolean().default(false),
+    completedBy: z.number().optional(),
+  })).optional(),
 });
 
 export const createPostRequestSchema = z.object({
@@ -210,6 +229,13 @@ export const createPostRequestSchema = z.object({
   hashtags: z.string().optional(),
   privacy: z.enum(["public", "friends", "private"]).default("public"),
   taggedUsers: z.string().optional(), // JSON string of user IDs
+  // Event fields
+  isEvent: z.string().optional(), // "true" or "false" as string from form
+  eventDate: z.string().optional(),
+  reminders: z.string().optional(), // JSON string of reminder array
+  isRecurring: z.string().optional(), // "true" or "false" as string from form
+  recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
+  taskList: z.string().optional(), // JSON string of task array
 }).refine(
   (data) => {
     // At least one of primaryLink, spotifyUrl, or youtubeUrl must be provided
