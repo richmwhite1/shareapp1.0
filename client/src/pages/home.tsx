@@ -87,8 +87,7 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-black"">
-      
+    <div className="bg-black">
       {/* Friends Stories Bar */}
       <FriendsStoriesBar
         onSelectFeed={handleSelectFeed}
