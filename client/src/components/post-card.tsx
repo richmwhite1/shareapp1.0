@@ -38,6 +38,48 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
+  // For feed view, use magazine-style layout with overlaid stats
+  if (!isDetailView) {
+    return (
+      <div className="relative bg-black">
+        <AuricPhotoBorder postId={post.id}>
+          <Link href={`/post/${post.id}`}>
+            <img
+              src={post.primaryPhotoUrl}
+              alt={post.primaryDescription}
+              className="w-full h-96 object-cover cursor-pointer"
+            />
+          </Link>
+        </AuricPhotoBorder>
+        
+        {/* Overlaid stats at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-1">
+                <Heart className="w-4 h-4" />
+                <span>{stats?.likeCount || 0}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <MessageCircle className="w-4 h-4" />
+                <span>{stats?.commentCount || 0}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Share2 className="w-4 h-4" />
+                <span>{stats?.shareCount || 0}</span>
+              </div>
+            </div>
+            {post.discountCode && (
+              <div className="bg-pinterest-red text-white px-2 py-1 rounded text-xs font-bold">
+                ${post.discountCode}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Check if user has liked this post
   const { data: userLike } = useQuery<boolean>({
     queryKey: [`/api/posts/${post.id}/like`],
