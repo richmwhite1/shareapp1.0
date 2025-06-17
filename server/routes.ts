@@ -12,7 +12,7 @@ import {
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
   type AdditionalPhotoData, users
 } from "@shared/schema";
-import { db } from "./db";
+import { db, pool } from "./db";
 import { or, like, sql } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -1111,14 +1111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all users endpoint
   app.get('/api/users/all', async (req, res) => {
     try {
-      const result = await db.select({
-        id: users.id,
-        username: users.username,
-        name: users.name,
-        profilePictureUrl: users.profilePictureUrl
-      }).from(users);
-      
-      res.json(result);
+      const result = await pool.query('SELECT id, username, name, profile_picture_url as "profilePictureUrl" FROM users ORDER BY id');
+      res.json(result.rows);
     } catch (error) {
       console.error('Get all users error:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });

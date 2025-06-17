@@ -41,11 +41,11 @@ export default function FriendsPage() {
     enabled: isAuthenticated,
   });
 
-  // Load all users on component mount
+  // Load all users using the working search endpoint
   const { data: allUsersData = [], isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ['/api/users/all'],
+    queryKey: ['/api/search/users', 'all'],
     queryFn: async () => {
-      const response = await fetch('/api/users/all');
+      const response = await fetch('/api/search/users?q=');
       if (!response.ok) throw new Error('Failed to load users');
       return response.json();
     },
