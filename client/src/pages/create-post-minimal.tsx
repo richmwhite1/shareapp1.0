@@ -381,6 +381,50 @@ export default function CreatePostPage() {
               </div>
             </div>
 
+            {/* YouTube URL */}
+            <div>
+              <Label className="text-white">YouTube URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="bg-black border-gray-700 text-white"
+                  value={formData.youtubeUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                />
+                <Button
+                  type="button"
+                  onClick={fetchFromYouTube}
+                  disabled={isFetchingImage || !formData.youtubeUrl.trim()}
+                  className="bg-red-600 hover:bg-red-700 px-3"
+                >
+                  <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+
+            {/* Spotify URL */}
+            <div>
+              <Label className="text-white">Spotify URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://open.spotify.com/..."
+                  className="bg-black border-gray-700 text-white"
+                  value={formData.spotifyUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                />
+                <Button
+                  type="button"
+                  onClick={fetchFromSpotify}
+                  disabled={isFetchingImage || !formData.spotifyUrl.trim()}
+                  className="bg-red-600 hover:bg-red-700 px-3"
+                >
+                  <Download className={`h-4 w-4 ${isFetchingImage ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+
             {/* Description */}
             <div>
               <Label className="text-white">Description *</Label>
@@ -501,42 +545,155 @@ export default function CreatePostPage() {
               </Button>
             </div>
 
-            {/* Event Date (if event mode) */}
+            {/* Event Features */}
             {isEvent && (
-              <div>
-                <Label className="text-white">Event Date</Label>
-                <Input
-                  type="datetime-local"
-                  className="bg-black border-gray-700 text-white"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                />
+              <div className="space-y-4 border border-gray-700 rounded-lg p-4">
+                <h3 className="text-white font-medium">Event Details</h3>
+                
+                {/* Interactive Calendar */}
+                <div>
+                  <Label className="text-white">Event Date & Time</Label>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="bg-black border-gray-700 text-white hover:bg-gray-800"
+                        >
+                          <Calendar className="h-4 w-4 mr-2" />
+                          {selectedDate ? selectedDate.toDateString() : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-700">
+                        <DayPicker
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={handleDateSelect}
+                          disabled={(date) => date < new Date()}
+                          className="bg-gray-900 text-white"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={eventTime}
+                      onChange={(e) => {
+                        setEventTime(e.target.value);
+                        if (selectedDate) {
+                          const eventDateTime = new Date(selectedDate);
+                          const [hours, minutes] = e.target.value.split(':');
+                          eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+                          setEventDate(eventDateTime.toISOString());
+                        }
+                      }}
+                      className="bg-black border-gray-700 text-white w-32"
+                    />
+                  </div>
+                </div>
+
+                {/* RSVP Option */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="allowRsvp"
+                    checked={allowRsvp}
+                    onChange={(e) => setAllowRsvp(e.target.checked)}
+                    className="rounded border-gray-700"
+                  />
+                  <Label htmlFor="allowRsvp" className="text-white">Allow RSVP responses</Label>
+                </div>
+
+                {/* Reminders */}
+                <div>
+                  <Label className="text-white">Reminders</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Add a reminder..."
+                      value={newReminder}
+                      onChange={(e) => setNewReminder(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addReminder())}
+                      className="bg-black border-gray-700 text-white"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addReminder}
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {reminders.length > 0 && (
+                    <div className="space-y-1">
+                      {reminders.map((reminder, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-gray-800 rounded p-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <span className="text-white text-sm flex-1">{reminder}</span>
+                          <Button
+                            type="button"
+                            onClick={() => removeReminder(reminder)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Task List */}
+                <div>
+                  <Label className="text-white">Task List</Label>
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      placeholder="Add a task..."
+                      value={newTask}
+                      onChange={(e) => setNewTask(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
+                      className="bg-black border-gray-700 text-white"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addTask}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {taskList.length > 0 && (
+                    <div className="space-y-1">
+                      {taskList.map((task) => (
+                        <div key={task.id} className="flex items-center gap-2 bg-gray-800 rounded p-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleTask(task.id)}
+                            className="text-green-400 hover:text-green-300"
+                          >
+                            <CheckSquare className={`h-4 w-4 ${task.completed ? 'fill-current' : ''}`} />
+                          </button>
+                          <span className={`text-white text-sm flex-1 ${task.completed ? 'line-through opacity-60' : ''}`}>
+                            {task.text}
+                          </span>
+                          <Button
+                            type="button"
+                            onClick={() => removeTask(task.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-
-            {/* Media URLs */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-white text-sm">Spotify URL</Label>
-                <Input
-                  type="url"
-                  placeholder="Spotify link"
-                  className="bg-black border-gray-700 text-white"
-                  value={formData.spotifyUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label className="text-white text-sm">YouTube URL</Label>
-                <Input
-                  type="url"
-                  placeholder="YouTube link"
-                  className="bg-black border-gray-700 text-white"
-                  value={formData.youtubeUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                />
-              </div>
-            </div>
 
             {/* Discount Code */}
             <div>
