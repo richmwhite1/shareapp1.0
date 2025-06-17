@@ -1082,9 +1082,9 @@ END:VCALENDAR`;
                 </div>
               )}
 
-                {/* Event Configuration */}
-                {isEvent && (
-                  <div className="mt-6 p-4 bg-black border border-purple-400 rounded-lg space-y-4">
+              {/* Event Configuration */}
+              {isEvent && (
+                <div className="mt-6 p-4 bg-black border border-purple-400 rounded-lg space-y-4">
                     <h3 className="font-medium text-white flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Event Configuration
@@ -1298,7 +1298,6 @@ END:VCALENDAR`;
                     </div>
                   </div>
                 )}
-              </div>
 
               {/* Spotify & YouTube URLs side by side */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
