@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe } from "lucide-react";
 import Header from "@/components/header";
 import MediaProcessor from "@/components/media-processor";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,14 @@ export default function CreatePostPage() {
     categoryId: "", // Will be set when categories load
     spotifyUrl: "",
     youtubeUrl: "",
-    hashtags: ""
+    hashtags: "",
+    privacy: "public"
   });
 
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState("");
+  const [taggedUsers, setTaggedUsers] = useState<number[]>([]);
+  const [showFriendSelector, setShowFriendSelector] = useState(false);
 
   // Hashtag handling functions
   const addHashtag = (tag: string) => {
@@ -54,6 +57,29 @@ export default function CreatePostPage() {
         setHashtagInput('');
       }
     }
+  };
+
+  // Privacy and friend tagging functions
+  const handlePrivacyChange = (privacy: string) => {
+    setFormData(prev => ({ ...prev, privacy }));
+    if (privacy !== 'private') {
+      setTaggedUsers([]);
+    }
+  };
+
+  const toggleFriendTag = (friendId: number) => {
+    setTaggedUsers(prev => 
+      prev.includes(friendId) 
+        ? prev.filter(id => id !== friendId)
+        : [...prev, friendId]
+    );
+  };
+
+  const getTaggedFriendNames = () => {
+    return taggedUsers
+      .map(id => friends.find((friend: any) => friend.id === id)?.name)
+      .filter(Boolean)
+      .join(', ');
   };
 
   const parseHashtagsFromText = (text: string) => {
@@ -187,6 +213,13 @@ export default function CreatePostPage() {
   // Fetch user's categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['/api/categories'],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: isAuthenticated,
+  });
+
+  // Fetch user's friends for privacy tagging
+  const { data: friends = [] } = useQuery({
+    queryKey: ['/api/friends'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
   });
@@ -631,6 +664,14 @@ export default function CreatePostPage() {
         formDataToSend.append('primaryPhoto', primaryPhoto);
       }
       formDataToSend.append('categoryId', formData.categoryId);
+      
+      // Add privacy settings
+      formDataToSend.append('privacy', formData.privacy);
+      
+      // Add tagged users for private posts
+      if (formData.privacy === 'private' && taggedUsers.length > 0) {
+        formDataToSend.append('taggedUsers', JSON.stringify(taggedUsers));
+      }
       
       additionalPhotos.forEach((photoData, index) => {
         formDataToSend.append('additionalPhotos', photoData.file);
