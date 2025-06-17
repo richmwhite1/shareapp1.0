@@ -239,7 +239,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         youtubeUrl: req.body.youtubeUrl || undefined,
         hashtags: req.body.hashtags || undefined,
         privacy: req.body.privacy || 'public',
-        taggedUsers: req.body.taggedUsers || undefined
+        taggedUsers: req.body.taggedUsers || undefined,
+        // Event fields
+        isEvent: req.body.isEvent || undefined,
+        eventDate: req.body.eventDate || undefined,
+        reminders: req.body.reminders || undefined,
+        isRecurring: req.body.isRecurring || undefined,
+        recurringType: req.body.recurringType || undefined,
+        taskList: req.body.taskList || undefined
       };
       
       let validatedData;
@@ -492,6 +499,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Parse event data
+      const isEventBool = isEvent === 'true';
+      let eventReminders: string[] = [];
+      let isRecurringBool = false;
+      let eventTaskList: any[] = [];
+
+      if (isEventBool) {
+        if (reminders) {
+          try {
+            eventReminders = JSON.parse(reminders);
+          } catch (error) {
+            console.error('Failed to parse reminders:', error);
+          }
+        }
+        
+        isRecurringBool = isRecurring === 'true';
+        
+        if (taskList) {
+          try {
+            eventTaskList = JSON.parse(taskList);
+          } catch (error) {
+            console.error('Failed to parse taskList:', error);
+          }
+        }
+      }
+
       // Create post
       const post = await storage.createPost({
         userId: req.user.userId,
@@ -507,7 +540,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mediaMetadata,
         hashtags: hashtagArray,
         privacy,
-        taggedUsers: taggedUsersArray
+        taggedUsers: taggedUsersArray,
+        // Event data
+        isEvent: isEventBool,
+        eventDate: isEventBool && eventDate ? eventDate : undefined,
+        reminders: isEventBool ? eventReminders : undefined,
+        isRecurring: isEventBool ? isRecurringBool : undefined,
+        recurringType: isEventBool && isRecurringBool ? recurringType : undefined,
+        taskList: isEventBool ? eventTaskList : undefined
       });
 
       // Get post with user data
