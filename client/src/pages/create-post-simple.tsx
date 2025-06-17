@@ -47,6 +47,9 @@ export default function CreatePostPage() {
   const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
   const [allowRsvp, setAllowRsvp] = useState(false);
+  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
 
   // Calendar integration functions
   const generateCalendarUrl = (type: 'google' | 'apple') => {
@@ -274,14 +277,34 @@ END:VCALENDAR`;
     // Resize/compress the image
     return await resizeImage(file);
   };
-  
-  const [newCategoryData, setNewCategoryData] = useState({
-    name: "",
-    description: "",
-    isPublic: false
-  });
-  
-  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          description: newCategoryDescription.trim() || null
+        })
+      });
+      
+      if (response.ok) {
+        const newCategory = await response.json();
+        setFormData(prev => ({ ...prev, categoryId: newCategory.id.toString() }));
+        setNewCategoryName('');
+        setNewCategoryDescription('');
+        setShowNewCategoryDialog(false);
+        // Refetch categories
+        queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      }
+    } catch (error) {
+      console.error('Failed to create category:', error);
+    }
+  };
   
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
   const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string; discountCode: string }[]>([]);
@@ -1015,7 +1038,7 @@ END:VCALENDAR`;
                 </p>
               </div>
 
-              {/* Privacy Settings - More Discreet */}
+              {/* Privacy Settings & Category - More Discreet */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div>
@@ -1048,6 +1071,86 @@ END:VCALENDAR`;
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category" className="text-sm">Category</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.categoryId}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+                      >
+                        <SelectTrigger className="w-40 h-8 text-sm bg-input border-border">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          {Array.isArray(categories) && categories.map((category: any) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+                        <DialogTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <FolderPlus className="h-3 w-3" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card border-border">
+                          <DialogHeader>
+                            <DialogTitle className="text-foreground">Create New Category</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="categoryName">Category Name *</Label>
+                              <Input
+                                id="categoryName"
+                                placeholder="e.g., Christmas, Travel, Recipes"
+                                value={newCategoryName}
+                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                className="bg-input border-border"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="categoryDescription">Description (Optional)</Label>
+                              <Textarea
+                                id="categoryDescription"
+                                placeholder="Describe this category..."
+                                value={newCategoryDescription}
+                                onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                className="bg-input border-border"
+                                rows={3}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowNewCategoryDialog(false)}
+                                className="border-border"
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={handleCreateCategory}
+                                disabled={!newCategoryName.trim() || mutation.isPending}
+                                className="bg-pinterest-red hover:bg-red-700 text-white"
+                              >
+                                {mutation.isPending ? 'Creating...' : 'Create Category'}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </div>
                   
                   {formData.privacy === 'private' && (
