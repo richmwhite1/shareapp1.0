@@ -179,10 +179,6 @@ export default function FriendsPage() {
       <Header />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-            Friends
-          </h1>
-
           <Tabs defaultValue="find" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="find" className="flex items-center gap-2">

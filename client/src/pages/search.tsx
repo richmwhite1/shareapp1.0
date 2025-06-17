@@ -177,16 +177,9 @@ export default function SearchPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Search Header */}
+        {/* Hashtag Input */}
         <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-pinterest-red">
-              <SearchIcon className="h-6 w-6" />
-              Search Posts by Hashtags
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Hashtag Input */}
+          <CardContent className="pt-6 space-y-4">
             <div className="space-y-2">
               <div className="relative">
                 <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
