@@ -59,6 +59,7 @@ export interface IStorage {
   // Friends methods
   sendFriendRequest(fromUserId: number, toUserId: number): Promise<void>;
   getFriendRequests(userId: number): Promise<Array<{ id: number; fromUser: User; createdAt: Date }>>;
+  getOutgoingFriendRequests(userId: number): Promise<Array<{ id: number; toUser: User; createdAt: Date }>>;
   respondToFriendRequest(requestId: number, action: 'accept' | 'reject'): Promise<void>;
   getFriends(userId: number): Promise<UserWithFriends[]>;
   getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>>;
@@ -829,36 +830,12 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Friend request already sent");
     }
 
-    // Create one-way follow relationship immediately
-    await db.insert(friendships).values({
-      userId: fromUserId,
-      friendId: toUserId,
-      status: "following"
+    // Create friend request that needs approval
+    await db.insert(friendRequests).values({
+      fromUserId,
+      toUserId,
+      status: "pending"
     });
-
-    // Check if the target user is already following back
-    const reverseFollow = await db
-      .select()
-      .from(friendships)
-      .where(
-        and(
-          eq(friendships.userId, toUserId),
-          eq(friendships.friendId, fromUserId)
-        )
-      )
-      .limit(1);
-
-    // If mutual follow, upgrade both to connected status
-    if (reverseFollow.length > 0) {
-      await db.update(friendships)
-        .set({ status: "connected" })
-        .where(
-          or(
-            and(eq(friendships.userId, fromUserId), eq(friendships.friendId, toUserId)),
-            and(eq(friendships.userId, toUserId), eq(friendships.friendId, fromUserId))
-          )
-        );
-    }
 
     // Create notification for the follow
     try {
@@ -885,19 +862,30 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (action === 'accept') {
-      // Create bidirectional friendship
+      // Create bidirectional friendship with connected status
       await db.insert(friendships).values([
         {
           userId: request.fromUserId,
           friendId: request.toUserId,
-          status: "accepted"
+          status: "connected"
         },
         {
           userId: request.toUserId,
           friendId: request.fromUserId,
-          status: "accepted"
+          status: "connected"
         }
       ]);
+
+      // Create notification for acceptance
+      try {
+        await this.createNotification({
+          userId: request.fromUserId,
+          type: "friend_accept",
+          fromUserId: request.toUserId
+        });
+      } catch (notificationError) {
+        console.log('Notification creation failed:', notificationError);
+      }
     }
 
     // Update request status
@@ -1027,6 +1015,30 @@ export class DatabaseStorage implements IStorage {
     return result.map(r => ({
       id: r.id,
       fromUser: r.fromUser,
+      createdAt: r.createdAt
+    }));
+  }
+
+  async getOutgoingFriendRequests(userId: number): Promise<Array<{ id: number; toUser: User; createdAt: Date }>> {
+    const result = await db
+      .select({
+        id: friendRequests.id,
+        toUser: users,
+        createdAt: friendRequests.createdAt
+      })
+      .from(friendRequests)
+      .innerJoin(users, eq(friendRequests.toUserId, users.id))
+      .where(
+        and(
+          eq(friendRequests.fromUserId, userId),
+          eq(friendRequests.status, "pending")
+        )
+      )
+      .orderBy(desc(friendRequests.createdAt));
+
+    return result.map(r => ({
+      id: r.id,
+      toUser: r.toUser,
       createdAt: r.createdAt
     }));
   }

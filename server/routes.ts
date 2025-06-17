@@ -1217,6 +1217,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/outgoing-friend-requests', authenticateToken, async (req: any, res) => {
+    try {
+      const outgoingRequests = await storage.getOutgoingFriendRequests(req.user.userId);
+      res.json(outgoingRequests);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/friend-request', authenticateToken, async (req: any, res) => {
     try {
       const { friendId } = createFriendshipSchema.parse(req.body);

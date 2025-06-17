@@ -41,6 +41,13 @@ export default function ConnectionsPage() {
     enabled: isAuthenticated,
   });
 
+  // Get outgoing friend requests
+  const { data: outgoingRequests = [] } = useQuery<Array<{ id: number; toUser: User; createdAt: Date }>>({
+    queryKey: ['/api/outgoing-friend-requests'],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: isAuthenticated,
+  });
+
   // Load all users using the working search endpoint
   const { data: allUsersData = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ['/api/search/users', 'all'],
@@ -252,10 +259,11 @@ export default function ConnectionsPage() {
                       ) : (
                         filteredUsers.map((searchUser) => {
                           const friendship = friends.find((f: any) => f.id === searchUser.id);
-                          const isFollowing = !!friendship;
-                          const isConnected = false; // For now, treating all as following relationships
+                          const isFollowing = !!friendship && friendship.status === "following";
+                          const isConnected = !!friendship && friendship.status === "connected";
                           const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
-                          const hasOutgoingRequest = false; // Will implement proper outgoing request tracking
+                          // Check if we have sent a request to this user (they would have a pending request from us)
+                          const hasOutgoingRequest = false; // This would need to be tracked separately
                           
                           return (
                             <div
