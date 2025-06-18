@@ -24,7 +24,7 @@ export default function CreatePostPage() {
     primaryLink: "",
     primaryDescription: "",
     discountCode: "",
-    categoryId: "", 
+    listId: "", 
     spotifyUrl: "",
     youtubeUrl: "",
     hashtags: "",
@@ -47,9 +47,9 @@ export default function CreatePostPage() {
   const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
   const [allowRsvp, setAllowRsvp] = useState(false);
-  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [showNewListDialog, setShowNewListDialog] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
 
   // Photo state
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
@@ -139,8 +139,8 @@ export default function CreatePostPage() {
     return await resizeImage(file);
   };
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
+  const handleCreateList = async () => {
+    if (!newListName.trim()) return;
     
     try {
       const token = getAuthToken();
@@ -149,7 +149,7 @@ export default function CreatePostPage() {
         return;
       }
 
-      const response = await fetch('/api/categories', {
+      const response = await fetch('/api/lists', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -157,28 +157,28 @@ export default function CreatePostPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          name: newCategoryName.trim(),
-          description: newCategoryDescription.trim() || ""
+          name: newListName.trim(),
+          description: newListDescription.trim() || ""
         })
       });
       
       if (response.ok) {
-        const newCategory = await response.json();
-        setFormData(prev => ({ ...prev, categoryId: newCategory.id.toString() }));
-        setNewCategoryName('');
-        setNewCategoryDescription('');
-        setShowNewCategoryDialog(false);
-        queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+        const newList = await response.json();
+        setFormData(prev => ({ ...prev, listId: newList.id.toString() }));
+        setNewListName('');
+        setNewListDescription('');
+        setShowNewListDialog(false);
+        queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
         
         toast({
           title: "Success",
-          description: "Category created successfully!"
+          description: "List created successfully!"
         });
       } else {
         const errorData = await response.json();
         toast({
           title: "Error",
-          description: errorData.message || "Failed to create category",
+          description: errorData.message || "Failed to create list",
           variant: "destructive"
         });
       }
@@ -501,17 +501,17 @@ END:VCALENDAR`;
     queryKey: ['/api/friends']
   });
 
-  // Set default category when categories load
+  // Set default list when lists load
   useEffect(() => {
-    if (categories && !formData.categoryId && Array.isArray(categories)) {
-      const generalCategory = categories.find((cat: any) => cat.name.toLowerCase() === 'general');
-      if (generalCategory) {
-        setFormData(prev => ({ ...prev, categoryId: generalCategory.id.toString() }));
-      } else if (categories.length > 0) {
-        setFormData(prev => ({ ...prev, categoryId: categories[0].id.toString() }));
+    if (lists && !formData.listId && Array.isArray(lists)) {
+      const generalList = lists.find((list: any) => list.name.toLowerCase() === 'general');
+      if (generalList) {
+        setFormData(prev => ({ ...prev, listId: generalList.id.toString() }));
+      } else if (lists.length > 0) {
+        setFormData(prev => ({ ...prev, listId: lists[0].id.toString() }));
       }
     }
-  }, [categories, formData.categoryId]);
+  }, [lists, formData.listId]);
 
   // Form submission
   const mutation = useMutation({

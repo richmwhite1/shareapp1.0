@@ -101,23 +101,23 @@ export default function SavePostContent({ postId, onClose }: SavePostContentProp
     <div className="p-4">
       <div className="mb-4">
         <label className="block text-white font-medium mb-2">
-          Save to Category
+          Save to List
         </label>
-        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+        <Select value={selectedListId} onValueChange={setSelectedListId}>
           <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-            <SelectValue placeholder="Select a category" />
+            <SelectValue placeholder="Select a list" />
           </SelectTrigger>
           <SelectContent className="bg-gray-800 border-gray-600">
-            {categories.map((category) => (
+            {lists.map((list) => (
               <SelectItem 
-                key={category.id} 
-                value={category.id.toString()}
+                key={list.id} 
+                value={list.id.toString()}
                 className="text-white hover:bg-gray-700"
               >
-                {category.name}
-                {category.description && (
+                {list.name}
+                {list.description && (
                   <span className="text-gray-400 text-sm ml-2">
-                    - {category.description}
+                    - {list.description}
                   </span>
                 )}
               </SelectItem>
@@ -129,7 +129,7 @@ export default function SavePostContent({ postId, onClose }: SavePostContentProp
       <div className="flex gap-2">
         <Button
           onClick={handleSavePost}
-          disabled={!selectedCategoryId || saveMutation.isPending}
+          disabled={!selectedListId || saveMutation.isPending}
           className="flex-1 bg-purple-600 hover:bg-purple-700"
         >
           {saveMutation.isPending ? "Saving..." : "Save Post"}
