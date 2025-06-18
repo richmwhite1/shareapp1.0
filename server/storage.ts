@@ -257,11 +257,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createListWithPrivacy(listData: InsertList & { privacyLevel?: string }): Promise<List> {
-    const [list] = await db.insert(lists).values({
-      ...listData,
-      isPublic: (listData.privacyLevel || 'public') === 'public'
-    }).returning();
-
+    const [list] = await db.insert(lists).values(listData).returning();
     return list;
   }
 

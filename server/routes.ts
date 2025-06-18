@@ -105,12 +105,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profilePictureUrl,
       });
 
-      // Create default "General" category for the new user
-      await storage.createCategory({
+      // Create default "General" list for the new user
+      await storage.createList({
         userId: user.id,
         name: 'General',
-        description: 'Default category for all posts',
-        isPublic: false,
+        description: 'Default list for all posts',
+        isPublic: true,
       });
 
       // Generate JWT token
@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid user ID' });
       }
 
-      const categories = await storage.getCategoriesByUserId(userId);
+      const lists = await storage.getListsByUserId(userId);
       
       // Filter only public categories for unauthenticated requests
       const token = req.headers['authorization']?.split(' ')[1];
