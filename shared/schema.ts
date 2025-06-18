@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const categories = pgTable("categories", {
+export const lists = pgTable("lists", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
@@ -27,7 +27,7 @@ export const categories = pgTable("categories", {
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  categoryId: integer("category_id").notNull().default(1), // Default to "General" category
+  listId: integer("list_id").notNull().default(1), // Default to "General" list
   primaryPhotoUrl: text("primary_photo_url").notNull(),
   primaryLink: text("primary_link").notNull(),
   primaryDescription: text("primary_description").notNull(),
@@ -250,10 +250,10 @@ export const taskAssignments = pgTable("task_assignments", {
   assignedAt: timestamp("assigned_at").notNull().defaultNow(),
 });
 
-// Category access control for private lists
-export const categoryAccess = pgTable("category_access", {
+// List access control for private lists
+export const listAccess = pgTable("list_access", {
   id: serial("id").primaryKey(),
-  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  listId: integer("list_id").notNull().references(() => lists.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "collaborator" (edit), "viewer" (read-only)
   status: text("status").notNull().default("pending"), // pending, accepted, rejected
@@ -265,7 +265,7 @@ export const categoryAccess = pgTable("category_access", {
 // Access requests for private lists
 export const accessRequests = pgTable("access_requests", {
   id: serial("id").primaryKey(),
-  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  listId: integer("list_id").notNull().references(() => lists.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   requestedRole: text("requested_role").notNull(), // "collaborator" or "viewer"
   message: text("message"), // optional message from requester
@@ -391,35 +391,35 @@ export const createPostRequestSchema = z.object({
   }
 );
 
-// Category schemas
-export const insertCategorySchema = createInsertSchema(categories).pick({
+// List schemas
+export const insertListSchema = createInsertSchema(lists).pick({
   name: true,
   description: true,
   isPublic: true,
   privacyLevel: true,
 });
 
-export const createCategorySchema = insertCategorySchema.extend({
-  name: z.string().min(1).max(50, "Category name must be between 1 and 50 characters"),
+export const createListSchema = insertListSchema.extend({
+  name: z.string().min(1).max(50, "List name must be between 1 and 50 characters"),
   description: z.string().max(200, "Description must be less than 200 characters").optional(),
   isPublic: z.boolean().optional(),
   privacyLevel: z.enum(["public", "connections", "private"]).default("public"),
 });
 
-// Category access schemas
-export const createCategoryAccessSchema = z.object({
-  categoryId: z.number(),
+// List access schemas
+export const createListAccessSchema = z.object({
+  listId: z.number(),
   userId: z.number(),
   role: z.enum(["collaborator", "viewer"]),
 });
 
-export const respondCategoryAccessSchema = z.object({
+export const respondListAccessSchema = z.object({
   accessId: z.number(),
   action: z.enum(["accept", "reject"]),
 });
 
 export const createAccessRequestSchema = z.object({
-  categoryId: z.number(),
+  listId: z.number(),
   requestedRole: z.enum(["collaborator", "viewer"]),
   message: z.string().max(500).optional(),
 });
@@ -488,9 +488,9 @@ export type User = typeof users.$inferSelect;
 export type SignUpData = z.infer<typeof signUpSchema>;
 export type SignInData = z.infer<typeof signInSchema>;
 
-export type InsertCategory = z.infer<typeof insertCategorySchema>;
-export type Category = typeof categories.$inferSelect;
-export type CreateCategoryData = z.infer<typeof createCategorySchema>;
+export type InsertList = z.infer<typeof insertListSchema>;
+export type List = typeof lists.$inferSelect;
+export type CreateListData = z.infer<typeof createListSchema>;
 
 export type InsertPost = z.infer<typeof insertPostSchema>;
 export type Post = typeof posts.$inferSelect;
@@ -540,13 +540,13 @@ export type AdditionalPhotoData = {
 // Extended types for API responses
 export type PostWithUser = Post & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
-  category?: Pick<Category, 'id' | 'name'>;
+  list?: Pick<List, 'id' | 'name'>;
   additionalPhotoData?: AdditionalPhotoData[];
   hashtags?: Hashtag[];
   taggedUsers?: Pick<User, 'id' | 'username' | 'name'>[];
 };
 
-export type CategoryWithPosts = Category & {
+export type ListWithPosts = List & {
   posts: PostWithUser[];
   postCount: number;
   firstPostImage?: string;
