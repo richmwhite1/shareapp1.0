@@ -864,6 +864,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string, viewerId?: number): Promise<PostWithUser[]> {
+    console.log('Searching for hashtags:', hashtagNames);
     if (hashtagNames.length === 0) {
       return [];
     }
@@ -876,6 +877,7 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(hashtags.name, hashtagNames))
       .groupBy(postHashtags.postId);
 
+    console.log('Found post IDs:', postIds);
     if (postIds.length === 0) {
       return [];
     }
