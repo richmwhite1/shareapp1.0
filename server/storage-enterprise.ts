@@ -661,18 +661,18 @@ export class EnterpriseStorage implements IStorage {
         continue;
       }
 
-      // Public posts in public lists - visible to everyone
-      if (post.privacy === 'public' && list?.privacyLevel === 'public') {
+      // Determine the effective privacy level (post privacy or list privacy - whichever is more restrictive)
+      const effectivePrivacy = this.getEffectivePrivacy(post.privacy, list?.privacyLevel);
+
+      if (effectivePrivacy === 'public') {
+        // Public posts - visible to everyone
         filteredPosts.push({
           ...post,
           user,
           list: list || undefined
         });
-        continue;
-      }
-
-      // Connections-only posts - check if viewer is connected to author
-      if (post.privacy === 'connections' || list?.privacyLevel === 'connections') {
+      } else if (effectivePrivacy === 'connections') {
+        // Connections-only posts - check if viewer is connected to author
         const isConnected = await this.areFriends(viewerId, post.userId);
         if (isConnected) {
           filteredPosts.push({
@@ -681,29 +681,26 @@ export class EnterpriseStorage implements IStorage {
             list: list || undefined
           });
         }
-        continue;
-      }
+      } else if (effectivePrivacy === 'private') {
+        // Private posts - check if viewer has list access or is tagged
+        let hasAccess = false;
 
-      // Private posts - check if viewer has list access or is tagged
-      if (post.privacy === 'private' || list?.privacyLevel === 'private') {
-        // Check list access
-        const hasListAccess = await this.hasListAccess(viewerId, post.listId);
-        if (hasListAccess) {
-          filteredPosts.push({
-            ...post,
-            user,
-            list: list || undefined
-          });
-          continue;
+        // Check list access if post is in a list
+        if (post.listId) {
+          hasAccess = await this.hasListAccess(viewerId, post.listId);
         }
 
-        // Check if tagged in post
-        const taggedUsers = await db
-          .select({ userId: taggedPosts.toUserId })
-          .from(taggedPosts)
-          .where(eq(taggedPosts.postId, post.id));
-        
-        if (taggedUsers.some(tag => tag.userId === viewerId)) {
+        // If no list access, check if tagged in post
+        if (!hasAccess) {
+          const taggedUsers = await db
+            .select({ userId: taggedPosts.toUserId })
+            .from(taggedPosts)
+            .where(eq(taggedPosts.postId, post.id));
+          
+          hasAccess = taggedUsers.some(tag => tag.userId === viewerId);
+        }
+
+        if (hasAccess) {
           filteredPosts.push({
             ...post,
             user,
@@ -714,6 +711,20 @@ export class EnterpriseStorage implements IStorage {
     }
 
     return filteredPosts as PostWithUser[];
+  }
+
+  // Helper method to determine effective privacy level
+  private getEffectivePrivacy(postPrivacy: string, listPrivacy?: string): string {
+    // If no list, use post privacy
+    if (!listPrivacy) return postPrivacy;
+    
+    // Return the most restrictive privacy level
+    const privacyLevels: Record<string, number> = { 'public': 0, 'connections': 1, 'private': 2 };
+    const postLevel = privacyLevels[postPrivacy] || 0;
+    const listLevel = privacyLevels[listPrivacy] || 0;
+    
+    const maxLevel = Math.max(postLevel, listLevel);
+    return Object.keys(privacyLevels).find(key => privacyLevels[key] === maxLevel) || 'public';
   }
 
   // Helper methods for privacy checking
