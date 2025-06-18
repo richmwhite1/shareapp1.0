@@ -1014,7 +1014,11 @@ export class EnterpriseStorage implements IStorage {
 
   // SAVE SYSTEM
   async savePost(postId: number, userId: number): Promise<void> {
-    await db.insert(savedPosts).values({ postId, userId, categoryId: 1 }).onConflictDoNothing();
+    await db.insert(savedPosts).values({ 
+      postId: postId,
+      userId: userId, 
+      categoryId: 1 
+    }).onConflictDoNothing();
   }
 
   async unsavePost(postId: number, userId: number): Promise<void> {
@@ -1362,10 +1366,9 @@ export class EnterpriseStorage implements IStorage {
   // MODERATION & SAFETY
   async flagPost(postId: number, userId: number, reason: string, comment?: string): Promise<void> {
     await db.insert(postFlags).values({
-      postId,
-      userId,
-      reason,
-      comment: comment || null
+      postId: postId,
+      userId: userId,
+      reason: reason
     }).onConflictDoNothing();
   }
 
@@ -1399,8 +1402,7 @@ export class EnterpriseStorage implements IStorage {
   async flagUser(userId: number, flaggedBy: number, reason: string): Promise<void> {
     await db.insert(blacklist).values({
       type: 'user_flag',
-      value: userId.toString(),
-      userId: flaggedBy
+      value: userId.toString()
     }).onConflictDoNothing();
   }
 
@@ -1410,14 +1412,13 @@ export class EnterpriseStorage implements IStorage {
 
   // PRIVACY & BLOCKING
   async getBlacklist(userId: number): Promise<any[]> {
-    return await db.select().from(blacklist).where(eq(blacklist.userId, userId));
+    return await db.select().from(blacklist).where(eq(blacklist.type, 'blocked_user'));
   }
 
   async addToBlacklist(userId: number, blockedUserId: number): Promise<void> {
     await db.insert(blacklist).values({
       type: 'blocked_user',
-      value: blockedUserId.toString(),
-      userId
+      value: blockedUserId.toString()
     }).onConflictDoNothing();
   }
 
