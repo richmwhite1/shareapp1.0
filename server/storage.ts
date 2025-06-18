@@ -712,7 +712,54 @@ export class DatabaseStorage implements IStorage {
 
   // Placeholder implementations for remaining methods
   async deletePost(postId: number): Promise<void> {
-    await db.delete(posts).where(eq(posts.id, postId));
+    try {
+      // Delete all related data first to maintain referential integrity
+      
+      // Delete post interactions
+      await db.delete(postLikes).where(eq(postLikes.postId, postId));
+      await db.delete(postShares).where(eq(postShares.postId, postId));
+      await db.delete(postViews).where(eq(postViews.postId, postId));
+      await db.delete(savedPosts).where(eq(savedPosts.postId, postId));
+      await db.delete(postFlags).where(eq(postFlags.postId, postId));
+      
+      // Delete hashtag associations
+      await db.delete(postHashtags).where(eq(postHashtags.postId, postId));
+      
+      // Delete user tags
+      await db.delete(postTags).where(eq(postTags.postId, postId));
+      
+      // Delete comments and their related data
+      const postComments = await db.select({ id: comments.id }).from(comments).where(eq(comments.postId, postId));
+      for (const comment of postComments) {
+        await db.delete(commentLikes).where(eq(commentLikes.commentId, comment.id));
+        await db.delete(commentHashtags).where(eq(commentHashtags.commentId, comment.id));
+        await db.delete(commentTags).where(eq(commentTags.commentId, comment.id));
+      }
+      await db.delete(comments).where(eq(comments.postId, postId));
+      
+      // Delete event-related data
+      await db.delete(rsvps).where(eq(rsvps.postId, postId));
+      await db.delete(taskAssignments).where(eq(taskAssignments.postId, postId));
+      
+      // Delete energy ratings
+      await db.delete(postEnergyRatings).where(eq(postEnergyRatings.postId, postId));
+      
+      // Delete tagged posts references
+      await db.delete(taggedPosts).where(eq(taggedPosts.postId, postId));
+      
+      // Delete reposts
+      await db.delete(reposts).where(eq(reposts.originalPostId, postId));
+      
+      // Delete notifications related to this post
+      await db.delete(notifications).where(eq(notifications.postId, postId));
+      
+      // Finally delete the post itself
+      await db.delete(posts).where(eq(posts.id, postId));
+      
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
   }
 
   async updatePost(postId: number, updates: Partial<Post>): Promise<void> {
@@ -968,22 +1015,51 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteList(listId: number): Promise<void> {
-    // First, move all posts in this list to the General list
-    const [generalList] = await db
-      .select()
-      .from(lists)
-      .where(eq(lists.name, "General"))
-      .limit(1);
+    // Check list privacy before deletion
+    const [list] = await db.select().from(lists).where(eq(lists.id, listId)).limit(1);
+    
+    if (!list) return;
 
-    if (generalList) {
-      await db
-        .update(posts)
-        .set({ listId: generalList.id })
-        .where(eq(posts.listId, listId));
+    if (list.privacyLevel === 'private') {
+      // For private lists, delete all posts to maintain privacy
+      await this.deletePostsInList(listId);
+    } else {
+      // For public/connections lists, move posts to user's General list
+      const [generalList] = await db
+        .select()
+        .from(lists)
+        .where(and(eq(lists.name, "General"), eq(lists.userId, list.userId)))
+        .limit(1);
+
+      if (generalList) {
+        await db
+          .update(posts)
+          .set({ listId: generalList.id })
+          .where(eq(posts.listId, listId));
+      } else {
+        // If no General list exists, delete posts to prevent orphaning
+        await this.deletePostsInList(listId);
+      }
     }
-
-    // Delete the list
+    
+    // Delete list access records
+    await db.delete(listAccess).where(eq(listAccess.listId, listId));
+    
+    // Delete access requests
+    await db.delete(accessRequests).where(eq(accessRequests.listId, listId));
+    
+    // Finally delete the list itself
     await db.delete(lists).where(eq(lists.id, listId));
+  }
+
+  async deletePostsInList(listId: number): Promise<void> {
+    // Get all posts in the list
+    const postsToDelete = await db.select({ id: posts.id }).from(posts).where(eq(posts.listId, listId));
+    
+    // Delete each post and its related data
+    for (const post of postsToDelete) {
+      await this.deletePost(post.id);
+    }
   }
 
   async inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void> {
