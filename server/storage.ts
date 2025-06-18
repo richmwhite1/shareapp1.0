@@ -452,66 +452,77 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllPosts(viewerId?: number): Promise<PostWithUser[]> {
-    const result = await db
-      .select({
-        post: posts,
-        user: {
-          id: users.id,
-          username: users.username,
-          name: users.name,
-          profilePictureUrl: users.profilePictureUrl
-        },
-        list: {
-          id: lists.id,
-          name: lists.name,
-          privacyLevel: lists.privacyLevel
-        }
-      })
-      .from(posts)
-      .leftJoin(users, eq(posts.userId, users.id))
-      .leftJoin(lists, eq(posts.listId, lists.id))
-      .orderBy(desc(posts.createdAt));
+    try {
+      const result = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            name: users.name,
+            profilePictureUrl: users.profilePictureUrl
+          },
+          list: {
+            id: lists.id,
+            name: lists.name,
+            privacyLevel: lists.privacyLevel
+          }
+        })
+        .from(posts)
+        .leftJoin(users, eq(posts.userId, users.id))
+        .leftJoin(lists, eq(posts.listId, lists.id))
+        .orderBy(desc(posts.createdAt));
 
-    const allPosts = result.map(r => ({
-      ...r.post,
-      user: r.user!,
-      list: r.list || undefined
-    })) as PostWithUser[];
+      const allPosts = result.map(r => ({
+        ...r.post,
+        user: r.user!,
+        list: r.list || undefined
+      })) as PostWithUser[];
 
-    // Filter posts based on list privacy settings
-    if (!viewerId) {
-      // Anonymous users can only see posts in public lists or posts without lists
-      return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
-    }
-
-    const filteredPosts = [];
-    for (const post of allPosts) {
-      // If post has no list, show it (legacy support)
-      if (!post.list) {
-        filteredPosts.push(post);
-        continue;
+      // Filter posts based on list privacy settings
+      if (!viewerId) {
+        // Anonymous users can only see posts in public lists or posts without lists
+        return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
       }
 
-      const listPrivacy = post.list.privacyLevel;
-
-      if (listPrivacy === 'public') {
-        filteredPosts.push(post);
-      } else if (listPrivacy === 'connections') {
-        // Check if viewer is connected to post author OR is the author
-        const areFriends = await this.areFriends(viewerId, post.userId);
-        if (areFriends || post.userId === viewerId) {
+      const filteredPosts = [];
+      for (const post of allPosts) {
+        // Always show user's own posts
+        if (post.userId === viewerId) {
           filteredPosts.push(post);
+          continue;
         }
-      } else if (listPrivacy === 'private') {
-        // Check if viewer has access to this private list OR is the list owner
-        const hasAccess = await this.hasListAccess(viewerId, post.list.id);
-        if (hasAccess) {
+
+        // If post has no list, show it (legacy support)
+        if (!post.list) {
           filteredPosts.push(post);
+          continue;
+        }
+
+        const listPrivacy = post.list.privacyLevel;
+
+        if (listPrivacy === 'public') {
+          filteredPosts.push(post);
+        } else if (listPrivacy === 'connections') {
+          // Check if viewer is connected to post author
+          const areFriends = await this.areFriends(viewerId, post.userId);
+          if (areFriends) {
+            filteredPosts.push(post);
+          }
+        } else if (listPrivacy === 'private') {
+          // Check if viewer has access to this private list
+          const { hasAccess } = await this.hasListAccess(viewerId, post.list.id);
+          if (hasAccess) {
+            filteredPosts.push(post);
+          }
         }
       }
-    }
 
-    return filteredPosts;
+      return filteredPosts;
+    } catch (error) {
+      console.error('Error in getAllPosts:', error);
+      return [];
+    }
   }
 
   async areFriends(userId1: number, userId2: number): Promise<boolean> {
@@ -529,15 +540,7 @@ export class DatabaseStorage implements IStorage {
     return friendship.length > 0;
   }
 
-  async hasListAccess(userId: number, listId: number): Promise<boolean> {
-    // Check if user is the list owner
-    const [list] = await db.select().from(lists).where(and(eq(lists.id, listId), eq(lists.userId, userId))).limit(1);
-    if (list) return true;
 
-    // Check if user has been granted access as collaborator or viewer
-    const [access] = await db.select().from(listAccess).where(and(eq(listAccess.listId, listId), eq(listAccess.userId, userId), eq(listAccess.status, 'accepted'))).limit(1);
-    return !!access;
-  }
 
   async getPostsByUserId(userId: number): Promise<PostWithUser[]> {
     const result = await db
