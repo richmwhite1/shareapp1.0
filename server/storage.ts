@@ -525,6 +525,48 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  private async filterPostsByPrivacy(allPosts: PostWithUser[], viewerId?: number): Promise<PostWithUser[]> {
+    if (!viewerId) {
+      // Anonymous users can only see posts in public lists or posts without lists
+      return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
+    }
+
+    const filteredPosts = [];
+    for (const post of allPosts) {
+      // Always show user's own posts
+      if (post.userId === viewerId) {
+        filteredPosts.push(post);
+        continue;
+      }
+
+      // If post has no list, show it (legacy support)
+      if (!post.list) {
+        filteredPosts.push(post);
+        continue;
+      }
+
+      const listPrivacy = post.list.privacyLevel;
+
+      if (listPrivacy === 'public') {
+        filteredPosts.push(post);
+      } else if (listPrivacy === 'connections') {
+        // Check if viewer is connected to post author
+        const areFriends = await this.areFriends(viewerId, post.userId);
+        if (areFriends) {
+          filteredPosts.push(post);
+        }
+      } else if (listPrivacy === 'private') {
+        // Check if viewer has access to this private list
+        const { hasAccess } = await this.hasListAccess(viewerId, post.list.id);
+        if (hasAccess) {
+          filteredPosts.push(post);
+        }
+      }
+    }
+
+    return filteredPosts;
+  }
+
   async areFriends(userId1: number, userId2: number): Promise<boolean> {
     const friendship = await db
       .select()
@@ -821,7 +863,7 @@ export class DatabaseStorage implements IStorage {
     return this.filterPostsByPrivacy(allPosts, viewerId);
   }
 
-  async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]> {
+  async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string, viewerId?: number): Promise<PostWithUser[]> {
     if (hashtagNames.length === 0) {
       return [];
     }
@@ -856,12 +898,18 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           name: users.name,
           profilePictureUrl: users.profilePictureUrl
+        },
+        list: {
+          id: lists.id,
+          name: lists.name,
+          privacyLevel: lists.privacyLevel
         }
       })
       .from(posts)
       .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
       .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
       .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(lists, eq(posts.listId, lists.id))
       .where(inArray(hashtags.name, hashtagNames))
       .groupBy(
         posts.id, posts.userId, posts.listId, posts.primaryPhotoUrl, posts.primaryLink,
@@ -869,15 +917,20 @@ export class DatabaseStorage implements IStorage {
         posts.spotifyUrl, posts.youtubeUrl, posts.mediaMetadata, posts.privacy, posts.engagement,
         posts.isEvent, posts.eventDate, posts.reminders, posts.isRecurring, posts.recurringType,
         posts.taskList, posts.allowRsvp, posts.createdAt,
-        users.id, users.username, users.name, users.profilePictureUrl
+        users.id, users.username, users.name, users.profilePictureUrl,
+        lists.id, lists.name, lists.privacyLevel
       )
       .having(sql`count(*) = ${hashtagNames.length}`)
       .orderBy(sortBy === 'recent' ? desc(posts.createdAt) : desc(posts.engagement));
 
-    return result.map(r => ({
+    const allPosts = result.map(r => ({
       ...r,
-      user: r.user as User
+      user: r.user as User,
+      list: r.list || undefined
     })) as PostWithUser[];
+
+    // Apply privacy filtering
+    return this.filterPostsByPrivacy(allPosts, viewerId);
   }
 
   async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {

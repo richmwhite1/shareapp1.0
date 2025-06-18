@@ -1803,12 +1803,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/hashtags/:name/posts', async (req, res) => {
+  app.get('/api/hashtags/:name/posts', async (req: any, res) => {
     try {
       const hashtagName = req.params.name;
-      const posts = await storage.getPostsByHashtag(hashtagName);
+      const viewerId = req.user?.userId;
+      const posts = await storage.getPostsByHashtag(hashtagName, viewerId);
       res.json(posts);
     } catch (error) {
+      console.error('Hashtag posts error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
@@ -2128,10 +2130,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multiple hashtag search with sorting
-  app.get('/api/search/hashtags', async (req, res) => {
+  app.get('/api/search/hashtags', async (req: any, res) => {
     try {
       const tags = req.query.tags as string;
       const sort = req.query.sort as string || 'popular';
+      const viewerId = req.user?.userId;
       
       if (!tags) {
         return res.json([]);
@@ -2142,7 +2145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      const posts = await storage.getPostsByMultipleHashtags(hashtagNames, sort);
+      const posts = await storage.getPostsByMultipleHashtags(hashtagNames, sort, viewerId);
       res.json(posts);
     } catch (error) {
       console.error('Hashtag search error:', error);
