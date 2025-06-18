@@ -70,6 +70,7 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed 
   
   const unviewedStories = uniqueStories.filter(story => !viewedUsers.has(story.user.id));
 
+  // Don't render anything if there are no unviewed stories
   if (unviewedStories.length === 0) {
     return null;
   }
@@ -77,7 +78,7 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed 
   return (
     <>
       {/* Stories Bar */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-black border-b border-gray-700 p-4">
         <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
           {unviewedStories.map((story: Story) => (
             <div
