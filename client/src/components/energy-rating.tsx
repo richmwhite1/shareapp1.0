@@ -119,7 +119,7 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     <div className={`${className}`}>
       {/* Compact Rating Slider */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pr-16">
           <div className="flex items-center gap-1">
             <span className="text-xs">😐</span>
             <span className="text-xs text-gray-400">Aura</span>
