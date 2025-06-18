@@ -527,9 +527,13 @@ export class DatabaseStorage implements IStorage {
 
   private async filterPostsByPrivacy(allPosts: PostWithUser[], viewerId?: number): Promise<PostWithUser[]> {
     console.log('Privacy filter - viewerId:', viewerId, 'posts count:', allPosts.length);
+    console.log('First post data:', JSON.stringify(allPosts[0], null, 2));
     if (!viewerId) {
       // Anonymous users can only see posts in public lists or posts without lists
-      const filtered = allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
+      const filtered = allPosts.filter(post => {
+        console.log('Checking post:', post.id, 'list:', post.list);
+        return !post.list || (post.list && post.list.privacyLevel === 'public');
+      });
       console.log('Anonymous user - filtered to:', filtered.length);
       return filtered;
     }
@@ -896,7 +900,8 @@ export class DatabaseStorage implements IStorage {
         },
         list: {
           id: lists.id,
-          name: lists.name
+          name: lists.name,
+          privacyLevel: lists.privacyLevel
         }
       })
       .from(posts)
