@@ -660,7 +660,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFriends(userId: number): Promise<UserWithFriends[]> {
-    return []; // Simplified implementation
+    // Get accepted friend requests where user is either sender or receiver
+    const sentRequests = await db
+      .select({
+        friend: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+          createdAt: users.createdAt,
+        }
+      })
+      .from(friendRequests)
+      .innerJoin(users, eq(friendRequests.toUserId, users.id))
+      .where(and(
+        eq(friendRequests.fromUserId, userId),
+        eq(friendRequests.status, 'accepted')
+      ));
+
+    const receivedRequests = await db
+      .select({
+        friend: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+          createdAt: users.createdAt,
+        }
+      })
+      .from(friendRequests)
+      .innerJoin(users, eq(friendRequests.fromUserId, users.id))
+      .where(and(
+        eq(friendRequests.toUserId, userId),
+        eq(friendRequests.status, 'accepted')
+      ));
+
+    // Combine and deduplicate friends
+    const allFriends = [...sentRequests, ...receivedRequests];
+    const uniqueFriends = allFriends.reduce((acc, curr) => {
+      if (!acc.find(f => f.friend.id === curr.friend.id)) {
+        acc.push(curr);
+      }
+      return acc;
+    }, [] as typeof allFriends);
+
+    return uniqueFriends.map(r => ({
+      ...r.friend,
+      password: '', // Required by User type but not exposed
+      friends: [],
+      friendCount: 0,
+      relationshipStatus: 'accepted'
+    })) as UserWithFriends[];
   }
 
   async createHashtag(name: string): Promise<Hashtag> {
