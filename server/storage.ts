@@ -446,12 +446,6 @@ export class DatabaseStorage implements IStorage {
 
     const filteredPosts = [];
     for (const post of allPosts) {
-      // Always show user's own posts
-      if (post.userId === viewerId) {
-        filteredPosts.push(post);
-        continue;
-      }
-
       // If post has no list, show it (legacy support)
       if (!post.list) {
         filteredPosts.push(post);
@@ -463,13 +457,13 @@ export class DatabaseStorage implements IStorage {
       if (listPrivacy === 'public') {
         filteredPosts.push(post);
       } else if (listPrivacy === 'connections') {
-        // Check if viewer is connected to post author
+        // Check if viewer is connected to post author OR is the author
         const areFriends = await this.areFriends(viewerId, post.userId);
-        if (areFriends) {
+        if (areFriends || post.userId === viewerId) {
           filteredPosts.push(post);
         }
       } else if (listPrivacy === 'private') {
-        // Check if viewer has access to this private list
+        // Check if viewer has access to this private list OR is the list owner
         const hasAccess = await this.hasListAccess(viewerId, post.list.id);
         if (hasAccess) {
           filteredPosts.push(post);

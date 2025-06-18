@@ -118,6 +118,23 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
     }
   });
 
+  // Delete list mutation (for owners only)
+  const deleteListMutation = useMutation({
+    mutationFn: () => apiRequest('DELETE', `/api/lists/${listId}`),
+    onSuccess: () => {
+      toast({ title: "List deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to delete list", 
+        description: error.message || "An error occurred",
+        variant: "destructive" 
+      });
+    }
+  });
+
   const handlePrivacyChange = (privacyLevel: string) => {
     updatePrivacyMutation.mutate(privacyLevel);
   };
@@ -244,9 +261,9 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                                 <SelectValue placeholder="Select a connection to invite" />
                               </SelectTrigger>
                               <SelectContent>
-                                {userConnections.filter(c => c && c.id).map((connection: any) => (
+                                {userConnections.filter(c => c && c.id && c.username).map((connection: any) => (
                                   <SelectItem key={connection.id} value={connection.id.toString()}>
-                                    @{connection.username || 'unknown'} ({connection.name || 'Unknown User'})
+                                    @{connection.username} ({connection.name || 'Unknown User'})
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -468,6 +485,29 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                     Request Access
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Delete List (Owners Only) */}
+          {isOwner && (
+            <Card className="border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-red-600 dark:text-red-400">Danger Zone</CardTitle>
+                <CardDescription>
+                  Permanently delete this list and all its posts. This action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteListMutation.mutate()}
+                  disabled={deleteListMutation.isPending}
+                  className="w-full"
+                >
+                  <Trash className="w-4 h-4 mr-2" />
+                  {deleteListMutation.isPending ? "Deleting..." : "Delete List"}
+                </Button>
               </CardContent>
             </Card>
           )}
