@@ -5,6 +5,7 @@ import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, H
 import { DayPicker } from 'react-day-picker';
 
 import MediaProcessor from "@/components/media-processor";
+import { ListCollaborators } from "@/components/list-collaborators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1002,6 +1003,18 @@ END:VCALENDAR`;
                                 </SelectContent>
                               </Select>
                             </div>
+                            
+                            {/* Collaborators section for private lists */}
+                            {newListPrivacy === 'private' && (
+                              <div>
+                                <ListCollaborators
+                                  initialCollaborators={newListCollaborators}
+                                  onCollaboratorsChange={setNewListCollaborators}
+                                  showTitle={true}
+                                />
+                              </div>
+                            )}
+                            
                             <div className="flex justify-end space-x-2">
                               <Button
                                 type="button"

@@ -10,6 +10,19 @@ import { Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
+// Simple fetch wrapper for collaborator operations
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('authToken');
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      ...options.headers,
+    },
+  });
+};
+
 interface ListCollaboratorsProps {
   listId?: number;
   initialCollaborators?: Array<{
@@ -55,10 +68,11 @@ export function ListCollaborators({
   const addCollaboratorMutation = useMutation({
     mutationFn: async (data: { userId: number; role: "collaborator" | "viewer" }) => {
       if (listId) {
-        return apiRequest(`/api/lists/${listId}/collaborators`, {
+        const response = await fetchWithAuth(`/api/lists/${listId}/collaborators`, {
           method: 'POST',
-          body: JSON.stringify(data)
+          body: JSON.stringify(data),
         });
+        return response.json();
       }
       return data;
     },
@@ -86,9 +100,10 @@ export function ListCollaborators({
   const removeCollaboratorMutation = useMutation({
     mutationFn: async (userId: number) => {
       if (listId) {
-        return apiRequest(`/api/lists/${listId}/collaborators/${userId}`, {
-          method: 'DELETE'
+        const response = await fetchWithAuth(`/api/lists/${listId}/collaborators/${userId}`, {
+          method: 'DELETE',
         });
+        return response.json();
       }
       return userId;
     },
