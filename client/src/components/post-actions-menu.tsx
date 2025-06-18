@@ -234,8 +234,8 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
   };
 
   const submitSave = () => {
-    if (selectedCategory) {
-      savePostMutation.mutate(selectedCategory);
+    if (selectedList) {
+      savePostMutation.mutate(selectedList);
     }
   };
 
@@ -356,21 +356,21 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
         <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Save to Category</DialogTitle>
+              <DialogTitle>Save to List</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                {categories.map((category) => (
+                {lists.map((list) => (
                   <div
-                    key={category.id}
+                    key={list.id}
                     className={`p-3 rounded cursor-pointer ${
-                      selectedCategory === category.id
+                      selectedList === list.id
                         ? 'bg-blue-100 dark:bg-blue-900'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => setSelectedList(list.id)}
                   >
-                    <div className="font-medium">{category.name}</div>
+                    <div className="font-medium">{list.name}</div>
                   </div>
                 ))}
               </div>
@@ -380,7 +380,7 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
                 </Button>
                 <Button
                   onClick={submitSave}
-                  disabled={!selectedCategory || savePostMutation.isPending}
+                  disabled={!selectedList || savePostMutation.isPending}
                 >
                   Save
                 </Button>
@@ -536,17 +536,17 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              {categories.map((category) => (
+              {lists.map((list) => (
                 <div
-                  key={category.id}
+                  key={list.id}
                   className={`flex items-center p-3 rounded cursor-pointer border ${
-                    selectedCategory === category.id
+                    selectedList === list.id
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900'
                       : 'border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
-                  onClick={() => setSelectedCategory(category.id)}
+                  onClick={() => setSelectedList(list.id)}
                 >
-                  <div className="font-medium">{category.name}</div>
+                  <div className="font-medium">{list.name}</div>
                 </div>
               ))}
             </div>
@@ -556,7 +556,7 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
               </Button>
               <Button
                 onClick={submitSave}
-                disabled={!selectedCategory || savePostMutation.isPending}
+                disabled={!selectedList || savePostMutation.isPending}
               >
                 Save to List
               </Button>

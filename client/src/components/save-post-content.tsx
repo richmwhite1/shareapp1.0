@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth.tsx";
 import { getQueryFn } from "@/lib/queryClient";
 import { Bookmark, Plus } from "lucide-react";
 
-interface Category {
+interface List {
   id: number;
   name: string;
   description?: string;
@@ -19,28 +19,28 @@ interface SavePostContentProps {
 }
 
 export default function SavePostContent({ postId, onClose }: SavePostContentProps) {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+  const [selectedListId, setSelectedListId] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get user's categories
-  const { data: categories = [], isLoading } = useQuery<Category[]>({
-    queryKey: [`/api/categories/user/${user?.id}`],
+  // Get user's lists
+  const { data: lists = [], isLoading } = useQuery<List[]>({
+    queryKey: [`/api/lists/user/${user?.id}`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!user,
   });
 
   // Save post mutation
   const saveMutation = useMutation({
-    mutationFn: async (categoryId: number) => {
+    mutationFn: async (listId: number) => {
       const response = await fetch(`/api/posts/${postId}/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ categoryId }),
+        body: JSON.stringify({ listId }),
       });
 
       if (!response.ok) {
@@ -65,31 +65,31 @@ export default function SavePostContent({ postId, onClose }: SavePostContentProp
   });
 
   const handleSavePost = () => {
-    if (!selectedCategoryId) {
+    if (!selectedListId) {
       toast({
-        title: "Category required",
-        description: "Please select a category to save this post",
+        title: "List required",
+        description: "Please select a list to save this post",
         variant: "destructive",
       });
       return;
     }
-    saveMutation.mutate(parseInt(selectedCategoryId));
+    saveMutation.mutate(parseInt(selectedListId));
   };
 
   if (isLoading) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-300">Loading categories...</p>
+        <p className="text-gray-300">Loading lists...</p>
       </div>
     );
   }
 
-  if (categories.length === 0) {
+  if (lists.length === 0) {
     return (
       <div className="p-4 text-center">
         <Bookmark className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-        <p className="text-gray-300 mb-4">You don't have any categories yet.</p>
-        <p className="text-gray-400 text-sm mb-4">Create categories to organize your saved posts.</p>
+        <p className="text-gray-300 mb-4">You don't have any lists yet.</p>
+        <p className="text-gray-400 text-sm mb-4">Create lists to organize your saved posts.</p>
         <Button onClick={onClose} className="bg-purple-600 hover:bg-purple-700">
           Close
         </Button>
