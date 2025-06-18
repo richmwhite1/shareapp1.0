@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import PostCard from "@/components/post-card";
 import FriendsStoriesBar from "@/components/friends-stories-bar";
+import ListInvitationNotifications from "@/components/list-invitation-notifications";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";

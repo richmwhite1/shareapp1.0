@@ -670,8 +670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else if (list.privacyLevel === 'private') {
               // Private lists visible only if user has accepted access
-              const access = await storage.hasListAccess(viewerId, list.id);
-              if (access && access.hasAccess) {
+              const hasAccess = await storage.hasListAccess(viewerId, list.id);
+              if (hasAccess) {
                 visibleLists.push(list);
               }
             }
@@ -787,6 +787,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.respondToListInvite(pendingAccess.listId, 'reject');
       
       res.json({ message: 'Invitation rejected' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's pending list invitations
+  app.get('/api/user/list-invitations', authenticateToken, async (req: any, res) => {
+    try {
+      const userAccess = await storage.getUserListAccess(req.user.userId);
+      const pendingInvitations = userAccess.filter(access => access.status === 'pending');
+      
+      res.json(pendingInvitations);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
