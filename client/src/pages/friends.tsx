@@ -36,11 +36,12 @@ export default function ConnectionsPage() {
   });
 
   // Get connection requests
-  const { data: connectionRequests = [] } = useQuery<ConnectionRequest[]>({
+  const { data: friendRequests = [] } = useQuery<ConnectionRequest[]>({
     queryKey: ['/api/friend-requests'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
   });
+  const connectionRequests = friendRequests;
 
   // Get outgoing follow requests
   const { data: outgoingRequests = [] } = useQuery<Array<{ id: number; toUser: User; createdAt: Date }>>({
@@ -100,8 +101,8 @@ export default function ConnectionsPage() {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to send request",
-        description: error.message || "Could not send follow request.",
+        title: "Failed to follow",
+        description: error.message || "Could not follow this user.",
         variant: "destructive",
       });
     },
@@ -116,11 +117,12 @@ export default function ConnectionsPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Follow request accepted",
-        description: "You are now connected!",
+        title: "Connection accepted",
+        description: "You are now connected with this user.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
       queryClient.invalidateQueries({ queryKey: ['/api/friend-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: (error: any) => {
       toast({
