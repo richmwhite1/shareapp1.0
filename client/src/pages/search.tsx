@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search as SearchIcon, Hash, TrendingUp, X, SortAsc } from "lucide-react";
+import { Search as SearchIcon, Hash, TrendingUp, X, SortAsc, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ export default function SearchPage() {
   const [hashtagInput, setHashtagInput] = useState("");
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<"popular" | "recent">("popular");
+  const [isExpanded, setIsExpanded] = useState(false);
   const { isAuthenticated } = useAuth();
   const [location] = useLocation();
 
@@ -263,17 +264,29 @@ export default function SearchPage() {
           </Card>
         )}
 
-        {/* Trending Hashtags */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Trending Hashtags
+        {/* Trending Hashtags - Compact */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-sm font-medium">Trending</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+              >
+                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => {
+          <CardContent className="pt-0">
+            <div className="flex flex-wrap gap-1.5">
+              {Array.isArray(trendingHashtags) && trendingHashtags
+                .slice(0, isExpanded ? 25 : 5)
+                .map((hashtag: any) => {
                 const FollowButton = () => {
                   const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
                   
@@ -292,12 +305,12 @@ export default function SearchPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleHashtagClick(hashtag.name)}
-                        className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                        className="h-7 px-2 py-0 text-xs flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
                         disabled={selectedHashtags.includes(hashtag.name)}
                       >
-                        <Hash className="h-3 w-3" />
+                        <Hash className="h-2.5 w-2.5" />
                         {hashtag.name}
-                        <Badge variant="secondary" className="ml-1">
+                        <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
                           {hashtag.count}
                         </Badge>
                       </Button>
@@ -305,7 +318,7 @@ export default function SearchPage() {
                         variant={isFollowing ? "default" : "outline"}
                         size="sm"
                         onClick={handleToggleFollow}
-                        className={`h-8 w-8 p-0 ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
+                        className={`h-7 w-7 p-0 text-xs ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
                       >
                         {isFollowing ? '✓' : '+'}
                       </Button>
@@ -315,6 +328,16 @@ export default function SearchPage() {
 
                 return <FollowButton key={hashtag.id} />;
               })}
+              {!isExpanded && Array.isArray(trendingHashtags) && trendingHashtags.length > 5 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(true)}
+                  className="h-7 px-2 py-0 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  +{trendingHashtags.length - 5} more
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
