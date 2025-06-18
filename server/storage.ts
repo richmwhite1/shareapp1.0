@@ -832,11 +832,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFollowedHashtags(userId: number): Promise<Hashtag[]> {
-    return []; // Simplified implementation
+    try {
+      const followedHashtags = await db
+        .select({
+          id: hashtags.id,
+          name: hashtags.name,
+          count: hashtags.count,
+          createdAt: hashtags.createdAt
+        })
+        .from(hashtags)
+        .innerJoin(hashtagFollows, eq(hashtags.id, hashtagFollows.hashtagId))
+        .where(eq(hashtagFollows.userId, userId))
+        .orderBy(desc(hashtags.count));
+      
+      return followedHashtags;
+    } catch (error) {
+      console.error('Error fetching followed hashtags:', error);
+      return [];
+    }
   }
 
-  async getTrendingHashtags(limit?: number): Promise<Hashtag[]> {
-    return []; // Simplified implementation
+  async getTrendingHashtags(limit: number = 10): Promise<Hashtag[]> {
+    try {
+      const trendingHashtags = await db
+        .select({
+          id: hashtags.id,
+          name: hashtags.name,
+          count: hashtags.count,
+          createdAt: hashtags.createdAt
+        })
+        .from(hashtags)
+        .orderBy(desc(hashtags.count))
+        .limit(limit);
+      
+      return trendingHashtags;
+    } catch (error) {
+      console.error('Error fetching trending hashtags:', error);
+      return [];
+    }
   }
 
   async createNotification(notification: CreateNotificationData): Promise<Notification> {
@@ -1408,7 +1441,7 @@ export class DatabaseStorage implements IStorage {
       .from(rsvps)
       .where(
         and(
-          eq(rsvps.eventId, eventId),
+          eq(rsvps.postId, eventId),
           eq(rsvps.userId, userId)
         )
       )
@@ -1423,7 +1456,7 @@ export class DatabaseStorage implements IStorage {
       .set({ status, updatedAt: new Date() })
       .where(
         and(
-          eq(rsvps.eventId, eventId),
+          eq(rsvps.postId, eventId),
           eq(rsvps.userId, userId)
         )
       );
@@ -1431,7 +1464,7 @@ export class DatabaseStorage implements IStorage {
 
   async createRsvp(eventId: number, userId: number, status: string): Promise<void> {
     await db.insert(rsvps).values({
-      eventId,
+      postId: eventId,
       userId,
       status
     });
@@ -1444,7 +1477,7 @@ export class DatabaseStorage implements IStorage {
         count: count()
       })
       .from(rsvps)
-      .where(eq(rsvps.eventId, eventId))
+      .where(eq(rsvps.postId, eventId))
       .groupBy(rsvps.status);
 
     const result = { going: 0, maybe: 0, notGoing: 0 };
