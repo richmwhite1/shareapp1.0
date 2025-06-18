@@ -183,10 +183,10 @@ export default function CreatePostPage() {
         });
       }
     } catch (error) {
-      console.error('Failed to create category:', error);
+      console.error('Failed to create list:', error);
       toast({
         title: "Error",
-        description: "Failed to create category. Please try again.",
+        description: "Failed to create list. Please try again.",
         variant: "destructive"
       });
     }
