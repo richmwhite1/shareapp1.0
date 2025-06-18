@@ -6,7 +6,7 @@ import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Folder, Image, Plus, Users, Lock, Trash2, Share2, Camera } from "lucide-react";
+import { Folder, Image, Plus, Users, Lock, Trash2, Share2, Camera, Globe, X } from "lucide-react";
 import { Link, useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
@@ -32,6 +32,9 @@ export default function ProfilePage() {
   const [isUploadingProfilePic, setIsUploadingProfilePic] = useState(false);
   const [defaultPrivacy, setDefaultPrivacy] = useState<'public' | 'connections'>('public');
   const [auraRating, setAuraRating] = useState<number>(3);
+  const [isManagingLists, setIsManagingLists] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [draggedList, setDraggedList] = useState<number | null>(null);
   
   // If there's an ID param, we're viewing another user's profile
   const profileUserId = params.id ? parseInt(params.id) : user?.id;
@@ -224,6 +227,36 @@ export default function ProfilePage() {
     rateUserMutation.mutate(rating);
   };
 
+  // Long press handlers for list management
+  const handleMouseDown = (listId: number) => {
+    if (!isOwnProfile) return;
+    
+    const timer = setTimeout(() => {
+      setIsManagingLists(true);
+    }, 500); // 500ms for long press
+    
+    setLongPressTimer(timer);
+  };
+
+  const handleMouseUp = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const exitManagingMode = () => {
+    setIsManagingLists(false);
+    setDraggedList(null);
+  };
+
   // Get aura color based on rating
   const getAuraColor = (rating: number) => {
     if (rating >= 4.5) return 'border-yellow-400'; // Gold
@@ -411,15 +444,43 @@ export default function ProfilePage() {
               <span className="text-sm text-gray-400">{lists?.length || 0} lists</span>
             </div>
             
+            {/* Exit Management Mode Button */}
+            {isManagingLists && (
+              <div className="mb-4 flex justify-end">
+                <Button 
+                  onClick={exitManagingMode}
+                  variant="outline" 
+                  size="sm"
+                >
+                  Done
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-4 gap-3">
               {(lists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
                 // Get the most recent post image from this list
                 const recentPost = userPosts?.find(post => post.listId === list.id);
                 const hasImage = recentPost?.primaryPhotoUrl;
                 
-                return (
-                  <Link key={list.id} href={`/list/${list.id}`}>
-                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors relative">
+                return isManagingLists ? (
+                  // Management mode - floating with delete button and drag/drop
+                  <div 
+                    key={list.id}
+                    className={`relative ${isManagingLists ? 'animate-pulse' : ''}`}
+                    draggable={isManagingLists}
+                    onDragStart={() => setDraggedList(list.id)}
+                    onDragEnd={() => setDraggedList(null)}
+                  >
+                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-all relative transform hover:scale-105 shadow-lg">
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => handleDeleteList(list.id, list.name, e)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 z-10 shadow-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      
                       <div className="w-full aspect-square rounded-xl mx-auto mb-2 overflow-hidden relative">
                         {hasImage ? (
                           <img 
@@ -433,20 +494,71 @@ export default function ProfilePage() {
                           </div>
                         )}
                         {/* Privacy Indicator */}
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-1 right-1">
                           {list.privacyLevel === 'private' && (
-                            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                              Private
+                            <div className="bg-red-500/90 text-white p-1 rounded-full">
+                              <Lock className="h-3 w-3" />
                             </div>
                           )}
                           {list.privacyLevel === 'connections' && (
-                            <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                              Friends
+                            <div className="bg-blue-500/90 text-white p-1 rounded-full">
+                              <Users className="h-3 w-3" />
                             </div>
                           )}
                           {list.privacyLevel === 'public' && (
-                            <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                              Public
+                            <div className="bg-green-500/90 text-white p-1 rounded-full">
+                              <Globe className="h-3 w-3" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-white font-medium truncate">{list.name}</div>
+                      <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
+                      {list.privacyLevel !== 'public' && (
+                        <div className="mt-1">
+                          <ListCollaboratorAvatars listId={list.id} size="xs" maxVisible={3} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  // Normal mode - clickable link
+                  <Link key={list.id} href={`/list/${list.id}`}>
+                    <div 
+                      className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors relative"
+                      onMouseDown={() => handleMouseDown(list.id)}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseLeave}
+                      onTouchStart={() => handleMouseDown(list.id)}
+                      onTouchEnd={handleMouseUp}
+                    >
+                      <div className="w-full aspect-square rounded-xl mx-auto mb-2 overflow-hidden relative">
+                        {hasImage ? (
+                          <img 
+                            src={recentPost.primaryPhotoUrl} 
+                            alt={list.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-pinterest-red/20 rounded-xl flex items-center justify-center">
+                            <Folder className="h-6 w-6 text-pinterest-red" />
+                          </div>
+                        )}
+                        {/* Privacy Indicator */}
+                        <div className="absolute top-1 right-1">
+                          {list.privacyLevel === 'private' && (
+                            <div className="bg-red-500/90 text-white p-1 rounded-full">
+                              <Lock className="h-3 w-3" />
+                            </div>
+                          )}
+                          {list.privacyLevel === 'connections' && (
+                            <div className="bg-blue-500/90 text-white p-1 rounded-full">
+                              <Users className="h-3 w-3" />
+                            </div>
+                          )}
+                          {list.privacyLevel === 'public' && (
+                            <div className="bg-green-500/90 text-white p-1 rounded-full">
+                              <Globe className="h-3 w-3" />
                             </div>
                           )}
                         </div>
