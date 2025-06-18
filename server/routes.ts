@@ -859,6 +859,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/posts/:id/repost', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      await storage.repostPost(postId, req.user.userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/save', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { categoryId } = req.body;
+      await storage.savePost(postId, req.user.userId, categoryId || 1);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/flag', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { reason } = req.body;
+      await storage.flagPost(postId, req.user.userId, reason);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/posts/:id/tag-friend', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const { friendId } = req.body;
+      await storage.tagFriendInPost(postId, req.user.userId, friendId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/user/total-shares/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);

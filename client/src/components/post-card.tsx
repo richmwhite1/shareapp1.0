@@ -91,12 +91,40 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     setShowTagDialog(true);
   };
 
-  const handleRepost = () => {
-    // Implement repost functionality
-    toast({
-      title: "Repost",
-      description: "Repost functionality coming soon",
-    });
+  const handleRepost = async () => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to repost",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/repost`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Reposted",
+          description: "Post has been reposted to your profile",
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      } else {
+        throw new Error('Failed to repost');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to repost. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSave = () => {

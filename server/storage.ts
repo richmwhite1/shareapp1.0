@@ -113,7 +113,7 @@ export interface IStorage {
   isSaved(postId: number, userId: number): Promise<boolean>;
 
   // Repost methods
-  repost(postId: number, userId: number): Promise<void>;
+  repostPost(postId: number, userId: number): Promise<void>;
   unrepost(postId: number, userId: number): Promise<void>;
   getReposts(userId: number): Promise<PostWithStats[]>;
   isReposted(postId: number, userId: number): Promise<boolean>;
@@ -121,6 +121,9 @@ export interface IStorage {
   // Flag methods
   flagPost(postId: number, userId: number, reason?: string): Promise<void>;
   unflagPost(postId: number, userId: number): Promise<void>;
+  
+  // Tag methods
+  tagFriendInPost(postId: number, fromUserId: number, toUserId: number): Promise<void>;
   getPostFlags(postId: number): Promise<number>;
   checkAutoDelete(postId: number): Promise<boolean>;
 
@@ -1596,6 +1599,81 @@ export class DatabaseStorage implements IStorage {
       .update(taggedPosts)
       .set({ isViewed: true })
       .where(and(eq(taggedPosts.postId, postId), eq(taggedPosts.toUserId, userId)));
+  }
+
+  // Repost methods
+  async repostPost(postId: number, userId: number): Promise<void> {
+    await db.insert(reposts).values({
+      originalPostId: postId,
+      userId,
+    });
+  }
+
+  async unrepost(postId: number, userId: number): Promise<void> {
+    await db
+      .delete(reposts)
+      .where(and(eq(reposts.originalPostId, postId), eq(reposts.userId, userId)));
+  }
+
+  async getReposts(userId: number): Promise<PostWithStats[]> {
+    const userReposts = await db
+      .select({
+        post: posts,
+        user: users,
+        repostedAt: reposts.createdAt,
+      })
+      .from(reposts)
+      .innerJoin(posts, eq(reposts.originalPostId, posts.id))
+      .innerJoin(users, eq(posts.userId, users.id))
+      .where(eq(reposts.userId, userId))
+      .orderBy(desc(reposts.createdAt));
+
+    return userReposts.map(({ post, user, repostedAt }) => ({
+      ...post,
+      user,
+      repostedAt,
+    })) as PostWithStats[];
+  }
+
+  async isReposted(postId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(reposts)
+      .where(and(eq(reposts.originalPostId, postId), eq(reposts.userId, userId)))
+      .limit(1);
+    return result.length > 0;
+  }
+
+  // Flag methods
+  async flagPost(postId: number, userId: number, reason?: string): Promise<void> {
+    await db.insert(postFlags).values({
+      postId,
+      userId,
+      reason,
+    });
+  }
+
+  async unflagPost(postId: number, userId: number): Promise<void> {
+    await db
+      .delete(postFlags)
+      .where(and(eq(postFlags.postId, postId), eq(postFlags.userId, userId)));
+  }
+
+  // Tag methods
+  async tagFriendInPost(postId: number, fromUserId: number, toUserId: number): Promise<void> {
+    await db.insert(taggedPosts).values({
+      postId,
+      fromUserId,
+      toUserId,
+    });
+
+    // Create notification for tagged user
+    await this.createNotification({
+      userId: toUserId,
+      type: 'tag',
+      postId,
+      fromUserId,
+    });
   }
 }
 
