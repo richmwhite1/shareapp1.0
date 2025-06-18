@@ -243,6 +243,9 @@ export class EnterpriseStorage implements IStorage {
       .groupBy(lists.id, listAccess.role)
       .orderBy(desc(lists.createdAt));
 
+    // Debug logging
+    console.log(`User ${userId}: Found ${ownedLists.length} owned lists, ${collaborativeLists.length} collaborative lists`);
+    
     // Combine both result sets
     const allResults = [...ownedLists, ...collaborativeLists];
 
