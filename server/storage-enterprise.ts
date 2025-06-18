@@ -687,7 +687,8 @@ export class EnterpriseStorage implements IStorage {
 
         // Check list access if post is in a list
         if (post.listId) {
-          hasAccess = await this.hasListAccess(viewerId, post.listId);
+          const accessResult = await this.hasListAccess(viewerId, post.listId);
+          hasAccess = accessResult.hasAccess;
         }
 
         // If no list access, check if tagged in post
