@@ -440,8 +440,8 @@ export class DatabaseStorage implements IStorage {
 
     // Filter posts based on list privacy settings
     if (!viewerId) {
-      // Anonymous users can only see posts in public lists
-      return allPosts.filter(post => !post.list || post.list.privacyLevel === 'public');
+      // Anonymous users can only see posts in public lists or posts without lists
+      return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
     }
 
     const filteredPosts = [];
@@ -953,11 +953,12 @@ export class DatabaseStorage implements IStorage {
 
     // Create notification
     const list = await this.getList(listId);
-    if (list) {
+    const [inviter] = await db.select().from(users).where(eq(users.id, invitedBy)).limit(1);
+    if (list && inviter) {
       await this.createNotification({
         userId,
-        type: 'list_invitation',
-        message: `You've been invited to collaborate on "${list.name}"`,
+        type: 'list_invite',
+        message: `${inviter.name} invited you to collaborate on "${list.name}"`,
         metadata: { listId, role, invitedBy }
       });
     }
