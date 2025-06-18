@@ -419,7 +419,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostsByUserId(userId: number): Promise<PostWithUser[]> {
-    const result = await db
+    // Get user's original posts
+    const originalPosts = await db
       .select({
         post: posts,
         user: {
@@ -439,11 +440,51 @@ export class DatabaseStorage implements IStorage {
       .where(eq(posts.userId, userId))
       .orderBy(desc(posts.createdAt));
 
-    return result.map(r => ({
-      ...r.post,
-      user: r.user,
-      category: r.category
-    })) as PostWithUser[];
+    // Get user's reposts
+    const userReposts = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        category: {
+          id: categories.id,
+          name: categories.name
+        },
+        repostCreatedAt: reposts.createdAt
+      })
+      .from(reposts)
+      .innerJoin(posts, eq(reposts.originalPostId, posts.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .where(eq(reposts.userId, userId))
+      .orderBy(desc(reposts.createdAt));
+
+    // Combine and sort by creation time
+    const allPosts = [
+      ...originalPosts.map(r => ({
+        ...r.post,
+        user: r.user,
+        category: r.category,
+        isRepost: false,
+        sortDate: r.post.createdAt
+      })),
+      ...userReposts.map(r => ({
+        ...r.post,
+        user: r.user,
+        category: r.category,
+        isRepost: true,
+        sortDate: r.repostCreatedAt
+      }))
+    ];
+
+    // Sort by creation date (most recent first)
+    allPosts.sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime());
+
+    return allPosts as PostWithUser[];
   }
 
   async getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]> {

@@ -341,6 +341,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
           
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <Eye className="h-4 w-4" />
+              <span>{viewData?.viewCount || 0} views</span>
+            </div>
+            
             {/* Flag or Delete button */}
             {user?.id === post.userId ? (
               <Button
@@ -365,12 +370,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 <Flag className="h-4 w-4" />
               </Button>
             )}
-            
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <Eye className="h-4 w-4" />
-              <span>{viewData?.viewCount || 0} views</span>
-            </div>
           </div>
+        </div>
+        
+        {/* Compact Aura Rating below metrics */}
+        <div className="px-4 py-2">
+          <EnergyRating postId={post.id} className="max-w-xs" />
         </div>
       </div>
 

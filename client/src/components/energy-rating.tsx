@@ -116,28 +116,28 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
   const sliderGradient = `linear-gradient(to right, ${RATING_COLORS.join(', ')})`;
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Rating Slider */}
-      <div className="space-y-3">
+    <div className={`${className}`}>
+      {/* Compact Rating Slider */}
+      <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">😐</span>
-            <span className="text-sm font-medium text-gray-300">Rating</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs">😐</span>
+            <span className="text-xs text-gray-400">Aura</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">♥️</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs">♥️</span>
           </div>
         </div>
         
-        <div className="relative">
+        <div className="relative w-full">
           {/* Custom gradient background */}
           <div 
-            className="h-2 rounded-full absolute w-full"
+            className="h-1 rounded-full absolute w-full"
             style={{ background: sliderGradient }}
           />
           {/* Overlay showing current position */}
           <div 
-            className="h-2 rounded-full absolute transition-all duration-200"
+            className="h-1 rounded-full absolute transition-all duration-200"
             style={{ 
               backgroundColor: RATING_COLORS[currentRating - 1],
               width: `${((currentRating - 1) / 6) * 100}%`
@@ -149,30 +149,19 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
             min={1}
             max={7}
             step={1}
-            className="absolute top-0 w-full h-2 z-10"
+            className="absolute top-0 w-full h-1 z-10"
             style={{ background: 'transparent' }}
           />
         </div>
 
-        {/* Current selection display */}
-        <div className="flex items-center justify-center text-sm">
-          <div className="flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: RATING_COLORS[currentRating - 1] }}
-            />
-            <span className="text-gray-300">{currentRating}</span>
-          </div>
-        </div>
-
-        {/* Rate button positioned lower */}
-        <div className="flex justify-end mt-4">
+        {/* Rate button - compact */}
+        <div className="flex justify-end">
           <button
             onClick={handleRatingSubmit}
             disabled={ratingMutation.isPending}
-            className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
+            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
           >
-            {ratingMutation.isPending ? 'Submitting...' : 'Submit Rating'}
+            {ratingMutation.isPending ? 'Rating...' : 'Rate'}
           </button>
         </div>
       </div>
