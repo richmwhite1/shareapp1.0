@@ -78,6 +78,14 @@ export default function Home() {
     }
   };
 
+  const handleStoryClick = (userId: number) => {
+    handleSelectFeed('friend', userId);
+  };
+
+  const handleMarkStoryViewed = (userId: number) => {
+    setViewedStoryUsers(prev => new Set([...Array.from(prev), userId]));
+  };
+
   if (error) {
     return (
       <div className="max-w-md mx-auto px-4 py-8">
@@ -98,7 +106,13 @@ export default function Home() {
   return (
     <div className="bg-black">
       {/* Stories */}
-      {isAuthenticated && <Stories />}
+      {isAuthenticated && (
+        <Stories 
+          onSelectUser={handleStoryClick}
+          viewedUsers={viewedStoryUsers}
+          onMarkAsViewed={handleMarkStoryViewed}
+        />
+      )}
       
       <main className="w-full">
         {/* List Invitation Notifications */}

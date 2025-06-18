@@ -60,8 +60,15 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed 
     );
   }
 
-  // Filter out viewed users
-  const unviewedStories = stories.filter(story => !viewedUsers.has(story.user.id));
+  // Deduplicate stories by user ID and filter out viewed users
+  const uniqueStories = stories.reduce((acc: Story[], story) => {
+    if (!acc.find(s => s.user.id === story.user.id)) {
+      acc.push(story);
+    }
+    return acc;
+  }, []);
+  
+  const unviewedStories = uniqueStories.filter(story => !viewedUsers.has(story.user.id));
 
   if (unviewedStories.length === 0) {
     return null;
