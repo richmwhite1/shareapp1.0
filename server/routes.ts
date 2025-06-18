@@ -629,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get categories by user ID (public categories only for unauthenticated users)
-  app.get('/api/categories/user/:userId', async (req, res) => {
+  app.get('/api/lists/user/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       if (isNaN(userId)) {
@@ -638,27 +638,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const lists = await storage.getListsByUserId(userId);
       
-      // Filter only public categories for unauthenticated requests
+      // Filter only public lists for unauthenticated requests
       const token = req.headers['authorization']?.split(' ')[1];
       if (!token) {
-        const publicCategories = categories.filter(cat => cat.isPublic);
-        return res.json(publicCategories);
+        const publicLists = lists.filter(list => list.isPublic);
+        return res.json(publicLists);
       }
 
-      // For authenticated users viewing their own profile, return all categories
+      // For authenticated users viewing their own profile, return all lists
       try {
         const decoded = jwt.verify(token, JWT_SECRET) as any;
         if (decoded.userId === userId) {
-          return res.json(categories);
+          return res.json(lists);
         } else {
-          // Authenticated user viewing another's profile - show only public categories
-          const publicCategories = categories.filter(cat => cat.isPublic);
-          return res.json(publicCategories);
+          // Authenticated user viewing another's profile - show only public lists
+          const publicLists = lists.filter(list => list.isPublic);
+          return res.json(publicLists);
         }
       } catch {
-        // Invalid token - show only public categories
-        const publicCategories = categories.filter(cat => cat.isPublic);
-        return res.json(publicCategories);
+        // Invalid token - show only public lists
+        const publicLists = lists.filter(list => list.isPublic);
+        return res.json(publicLists);
       }
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
