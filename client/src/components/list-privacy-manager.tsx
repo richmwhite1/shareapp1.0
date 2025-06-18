@@ -60,10 +60,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
   // Invite user mutation
   const inviteUserMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: number; role: string }) =>
-      apiRequest(`/api/lists/${listId}/invite`, {
-        method: 'POST',
-        body: JSON.stringify({ userId, role })
-      }),
+      apiRequest('POST', `/api/lists/${listId}/invite`, { userId, role }),
     onSuccess: () => {
       toast({ title: "Invitation sent successfully" });
       setSelectedUserId("");
@@ -78,9 +75,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
   // Remove access mutation
   const removeAccessMutation = useMutation({
     mutationFn: (userId: number) =>
-      apiRequest(`/api/lists/${listId}/access/${userId}`, {
-        method: 'DELETE'
-      }),
+      apiRequest('DELETE', `/api/lists/${listId}/access/${userId}`),
     onSuccess: () => {
       toast({ title: "Access removed successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/lists', listId, 'access'] });
@@ -93,10 +88,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
   // Respond to access request mutation
   const respondToRequestMutation = useMutation({
     mutationFn: ({ requestId, action }: { requestId: number; action: string }) =>
-      apiRequest(`/api/access-requests/${requestId}/respond`, {
-        method: 'POST',
-        body: JSON.stringify({ action })
-      }),
+      apiRequest('POST', `/api/access-requests/${requestId}/respond`, { action }),
     onSuccess: () => {
       toast({ title: "Request responded to successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/lists', listId, 'access-requests'] });
@@ -110,10 +102,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
   // Request access mutation (for non-owners)
   const requestAccessMutation = useMutation({
     mutationFn: ({ requestedRole, message }: { requestedRole: string; message?: string }) =>
-      apiRequest(`/api/lists/${listId}/request-access`, {
-        method: 'POST',
-        body: JSON.stringify({ requestedRole, message })
-      }),
+      apiRequest('POST', `/api/lists/${listId}/request-access`, { requestedRole, message }),
     onSuccess: () => {
       toast({ title: "Access request sent successfully" });
       setRequestMessage("");
