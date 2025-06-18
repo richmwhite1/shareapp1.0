@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth.tsx";
 import AuricField from "@/components/auric-field";
 import type { User } from "@shared/schema";
 
-interface FriendRequest {
+interface ConnectionRequest {
   id: number;
   fromUser: User;
   createdAt: Date;
@@ -28,21 +28,21 @@ export default function ConnectionsPage() {
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get current friends
-  const { data: friends = [] } = useQuery<User[]>({
+  // Get current connections
+  const { data: connections = [] } = useQuery<User[]>({
     queryKey: ['/api/friends'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
   });
 
-  // Get friend requests
-  const { data: friendRequests = [] } = useQuery<FriendRequest[]>({
+  // Get connection requests
+  const { data: connectionRequests = [] } = useQuery<ConnectionRequest[]>({
     queryKey: ['/api/friend-requests'],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: isAuthenticated,
   });
 
-  // Get outgoing friend requests
+  // Get outgoing follow requests
   const { data: outgoingRequests = [] } = useQuery<Array<{ id: number; toUser: User; createdAt: Date }>>({
     queryKey: ['/api/outgoing-friend-requests'],
     queryFn: getQueryFn({ on401: "throw" }),

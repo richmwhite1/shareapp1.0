@@ -1029,7 +1029,7 @@ END:VCALENDAR`;
                       className="text-xs"
                     >
                       <Plus className="h-3 w-3 mr-1" />
-                      Tag Friends
+                      Tag Connections
                     </Button>
                   )}
                 </div>
@@ -1381,7 +1381,7 @@ END:VCALENDAR`;
                       </div>
                     ))
                   ) : (
-                    <p className="text-muted-foreground p-4 text-center">No friends found</p>
+                    <p className="text-muted-foreground p-4 text-center">No connections found</p>
                   )}
                 </div>
                 <div className="flex justify-end">
