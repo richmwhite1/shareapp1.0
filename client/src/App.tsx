@@ -16,6 +16,7 @@ import SearchPage from "@/pages/search";
 import ConnectionsPage from "@/pages/friends";
 import NotificationsPage from "@/pages/notifications";
 import SharedWithMePage from "@/pages/shared-with-me";
+import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/friends" component={ConnectionsPage} />
       <Route path="/notifications" component={NotificationsPage} />
       <Route path="/shared-with-me" component={SharedWithMePage} />
+      <Route path="/admin" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

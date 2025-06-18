@@ -2511,6 +2511,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mount admin routes
+  app.use('/api/admin', adminRoutes);
+
   const httpServer = createServer(app);
   return httpServer;
 }
