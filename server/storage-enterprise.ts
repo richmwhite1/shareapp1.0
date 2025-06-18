@@ -1250,17 +1250,45 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async sendFriendRequest(fromUserId: number, toUserId: number): Promise<void> {
+    // Check if request already exists
+    const [existing] = await db
+      .select()
+      .from(friendRequests)
+      .where(
+        and(
+          eq(friendRequests.fromUserId, fromUserId),
+          eq(friendRequests.toUserId, toUserId)
+        )
+      )
+      .limit(1);
+
+    if (existing) {
+      throw new Error('Friend request already sent');
+    }
+
+    // Check if already friends
+    const areFriends = await this.areFriends(fromUserId, toUserId);
+    if (areFriends) {
+      throw new Error('Already connected with this user');
+    }
+
     await db.insert(friendRequests).values({
       fromUserId,
-      toUserId
-    }).onConflictDoNothing();
+      toUserId,
+      status: 'pending'
+    });
 
     // Create notification
-    await this.createNotification({
-      userId: toUserId,
-      type: 'friend_request',
-      fromUserId
-    });
+    try {
+      await this.createNotification({
+        userId: toUserId,
+        type: 'friend_request',
+        fromUserId
+      });
+    } catch (error) {
+      console.log('Notification creation failed:', error);
+      // Don't throw error - friend request was created successfully
+    }
   }
 
   async getFriendRequests(userId: number): Promise<any[]> {

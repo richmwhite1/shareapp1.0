@@ -1595,6 +1595,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Alternative endpoint that matches frontend expectations
+  app.post('/api/friends/send-request', authenticateToken, async (req: any, res) => {
+    try {
+      const { userId } = req.body;
+      const friendId = userId || req.body.friendId;
+      
+      if (!friendId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      if (friendId === req.user.userId) {
+        return res.status(400).json({ message: 'Cannot send friend request to yourself' });
+      }
+
+      const targetUser = await storage.getUser(friendId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      await storage.sendFriendRequest(req.user.userId, friendId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Friend request error:', error);
+      res.status(500).json({ message: error.message || 'Internal server error' });
+    }
+  });
+
   app.post('/api/friend-request/:requestId/respond', authenticateToken, async (req: any, res) => {
     try {
       const requestId = parseInt(req.params.requestId);
