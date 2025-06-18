@@ -589,7 +589,7 @@ export default function ProfilePage() {
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
                       {list.privacyLevel !== 'public' && (
                         <div className="mt-1">
-                          <ListCollaboratorAvatars listId={list.id} size="xs" maxVisible={3} />
+                          <ListCollaboratorAvatars listId={list.id} maxVisible={3} />
                         </div>
                       )}
                     </div>
@@ -640,7 +640,7 @@ export default function ProfilePage() {
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
                       {list.privacyLevel !== 'public' && (
                         <div className="mt-1">
-                          <ListCollaboratorAvatars listId={list.id} size="xs" maxVisible={3} />
+                          <ListCollaboratorAvatars listId={list.id} maxVisible={3} />
                         </div>
                       )}
                     </div>
