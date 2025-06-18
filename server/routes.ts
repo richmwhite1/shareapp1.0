@@ -601,10 +601,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/categories', authenticateToken, async (req: any, res) => {
     try {
-      const categoryData = createCategorySchema.parse(req.body);
-      const category = await storage.createCategory({
-        ...categoryData,
+      const { privacyLevel, ...categoryData } = req.body;
+      const validatedData = createCategorySchema.parse(categoryData);
+      
+      const category = await storage.createCategoryWithPrivacy({
+        ...validatedData,
         userId: req.user.userId,
+        privacyLevel: privacyLevel || 'public'
       });
       res.json(category);
     } catch (error: any) {

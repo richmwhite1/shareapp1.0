@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const categories = pgTable("categories", {
+export const lists = pgTable("lists", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   name: text("name").notNull(),
@@ -27,7 +27,7 @@ export const categories = pgTable("categories", {
 export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  categoryId: integer("category_id").notNull().default(1), // Default to "General" category
+  listId: integer("list_id").notNull().default(1), // Default to "General" list
   primaryPhotoUrl: text("primary_photo_url").notNull(),
   primaryLink: text("primary_link").notNull(),
   primaryDescription: text("primary_description").notNull(),

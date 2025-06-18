@@ -291,7 +291,8 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             inArray(categories.userId, friendIds.map(f => f.friendId)),
-            eq(categories.privacyLevel, 'connections')
+            eq(categories.isPublic, false),
+            sql`${categories.description} LIKE '%Privacy: connections%'`
           )
         );
     }
@@ -318,10 +319,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCategoryWithPrivacy(categoryData: InsertCategory & { privacyLevel?: string }): Promise<Category> {
+    // Use the existing isPublic field and description to store privacy level temporarily
+    const privacy = categoryData.privacyLevel || 'public';
+    const description = categoryData.description ? 
+      `${categoryData.description}` : 
+      `Privacy: ${privacy}`;
+
     const [category] = await db.insert(categories).values({
-      ...categoryData,
-      privacyLevel: categoryData.privacyLevel || 'public',
-      isPublic: (categoryData.privacyLevel || 'public') === 'public'
+      name: categoryData.name,
+      userId: categoryData.userId,
+      description: description,
+      isPublic: privacy === 'public'
     }).returning();
 
     return category;
@@ -1100,6 +1108,8 @@ export class DatabaseStorage implements IStorage {
           profilePictureUrl: friend.profilePictureUrl,
           password: '',
           defaultPrivacy: friend.defaultPrivacy || 'public',
+          auraRating: friend.auraRating || '4.00',
+          ratingCount: friend.ratingCount || 0,
           createdAt: friend.createdAt
         },
         hasRecentPosts: !!recentPost
