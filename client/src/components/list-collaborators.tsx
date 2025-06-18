@@ -72,6 +72,9 @@ export function ListCollaborators({
           method: 'POST',
           body: JSON.stringify(data),
         });
+        if (!response.ok) {
+          throw new Error('Failed to add collaborator');
+        }
         return response.json();
       }
       return data;
@@ -79,15 +82,16 @@ export function ListCollaborators({
     onSuccess: (data) => {
       if (listId) {
         queryClient.invalidateQueries({ queryKey: ['/api/lists', listId, 'access'] });
-        toast({
-          title: "Success",
-          description: "Collaborator added successfully"
-        });
       }
       setSelectedUserId("");
       setSelectedRole("viewer");
+      toast({
+        title: "Success",
+        description: "Collaborator added successfully"
+      });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Add collaborator error:', error);
       toast({
         title: "Error",
         description: "Failed to add collaborator",
@@ -103,6 +107,9 @@ export function ListCollaborators({
         const response = await fetchWithAuth(`/api/lists/${listId}/collaborators/${userId}`, {
           method: 'DELETE',
         });
+        if (!response.ok) {
+          throw new Error('Failed to remove collaborator');
+        }
         return response.json();
       }
       return userId;
@@ -110,13 +117,14 @@ export function ListCollaborators({
     onSuccess: () => {
       if (listId) {
         queryClient.invalidateQueries({ queryKey: ['/api/lists', listId, 'access'] });
-        toast({
-          title: "Success",
-          description: "Collaborator removed successfully"
-        });
       }
+      toast({
+        title: "Success",
+        description: "Collaborator removed successfully"
+      });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Remove collaborator error:', error);
       toast({
         title: "Error",
         description: "Failed to remove collaborator",
@@ -126,9 +134,29 @@ export function ListCollaborators({
   });
 
   const handleAddCollaborator = () => {
-    if (!selectedUserId) return;
+    if (!selectedUserId || addCollaboratorMutation.isPending) return;
 
     const userId = parseInt(selectedUserId);
+    if (isNaN(userId)) {
+      toast({
+        title: "Error",
+        description: "Invalid user selection",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if user is already a collaborator
+    const existingCollaborator = collaborators.find(c => c.userId === userId);
+    if (existingCollaborator) {
+      toast({
+        title: "Error",
+        description: "User is already a collaborator",
+        variant: "destructive"
+      });
+      return;
+    }
+
     let selectedUser: any = null;
 
     // Find user in connections or search results
@@ -140,7 +168,14 @@ export function ListCollaborators({
       selectedUser = searchResults.find((u: any) => u.id === userId);
     }
 
-    if (!selectedUser) return;
+    if (!selectedUser) {
+      toast({
+        title: "Error",
+        description: "Selected user not found",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const newCollaborator = {
       userId,
@@ -159,6 +194,10 @@ export function ListCollaborators({
       onCollaboratorsChange?.(updatedCollaborators);
       setSelectedUserId("");
       setSelectedRole("viewer");
+      toast({
+        title: "Success",
+        description: "Collaborator added successfully"
+      });
     }
   };
 
@@ -197,7 +236,7 @@ export function ListCollaborators({
           {/* Add Collaborator Section */}
           <div className="space-y-4">
             {/* Show Connections First */}
-            {userConnections && Array.isArray(userConnections) && userConnections.length > 0 && (
+            {userConnections && Array.isArray(userConnections) && userConnections.length > 0 ? (
               <div className="space-y-2">
                 <Label>Your Connections</Label>
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -215,7 +254,7 @@ export function ListCollaborators({
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            ) : null}
 
             {/* Search for Other Users */}
             <div>
@@ -262,12 +301,13 @@ export function ListCollaborators({
             </div>
 
             <Button 
+              type="button"
               onClick={handleAddCollaborator}
               disabled={!selectedUserId || addCollaboratorMutation.isPending}
               className="w-full"
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Add Collaborator
+              {addCollaboratorMutation.isPending ? "Adding..." : "Add Collaborator"}
             </Button>
           </div>
 
@@ -287,6 +327,7 @@ export function ListCollaborators({
                     </Badge>
                   </div>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => handleRemoveCollaborator(collaborator.userId)}
