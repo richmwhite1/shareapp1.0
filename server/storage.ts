@@ -327,6 +327,22 @@ export class DatabaseStorage implements IStorage {
     return list.privacyLevel || 'public';
   }
 
+  async getListById(listId: number): Promise<List | undefined> {
+    const [list] = await db.select().from(lists).where(eq(lists.id, listId)).limit(1);
+    return list || undefined;
+  }
+
+  async deleteList(listId: number): Promise<void> {
+    // First delete all posts in the list
+    await db.delete(posts).where(eq(posts.listId, listId));
+    
+    // Delete list access records
+    await db.delete(listAccess).where(eq(listAccess.listId, listId));
+    
+    // Finally delete the list itself
+    await db.delete(lists).where(eq(lists.id, listId));
+  }
+
   // Post methods
   async createPost(postData: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[] }): Promise<Post> {
     let listId = postData.listId;
