@@ -4,17 +4,28 @@ import { Stories } from "@/components/Stories";
 import ListInvitationNotifications from "@/components/list-invitation-notifications";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth.tsx";
+import { useLocation } from "wouter";
 import type { PostWithUser } from "@shared/schema";
 
 export default function Home() {
   const { isAuthenticated, user } = useAuth();
+  const [location] = useLocation();
   const [feedType, setFeedType] = useState<'public' | 'friend' | 'shared'>('public');
   const [selectedFriend, setSelectedFriend] = useState<number | null>(null);
   const [currentFriendIndex, setCurrentFriendIndex] = useState(0);
   const [friendsWithPosts, setFriendsWithPosts] = useState<any[]>([]);
   const [viewedStoryUsers, setViewedStoryUsers] = useState<Set<number>>(new Set());
+
+  // Reset to public feed when home page loads
+  useEffect(() => {
+    if (location === '/') {
+      setFeedType('public');
+      setSelectedFriend(null);
+      setCurrentFriendIndex(0);
+    }
+  }, [location]);
 
   // Get friends with recent posts for navigation
   const { data: friendsData = [] } = useQuery<Array<{ user: any; hasRecentPosts: boolean }>>({

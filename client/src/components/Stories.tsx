@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import AuricField from '@/components/auric-field';
+import { useEffect } from 'react';
 
 interface Story {
   user: {
@@ -32,9 +33,10 @@ interface StoriesProps {
   onSelectUser?: (userId: number) => void;
   viewedUsers?: Set<number>;
   onMarkAsViewed?: (userId: number) => void;
+  onAllStoriesViewed?: () => void;
 }
 
-export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed }: StoriesProps) {
+export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed, onAllStoriesViewed }: StoriesProps) {
   const { data: stories = [], isLoading } = useQuery<Story[]>({
     queryKey: ['/api/connection-stories'],
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -69,6 +71,13 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed 
   }, []);
   
   const unviewedStories = uniqueStories.filter(story => !viewedUsers.has(story.user.id));
+
+  // Call callback when all stories are viewed
+  useEffect(() => {
+    if (unviewedStories.length === 0 && stories.length > 0) {
+      onAllStoriesViewed?.();
+    }
+  }, [unviewedStories.length, stories.length, onAllStoriesViewed]);
 
   // Don't render anything if there are no unviewed stories
   if (unviewedStories.length === 0) {
