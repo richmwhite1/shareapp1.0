@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import PostCard from "@/components/post-card";
-import FriendsStoriesBar from "@/components/friends-stories-bar";
+import { Stories } from "@/components/Stories";
 import ListInvitationNotifications from "@/components/list-invitation-notifications";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,13 +96,8 @@ export default function Home() {
 
   return (
     <div className="bg-black">
-      {/* Friends Stories Bar */}
-      <FriendsStoriesBar
-        onSelectFeed={handleSelectFeed}
-        activeFeed={feedType === 'public' ? 'public' : selectedFriend?.toString() || 'public'}
-        currentFriendIndex={currentFriendIndex}
-        onNextFriend={handleNextFriend}
-      />
+      {/* Stories */}
+      {isAuthenticated && <Stories />}
       
       <main className="w-full">
         {/* List Invitation Notifications */}

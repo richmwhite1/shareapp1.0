@@ -1242,6 +1242,100 @@ export class EnterpriseStorage implements IStorage {
     return friendsWithPosts;
   }
 
+  // Stories functionality - get recent posts from connections for story-style viewing
+  async getConnectionStories(userId: number): Promise<Array<{ user: User; posts: PostWithUser[]; hasUnseen: boolean }>> {
+    // Get all connected friends
+    const friendIds = await db
+      .select({ friendId: friendships.friendId })
+      .from(friendships)
+      .where(and(
+        eq(friendships.userId, userId),
+        eq(friendships.status, 'accepted')
+      ));
+
+    if (friendIds.length === 0) {
+      return [];
+    }
+
+    // Get posts from last 3 days
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    
+    const stories = [];
+    
+    for (const friendId of friendIds) {
+      const friend = await this.getUser(friendId.friendId);
+      if (!friend) continue;
+
+      // Get recent posts from this friend
+      const recentPosts = await db
+        .select({
+          post: posts,
+          user: {
+            id: users.id,
+            username: users.username,
+            name: users.name,
+            profilePictureUrl: users.profilePictureUrl
+          },
+          list: {
+            id: lists.id,
+            name: lists.name,
+            privacyLevel: lists.privacyLevel
+          }
+        })
+        .from(posts)
+        .leftJoin(users, eq(posts.userId, users.id))
+        .leftJoin(lists, eq(posts.listId, lists.id))
+        .where(
+          and(
+            eq(posts.userId, friendId.friendId),
+            gte(posts.createdAt, threeDaysAgo)
+          )
+        )
+        .orderBy(desc(posts.createdAt));
+
+      if (recentPosts.length > 0) {
+        // Filter posts based on privacy
+        const visiblePosts = [];
+        for (const row of recentPosts) {
+          const post = row.post;
+          const user = row.user!;
+          const list = row.list;
+
+          const effectivePrivacy = this.getEffectivePrivacy(post.privacy, list?.privacyLevel);
+          
+          // Show public posts and connection posts (since they are connected)
+          if (effectivePrivacy === 'public' || effectivePrivacy === 'connections') {
+            visiblePosts.push({
+              ...post,
+              user,
+              list: list || undefined
+            } as PostWithUser);
+          }
+        }
+
+        if (visiblePosts.length > 0) {
+          // Check if user has seen these posts (simplified - could track view history)
+          const hasUnseen = true; // For now, assume all are unseen
+          
+          stories.push({
+            user: friend,
+            posts: visiblePosts,
+            hasUnseen
+          });
+        }
+      }
+    }
+
+    // Sort by most recent post
+    stories.sort((a, b) => {
+      const aLatest = Math.max(...a.posts.map(p => new Date(p.createdAt).getTime()));
+      const bLatest = Math.max(...b.posts.map(p => new Date(p.createdAt).getTime()));
+      return bLatest - aLatest;
+    });
+
+    return stories;
+  }
+
   async getFriendsOrderedByRecentTags(userId: number): Promise<User[]> {
     const friends = await this.getFriends(userId);
     // For now, return friends in basic order

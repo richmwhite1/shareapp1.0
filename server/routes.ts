@@ -1656,6 +1656,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/connection-stories', authenticateToken, async (req: any, res) => {
+    try {
+      const stories = await storage.getConnectionStories(req.user.userId);
+      res.json(stories);
+    } catch (error) {
+      console.error('Stories error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get task assignments for a post
   app.get('/api/posts/:postId/task-assignments', async (req, res) => {
     try {
