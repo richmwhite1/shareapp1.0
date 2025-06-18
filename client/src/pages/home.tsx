@@ -14,6 +14,7 @@ export default function Home() {
   const [selectedFriend, setSelectedFriend] = useState<number | null>(null);
   const [currentFriendIndex, setCurrentFriendIndex] = useState(0);
   const [friendsWithPosts, setFriendsWithPosts] = useState<any[]>([]);
+  const [viewedStoryUsers, setViewedStoryUsers] = useState<Set<number>>(new Set());
 
   // Get friends with recent posts for navigation
   const { data: friendsData = [] } = useQuery<Array<{ user: any; hasRecentPosts: boolean }>>({
