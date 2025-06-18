@@ -8,9 +8,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { 
-  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createListSchema, 
+  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData, users, posts, lists, comments, postLikes, postShares, friendships, friendRequests, 
+  type AdditionalPhotoData, users, posts, categories, comments, postLikes, postShares, friendships, friendRequests, 
   hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
   reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments
 } from "@shared/schema";
@@ -601,13 +601,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/categories', authenticateToken, async (req: any, res) => {
     try {
-      const { privacyLevel, ...categoryData } = req.body;
-      const validatedData = createCategorySchema.parse(categoryData);
-      
-      const category = await storage.createCategoryWithPrivacy({
-        ...validatedData,
+      const categoryData = createCategorySchema.parse(req.body);
+      const category = await storage.createCategory({
+        ...categoryData,
         userId: req.user.userId,
-        privacyLevel: privacyLevel || 'public'
       });
       res.json(category);
     } catch (error: any) {

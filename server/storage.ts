@@ -1,9 +1,9 @@
 import { 
-  users, posts, comments, lists, postLikes, postShares, friendships, friendRequests, hashtags, 
+  users, posts, comments, categories, postLikes, postShares, friendships, friendRequests, hashtags, 
   postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows, rsvps,
   postViews, savedPosts, reposts, postFlags, taggedPosts,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
-  type PostWithUser, type CommentWithUser, type List, type InsertList, type ListWithPosts,
+  type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
   type Notification, type CreateNotificationData, type Report, type CreateReportData,
   type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp,
@@ -21,18 +21,18 @@ export interface IStorage {
   searchUsers(query: string): Promise<User[]>;
   updateUserPrivacy(userId: number, privacy: string): Promise<void>;
 
-  // List methods
-  createList(list: InsertList & { userId: number }): Promise<List>;
-  getListsByUserId(userId: number): Promise<ListWithPosts[]>;
-  getList(id: number): Promise<List | undefined>;
-  getListWithPosts(id: number): Promise<ListWithPosts | undefined>;
+  // Category methods
+  createCategory(category: InsertCategory & { userId: number }): Promise<Category>;
+  getCategoriesByUserId(userId: number): Promise<CategoryWithPosts[]>;
+  getCategory(id: number): Promise<Category | undefined>;
+  getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
-  getPostsByListId(listId: number): Promise<PostWithUser[]>;
+  getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]>;
   getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]>;
   getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]>;
   getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
@@ -291,8 +291,7 @@ export class DatabaseStorage implements IStorage {
         .where(
           and(
             inArray(categories.userId, friendIds.map(f => f.friendId)),
-            eq(categories.isPublic, false),
-            sql`${categories.description} LIKE '%Privacy: connections%'`
+            eq(categories.privacyLevel, 'connections')
           )
         );
     }
@@ -319,17 +318,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCategoryWithPrivacy(categoryData: InsertCategory & { privacyLevel?: string }): Promise<Category> {
-    // Use the existing isPublic field and description to store privacy level temporarily
-    const privacy = categoryData.privacyLevel || 'public';
-    const description = categoryData.description ? 
-      `${categoryData.description}` : 
-      `Privacy: ${privacy}`;
-
     const [category] = await db.insert(categories).values({
-      name: categoryData.name,
-      userId: categoryData.userId,
-      description: description,
-      isPublic: privacy === 'public'
+      ...categoryData,
+      privacyLevel: categoryData.privacyLevel || 'public',
+      isPublic: (categoryData.privacyLevel || 'public') === 'public'
     }).returning();
 
     return category;
@@ -1108,8 +1100,6 @@ export class DatabaseStorage implements IStorage {
           profilePictureUrl: friend.profilePictureUrl,
           password: '',
           defaultPrivacy: friend.defaultPrivacy || 'public',
-          auraRating: friend.auraRating || '4.00',
-          ratingCount: friend.ratingCount || 0,
           createdAt: friend.createdAt
         },
         hasRecentPosts: !!recentPost
