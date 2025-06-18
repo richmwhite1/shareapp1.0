@@ -45,6 +45,12 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
     enabled: isOwner && currentPrivacy === 'private'
   });
 
+  // Get list information including creator
+  const { data: listInfo } = useQuery({
+    queryKey: ['/api/lists', listId],
+    enabled: isOwner
+  });
+
   // Search users for invitations
   const { data: searchResults } = useQuery({
     queryKey: ['/api/search/users', searchQuery],
@@ -341,22 +347,41 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
                   </Card>
 
                   {/* Current Access */}
-                  {listAccess && Array.isArray(listAccess) && listAccess.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Current Access</CardTitle>
-                        <CardDescription>
-                          People who have access to this list
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {listAccess.map((access: any) => (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Current Access</CardTitle>
+                      <CardDescription>
+                        People who have access to this list
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {/* List Creator - Always shown first */}
+                        {listInfo?.creator && (
+                          <div className="flex items-center justify-between p-3 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <div className="font-medium">@{listInfo.creator.username}</div>
+                                <div className="text-sm text-gray-600 dark:text-gray-400">{listInfo.creator.name}</div>
+                              </div>
+                              <Badge className="bg-blue-600 text-white">
+                                Creator
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-gray-500">Owner</div>
+                          </div>
+                        )}
+                        
+                        {/* Collaborators */}
+                        {listAccess && Array.isArray(listAccess) && listAccess.length > 0 && 
+                          listAccess
+                            .filter((access: any) => access.user && access.user.username)
+                            .map((access: any) => (
                             <div key={access.userId} className="flex items-center justify-between p-3 border rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div>
-                                  <div className="font-medium">@{access.user?.username || access.username || 'unknown'}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">{access.user?.name || access.name || 'Unknown User'}</div>
+                                  <div className="font-medium">@{access.user.username}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">{access.user.name}</div>
                                 </div>
                                 <Badge className={getRoleBadgeColor(access.role)}>
                                   {access.role}
@@ -375,10 +400,9 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
                               </Button>
                             </div>
                           ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {/* Access Requests */}
                   {accessRequests && accessRequests.length > 0 && (

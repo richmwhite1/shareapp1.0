@@ -201,6 +201,30 @@ export class DatabaseStorage implements IStorage {
     return list || undefined;
   }
 
+  async getListWithCreator(id: number): Promise<any> {
+    const result = await db
+      .select({
+        id: lists.id,
+        name: lists.name,
+        description: lists.description,
+        userId: lists.userId,
+        isPublic: lists.isPublic,
+        privacyLevel: lists.privacyLevel,
+        createdAt: lists.createdAt,
+        creator: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(lists)
+      .leftJoin(users, eq(lists.userId, users.id))
+      .where(eq(lists.id, id));
+
+    return result[0] || undefined;
+  }
+
   async getListWithPosts(id: number): Promise<ListWithPosts | undefined> {
     const list = await this.getList(id);
     if (!list) return undefined;

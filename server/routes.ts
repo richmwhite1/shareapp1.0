@@ -619,7 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/lists/:id', async (req, res) => {
     try {
       const listId = parseInt(req.params.id);
-      const list = await storage.getListWithPosts(listId);
+      const list = await storage.getListWithCreator(listId);
       if (!list) {
         return res.status(404).json({ message: 'List not found' });
       }
