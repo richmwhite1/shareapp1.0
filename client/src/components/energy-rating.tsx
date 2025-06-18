@@ -129,37 +129,38 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
           </div>
         </div>
         
-        <div className="relative w-full">
-          {/* Custom gradient background */}
-          <div 
-            className="h-1 rounded-full absolute w-full"
-            style={{ background: sliderGradient }}
-          />
-          {/* Overlay showing current position */}
-          <div 
-            className="h-1 rounded-full absolute transition-all duration-200"
-            style={{ 
-              backgroundColor: RATING_COLORS[currentRating - 1],
-              width: `${((currentRating - 1) / 6) * 100}%`
-            }}
-          />
-          <Slider
-            value={[currentRating]}
-            onValueChange={handleRatingChange}
-            min={1}
-            max={7}
-            step={1}
-            className="absolute top-0 w-full h-1 z-10"
-            style={{ background: 'transparent' }}
-          />
-        </div>
-
-        {/* Rate button - compact */}
-        <div className="flex justify-end">
+        {/* Slider and Rate button side by side */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            {/* Custom gradient background */}
+            <div 
+              className="h-1 rounded-full absolute w-full"
+              style={{ background: sliderGradient }}
+            />
+            {/* Overlay showing current position */}
+            <div 
+              className="h-1 rounded-full absolute transition-all duration-200"
+              style={{ 
+                backgroundColor: RATING_COLORS[currentRating - 1],
+                width: `${((currentRating - 1) / 6) * 100}%`
+              }}
+            />
+            <Slider
+              value={[currentRating]}
+              onValueChange={handleRatingChange}
+              min={1}
+              max={7}
+              step={1}
+              className="absolute top-0 w-full h-1 z-10"
+              style={{ background: 'transparent' }}
+            />
+          </div>
+          
+          {/* Rate button - to the right of slider */}
           <button
             onClick={handleRatingSubmit}
             disabled={ratingMutation.isPending}
-            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white"
+            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white whitespace-nowrap"
           >
             {ratingMutation.isPending ? 'Rating...' : 'Rate'}
           </button>
