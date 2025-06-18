@@ -218,13 +218,13 @@ export default function ConnectionsPage() {
                 <Search className="h-4 w-4" />
                 Find People
               </TabsTrigger>
-              <TabsTrigger value="friends" className="flex items-center gap-2">
+              <TabsTrigger value="connections" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Connections ({friends.length})
+                Connections ({connections.length})
               </TabsTrigger>
               <TabsTrigger value="requests" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
-                Requests ({friendRequests.length})
+                Requests ({connectionRequests.length})
               </TabsTrigger>
             </TabsList>
 
@@ -260,8 +260,8 @@ export default function ConnectionsPage() {
                         </div>
                       ) : (
                         filteredUsers.map((searchUser) => {
-                          const isConnected = friends.some((f: any) => f.id === searchUser.id);
-                          const hasPendingRequest = friendRequests.some(req => req.fromUser.id === searchUser.id);
+                          const isConnected = connections.some((f: any) => f.id === searchUser.id);
+                          const hasPendingRequest = connectionRequests.some((req: any) => req.fromUser.id === searchUser.id);
                           const hasOutgoingRequest = outgoingRequests.some(req => req.toUser.id === searchUser.id);
                           
                           return (
@@ -362,7 +362,7 @@ export default function ConnectionsPage() {
                   <CardTitle>My Connections</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {friends.length === 0 ? (
+                  {connections.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-600 dark:text-gray-400">
                         You haven't connected with anyone yet. Start by searching for people!
@@ -370,37 +370,37 @@ export default function ConnectionsPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {friends.map((friend) => (
+                      {connections.map((connection: any) => (
                         <div
-                          key={friend.id}
+                          key={connection.id}
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
-                            <AuricField profileId={friend.id} intensity={0.2}>
+                            <AuricField profileId={connection.id} intensity={0.2}>
                               <Avatar>
                                 <AvatarImage 
-                                  src={friend.profilePictureUrl || undefined} 
-                                  alt={friend.name}
+                                  src={connection.profilePictureUrl || undefined} 
+                                  alt={connection.name}
                                 />
                                 <AvatarFallback>
-                                  {friend.name.charAt(0).toUpperCase()}
+                                  {connection.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                             </AuricField>
                             <div>
                               <p className="font-medium text-gray-900 dark:text-white">
-                                {friend.name}
+                                {connection.name}
                               </p>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                @{friend.username}
+                                @{connection.username}
                               </p>
                               <p className="text-xs text-blue-600 dark:text-blue-400">
-                                {(friend as any).relationshipStatus === 'connected' ? 'Connected' : 'Following'}
+                                {(connection as any).relationshipStatus === 'connected' ? 'Connected' : 'Following'}
                               </p>
                             </div>
                           </div>
                           <Button
-                            onClick={() => handleUnfollow(friend.id)}
+                            onClick={() => handleUnfollow(connection.id)}
                             disabled={unfollowMutation.isPending}
                             size="sm"
                             variant="outline"
@@ -420,18 +420,18 @@ export default function ConnectionsPage() {
             <TabsContent value="requests" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Friend Requests</CardTitle>
+                  <CardTitle>Connection Requests</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {friendRequests.length === 0 ? (
+                  {connectionRequests.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-gray-600 dark:text-gray-400">
-                        No pending friend requests.
+                        No pending connection requests.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {friendRequests.map((request) => (
+                      {connectionRequests.map((request: any) => (
                         <div
                           key={request.id}
                           className="flex items-center justify-between p-4 border rounded-lg"
