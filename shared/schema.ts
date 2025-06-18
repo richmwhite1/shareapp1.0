@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   profilePictureUrl: text("profile_picture_url"),
   defaultPrivacy: text("default_privacy").notNull().default("public"), // public, connections
-  auraRating: numeric("aura_rating", { precision: 3, scale: 2 }).default("4.00"), // User's average aura rating (1-7 scale)
+  auraRating: text("aura_rating").default("4.00"), // User's average aura rating (1-7 scale)
   ratingCount: integer("rating_count").default(0), // Number of ratings received
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -20,6 +20,7 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   description: text("description"),
   isPublic: boolean("is_public").notNull().default(false),
+  privacyLevel: text("privacy_level").notNull().default("public"), // public, connections, private
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -150,9 +151,10 @@ export const commentHashtags = pgTable("comment_hashtags", {
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept
+  type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept, list_invite, list_access_request
   postId: integer("post_id"),
   fromUserId: integer("from_user_id"),
+  categoryId: integer("category_id"),
   viewed: boolean("viewed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -246,6 +248,30 @@ export const taskAssignments = pgTable("task_assignments", {
   taskId: text("task_id").notNull(),
   userId: integer("user_id").notNull(),
   assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+});
+
+// Category access control for private lists
+export const categoryAccess = pgTable("category_access", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull(), // "collaborator" (edit), "viewer" (read-only)
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected
+  invitedBy: integer("invited_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Access requests for private lists
+export const accessRequests = pgTable("access_requests", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestedRole: text("requested_role").notNull(), // "collaborator" or "viewer"
+  message: text("message"), // optional message from requester
+  status: text("status").notNull().default("pending"), // pending, approved, rejected
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // User schemas
@@ -370,12 +396,32 @@ export const insertCategorySchema = createInsertSchema(categories).pick({
   name: true,
   description: true,
   isPublic: true,
+  privacyLevel: true,
 });
 
 export const createCategorySchema = insertCategorySchema.extend({
   name: z.string().min(1).max(50, "Category name must be between 1 and 50 characters"),
   description: z.string().max(200, "Description must be less than 200 characters").optional(),
   isPublic: z.boolean().optional(),
+  privacyLevel: z.enum(["public", "connections", "private"]).default("public"),
+});
+
+// Category access schemas
+export const createCategoryAccessSchema = z.object({
+  categoryId: z.number(),
+  userId: z.number(),
+  role: z.enum(["collaborator", "viewer"]),
+});
+
+export const respondCategoryAccessSchema = z.object({
+  accessId: z.number(),
+  action: z.enum(["accept", "reject"]),
+});
+
+export const createAccessRequestSchema = z.object({
+  categoryId: z.number(),
+  requestedRole: z.enum(["collaborator", "viewer"]),
+  message: z.string().max(500).optional(),
 });
 
 // Comment schemas
@@ -430,9 +476,10 @@ export const createRsvpSchema = z.object({
 // Notification schemas
 export const createNotificationSchema = z.object({
   userId: z.number(),
-  type: z.enum(["tag", "friend_request", "like", "comment", "share", "friend_accept"]),
+  type: z.enum(["tag", "friend_request", "like", "comment", "share", "friend_accept", "list_invite", "list_access_request"]),
   postId: z.number().optional(),
   fromUserId: z.number().optional(),
+  categoryId: z.number().optional(),
 });
 
 // Types

@@ -1,0 +1,100 @@
+Implementation Plan for Privacy Levels in Replit's “share” App
+Overview
+The goal is to add three privacy levels to lists in the "Share” app:
+* Public: Visible to everyone, including unauthenticated users.
+* Connections: Visible only to a user's connections (e.g., friends or followed users).
+* Private: Visible only to the creator and explicitly added collaborators or viewers, with notifications for access requests.
+Key Features
+1. Privacy Settings: Add a privacy_level attribute to the list model (e.g., "public", "connections", "private").
+2. Access Control: Restrict list visibility based on the privacy level and user relationships.
+3. Collaboration System: Allow adding collaborators (edit access) or viewers (read-only) for private lists, with notifications.
+4. UI Updates: Modify the frontend to reflect privacy settings and access controls.
+Backend Implementation
+Assuming the "Share" app uses a Python-based backend (e.g., Flask or Django), we'll extend the existing list model and add endpoints for managing privacy and collaboration.
+1. Database Model Changes
+    * Add privacy_level to the List model.
+    * Create a ListAccess table to track collaborators and viewers for private lists.
+2. API Endpoints
+    * GET /lists: Filter lists based on privacy and user relationships.
+    * POST /lists/:id/invite: Invite a user as a collaborator or viewer (triggers notification).
+    * POST /lists/:id/accept: Accept an invitation to access a private list.
+3. Notification System
+    * Use an existing notification framework (e.g., Replit’s internal system) to send access requests.
+Frontend Implementation
+Assuming a web-based UI with JavaScript (e.g., React), we'll update the list display and add privacy controls.
+1. List Display Logic
+    * Filter lists based on the authenticated user’s access rights.
+    * Hide private lists from non-authorized users on profile views.
+2. Privacy Settings UI
+    * Add a dropdown for selecting privacy levels when creating/editing a list.
+    * Add an interface for managing collaborators/viewers.
+Sample Code
+Below is a sample implementation for the backend (Python/Flask) and frontend (React). This assumes integration with Replit’s existing authentication and database systems.
+
+python
+CollapseWrapRun
+Copy
+from flask import Flask, request, jsonify
+from flask_login import current_user, login_required
+import db  # Replit's hypothetical database module
+
+app = Flask(__name__)
+
+# List model (simplified)
+class List:
+    def __init__(self, id, title, privacy_level, creator_id):
+        self.id = id
+        self.title = title
+        self.privacy_level = privacy_level  # "public", "connections", "private"
+        self.creator_id = creator_id
+
+# ListAccess model for private list permissions
+class ListAccess:
+    def __init__(self, list_id, user_id, role):
+        self.list_id = list_id
+        self.user_id = user_id
+        self.role = role  # "collaborator" or "viewer"
+
+@app.route('/lists', methods=['GET'])
+@login_required
+def get_lists():
+    all_lists = db.get_lists()  # Fetch all lists from DB
+    visible_lists = []
+
+    for lst in all_lists:
+        if lst.privacy_level == "public":
+            visible_lists.append(lst)
+        elif lst.privacy_level == "connections" and db.is_connection(current_user.id, lst.creator_id):
+            visible_lists.append(lst)
+        elif lst.privacy_level == "private" and (
+            lst.creator_id == current_user.id or
+            db.has_access(current_user.id, lst.id)
+        ):
+            visible_lists.append(lst)
+
+    return jsonify([{"id": lst.id, "title": lst.title, "privacy": lst.privacy_level} for lst in visible_lists])
+
+@app.route('/lists/<int:list_id>/invite', methods=['POST'])
+@login_required
+def invite_to_list(list_id):
+    data = request.json
+    user_id = data['user_id']
+    role = data['role']  # "collaborator" or "viewer"
+    
+    lst = db.get_list(list_id)
+    if lst.creator_id != current_user.id or lst.privacy_level != "private":
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    db.add_list_access(list_id, user_id, role)
+    db.send_notification(user_id, f"You’ve been invited to {role} on {lst.title}")
+    return jsonify({"message": "Invite sent"})
+
+@app.route('/lists/<int:list_id>/accept', methods=['POST'])
+@login_required
+def accept_invite(list_id):
+    access = db.get_pending_access(current_user.id, list_id)
+    if not access:
+        return jsonify({"error": "No pending invite"}), 404
+    
+    db.confirm_access(current_user.id, list_id)
+    return jsonify({"message": "Access granted"})
