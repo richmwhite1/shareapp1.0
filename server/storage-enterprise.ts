@@ -693,6 +693,37 @@ export class EnterpriseStorage implements IStorage {
     return filteredPosts as PostWithUser[];
   }
 
+  // Helper methods for privacy checking
+  async areFriends(userId1: number, userId2: number): Promise<boolean> {
+    const friendship = await db
+      .select()
+      .from(friendships)
+      .where(
+        or(
+          and(eq(friendships.userId, userId1), eq(friendships.friendId, userId2)),
+          and(eq(friendships.userId, userId2), eq(friendships.friendId, userId1))
+        )
+      )
+      .limit(1);
+    
+    return friendship.length > 0 && friendship[0].status === 'accepted';
+  }
+
+  async hasListAccess(userId: number, listId: number): Promise<boolean> {
+    // Check if user is the list owner
+    const [list] = await db.select().from(lists).where(and(eq(lists.id, listId), eq(lists.userId, userId))).limit(1);
+    if (list) return true;
+
+    // Check if user has been granted access to this private list
+    const [access] = await db
+      .select()
+      .from(listAccess)
+      .where(and(eq(listAccess.listId, listId), eq(listAccess.userId, userId), eq(listAccess.status, 'accepted')))
+      .limit(1);
+    
+    return !!access;
+  }
+
   // BULLETPROOF PRIVACY: Only public posts in public lists are searchable
   async getPostsByHashtag(hashtagName: string, viewerId?: number): Promise<PostWithUser[]> {
     const result = await db
