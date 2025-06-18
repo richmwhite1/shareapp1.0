@@ -16,9 +16,10 @@ interface ListPrivacyManagerProps {
   listId: number;
   currentPrivacy: string;
   isOwner: boolean;
+  onClose?: () => void;
 }
 
-export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPrivacyManagerProps) {
+export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }: ListPrivacyManagerProps) {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState<"collaborator" | "viewer">("collaborator");
   const [searchQuery, setSearchQuery] = useState("");
@@ -124,7 +125,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
     onSuccess: () => {
       toast({ title: "List deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
-      onClose();
+      onClose?.();
     },
     onError: (error: any) => {
       toast({ 
@@ -505,7 +506,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                   disabled={deleteListMutation.isPending}
                   className="w-full"
                 >
-                  <Trash className="w-4 h-4 mr-2" />
+                  <Trash2 className="w-4 h-4 mr-2" />
                   {deleteListMutation.isPending ? "Deleting..." : "Delete List"}
                 </Button>
               </CardContent>

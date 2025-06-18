@@ -804,6 +804,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete a list (owner only)
+  app.delete('/api/lists/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const userId = req.user.userId;
+
+      // Verify the user owns this list
+      const list = await storage.getListById(listId);
+      if (!list || list.userId !== userId) {
+        return res.status(403).json({ message: 'You can only delete your own lists' });
+      }
+
+      // Delete the list and all associated posts
+      await storage.deleteList(listId);
+      
+      res.json({ message: 'List deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/lists/access/:accessId/respond', authenticateToken, async (req: any, res) => {
     try {
       const accessId = parseInt(req.params.accessId);
