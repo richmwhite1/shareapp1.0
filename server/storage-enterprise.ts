@@ -587,9 +587,10 @@ export class EnterpriseStorage implements IStorage {
     } as PostWithUser;
   }
 
-  // BULLETPROOF PRIVACY: Only public posts in public lists
+  // BULLETPROOF THREE-TIER PRIVACY SYSTEM
   async getAllPosts(viewerId?: number): Promise<PostWithUser[]> {
-    const result = await db
+    // Get all posts with user and list data
+    const allPosts = await db
       .select({
         post: posts,
         user: {
@@ -607,19 +608,89 @@ export class EnterpriseStorage implements IStorage {
       .from(posts)
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(lists, eq(posts.listId, lists.id))
-      .where(
-        and(
-          eq(posts.privacy, 'public'),
-          eq(lists.privacyLevel, 'public')
-        )
-      )
       .orderBy(desc(posts.createdAt));
 
-    return result.map(r => ({
-      ...r.post,
-      user: r.user!,
-      list: r.list || undefined
-    })) as PostWithUser[];
+    if (!viewerId) {
+      // Anonymous users: only public posts in public lists
+      return allPosts
+        .filter(r => r.post.privacy === 'public' && r.list?.privacyLevel === 'public')
+        .map(r => ({
+          ...r.post,
+          user: r.user!,
+          list: r.list || undefined
+        })) as PostWithUser[];
+    }
+
+    const filteredPosts = [];
+    
+    for (const row of allPosts) {
+      const post = row.post;
+      const user = row.user!;
+      const list = row.list;
+
+      // Users can always see their own posts
+      if (post.userId === viewerId) {
+        filteredPosts.push({
+          ...post,
+          user,
+          list: list || undefined
+        });
+        continue;
+      }
+
+      // Public posts in public lists - visible to everyone
+      if (post.privacy === 'public' && list?.privacyLevel === 'public') {
+        filteredPosts.push({
+          ...post,
+          user,
+          list: list || undefined
+        });
+        continue;
+      }
+
+      // Connections-only posts - check if viewer is connected to author
+      if (post.privacy === 'connections' || list?.privacyLevel === 'connections') {
+        const isConnected = await this.areFriends(viewerId, post.userId);
+        if (isConnected) {
+          filteredPosts.push({
+            ...post,
+            user,
+            list: list || undefined
+          });
+        }
+        continue;
+      }
+
+      // Private posts - check if viewer has list access or is tagged
+      if (post.privacy === 'private' || list?.privacyLevel === 'private') {
+        // Check list access
+        const hasListAccess = await this.hasListAccess(viewerId, post.listId);
+        if (hasListAccess) {
+          filteredPosts.push({
+            ...post,
+            user,
+            list: list || undefined
+          });
+          continue;
+        }
+
+        // Check if tagged in post
+        const taggedUsers = await db
+          .select({ userId: taggedPosts.toUserId })
+          .from(taggedPosts)
+          .where(eq(taggedPosts.postId, post.id));
+        
+        if (taggedUsers.some(tag => tag.userId === viewerId)) {
+          filteredPosts.push({
+            ...post,
+            user,
+            list: list || undefined
+          });
+        }
+      }
+    }
+
+    return filteredPosts as PostWithUser[];
   }
 
   // BULLETPROOF PRIVACY: Only public posts in public lists are searchable
