@@ -340,8 +340,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
             
             {/* Inline aura rating to the right of share */}
-            <div className="w-32">
-              <EnergyRating postId={post.id} className="scale-[3.75] origin-left" />
+            <div className="w-20 flex items-center">
+              <EnergyRating postId={post.id} className="scale-50 w-40 h-12" />
             </div>
           </div>
           
