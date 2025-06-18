@@ -97,6 +97,12 @@ export default function Home() {
     setViewedStoryUsers(prev => new Set([...Array.from(prev), userId]));
   };
 
+  const handleAllStoriesViewed = () => {
+    setFeedType('public');
+    setSelectedFriend(null);
+    setCurrentFriendIndex(0);
+  };
+
   if (error) {
     return (
       <div className="max-w-md mx-auto px-4 py-8">
@@ -122,6 +128,7 @@ export default function Home() {
           onSelectUser={handleStoryClick}
           viewedUsers={viewedStoryUsers}
           onMarkAsViewed={handleMarkStoryViewed}
+          onAllStoriesViewed={handleAllStoriesViewed}
         />
       )}
       

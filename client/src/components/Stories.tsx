@@ -42,26 +42,6 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const handleStoryClick = (story: Story) => {
-    // Mark as viewed and switch to user's feed
-    onMarkAsViewed?.(story.user.id);
-    onSelectUser?.(story.user.id);
-  };
-
-
-
-  if (isLoading) {
-    return (
-      <div className="flex space-x-4 p-4 overflow-x-auto">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex-shrink-0 animate-pulse">
-            <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   // Deduplicate stories by user ID and filter out viewed users
   const uniqueStories = stories.reduce((acc: Story[], story) => {
     if (!acc.find(s => s.user.id === story.user.id)) {
@@ -78,6 +58,28 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
       onAllStoriesViewed?.();
     }
   }, [unviewedStories.length, stories.length, onAllStoriesViewed]);
+
+  const handleStoryClick = (story: Story) => {
+    onSelectUser?.(story.user.id);
+    onMarkAsViewed?.(story.user.id);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-black border-b border-gray-700 p-4">
+        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex-shrink-0">
+              <div className="flex flex-col items-center space-y-1">
+                <div className="w-16 h-16 bg-gray-800 rounded-full animate-pulse" />
+                <div className="w-12 h-3 bg-gray-800 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Don't render anything if there are no unviewed stories
   if (unviewedStories.length === 0) {
@@ -98,19 +100,19 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
               <div className="flex flex-col items-center space-y-1">
                 <div className="p-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
                   <AuricField profileId={story.user.id} intensity={0.3}>
-                    <Avatar className="w-16 h-16 border-2 border-white dark:border-gray-900">
+                    <Avatar className="w-14 h-14 border-2 border-black">
                       <AvatarImage 
-                        src={story.user.profilePictureUrl || undefined} 
+                        src={story.user.profilePictureUrl} 
                         alt={story.user.name}
                       />
-                      <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                      <AvatarFallback className="bg-gray-700 text-white text-sm">
                         {story.user.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   </AuricField>
                 </div>
-                <span className="text-xs text-gray-600 dark:text-gray-400 max-w-[70px] truncate">
-                  {story.user.name}
+                <span className="text-xs text-white text-center w-16 truncate">
+                  {story.user.username}
                 </span>
               </div>
             </div>
