@@ -913,10 +913,9 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(hashtags.name, hashtagNames))
       .groupBy(
         posts.id, posts.userId, posts.listId, posts.primaryPhotoUrl, posts.primaryLink,
-        posts.primaryDescription, posts.discountCode, posts.additionalPhotos, posts.additionalPhotoData,
-        posts.spotifyUrl, posts.youtubeUrl, posts.mediaMetadata, posts.privacy, posts.engagement,
-        posts.isEvent, posts.eventDate, posts.reminders, posts.isRecurring, posts.recurringType,
-        posts.taskList, posts.allowRsvp, posts.createdAt,
+        posts.primaryDescription, posts.discountCode, posts.spotifyUrl, posts.youtubeUrl,
+        posts.privacy, posts.engagement, posts.isEvent, posts.eventDate, posts.isRecurring, 
+        posts.recurringType, posts.allowRsvp, posts.createdAt,
         users.id, users.username, users.name, users.profilePictureUrl,
         lists.id, lists.name, lists.privacyLevel
       )
