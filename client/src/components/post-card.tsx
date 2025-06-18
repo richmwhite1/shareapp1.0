@@ -337,6 +337,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 <span>{stats?.commentCount || 0}</span>
               </Button>
             </Link>
+            
+            {/* Inline compact aura rating */}
+            <div className="w-8">
+              <EnergyRating postId={post.id} className="scale-25 origin-left" />
+            </div>
+            
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
           </div>
           
@@ -371,11 +377,6 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               </Button>
             )}
           </div>
-        </div>
-        
-        {/* Compact Aura Rating below metrics */}
-        <div className="px-4 py-2">
-          <EnergyRating postId={post.id} className="max-w-xs" />
         </div>
       </div>
 
@@ -413,10 +414,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
 
 
-        {/* Energy Rating Component */}
-        <div className="mt-6">
-          <EnergyRating profileId={post.user.id} />
-        </div>
+
       </div>
 
       {/* RSVP Component - Only show for events */}
