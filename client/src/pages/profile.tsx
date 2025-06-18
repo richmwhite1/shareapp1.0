@@ -201,11 +201,11 @@ export default function ProfilePage() {
     },
   });
 
-  const handleDeleteCategory = (categoryId: number, categoryName: string, e: React.MouseEvent) => {
+  const handleDeleteList = (listId: number, listName: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent navigation
     
-    if (confirm(`Are you sure you want to delete the "${categoryName}" category? All posts will be moved to General.`)) {
-      deleteCategoryMutation.mutate(categoryId);
+    if (confirm(`Are you sure you want to delete the "${listName}" list? All posts will be moved to General.`)) {
+      deleteListMutation.mutate(listId);
     }
   };
 
@@ -411,19 +411,19 @@ export default function ProfilePage() {
             </div>
             
             <div className="grid grid-cols-4 gap-3">
-              {(categories || []).slice(0, 8).filter((cat: any) => cat && cat.id && cat.name && cat.name.trim()).map((category: CategoryWithPosts) => {
-                // Get the most recent post image from this category
-                const recentPost = userPosts?.find(post => post.categoryId === category.id);
+              {(lists || []).slice(0, 8).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
+                // Get the most recent post image from this list
+                const recentPost = userPosts?.find(post => post.listId === list.id);
                 const hasImage = recentPost?.primaryPhotoUrl;
                 
                 return (
-                  <Link key={category.id} href={`/category/${category.id}`}>
+                  <Link key={list.id} href={`/list/${list.id}`}>
                     <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors">
                       <div className="w-full aspect-square rounded-xl mx-auto mb-2 overflow-hidden">
                         {hasImage ? (
                           <img 
                             src={recentPost.primaryPhotoUrl} 
-                            alt={category.name}
+                            alt={list.name}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -432,8 +432,8 @@ export default function ProfilePage() {
                           </div>
                         )}
                       </div>
-                      <div className="text-xs text-white font-medium truncate">{category.name}</div>
-                      <div className="text-xs text-gray-400">{category.posts?.length || 0} items</div>
+                      <div className="text-xs text-white font-medium truncate">{list.name}</div>
+                      <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
                     </div>
                   </Link>
                 );

@@ -15,30 +15,30 @@ import type { ListWithPosts, PostWithUser } from "@shared/schema";
 
 export default function CategoryPage() {
   const [match, params] = useRoute('/category/:id');
-  const categoryId = params?.id;
+  const listId = params?.id;
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const { data: category, isLoading: categoryLoading } = useQuery<ListWithPosts>({
-    queryKey: [`/api/categories/${categoryId}`],
+  const { data: list, isLoading: listLoading } = useQuery<ListWithPosts>({
+    queryKey: [`/api/lists/${listId}`],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: !!categoryId,
+    enabled: !!listId,
   });
 
   const { data: posts = [], isLoading: postsLoading } = useQuery<PostWithUser[]>({
-    queryKey: [`/api/posts/category/${categoryId}`],
+    queryKey: [`/api/posts/list/${listId}`],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: !!categoryId,
+    enabled: !!listId,
   });
 
-  const handleShareCategory = async () => {
-    const url = `${window.location.origin}/category/${categoryId}`;
+  const handleShareList = async () => {
+    const url = `${window.location.origin}/list/${listId}`;
     
     try {
       await navigator.clipboard.writeText(url);
       toast({
         title: "Link copied!",
-        description: "Category link copied to clipboard.",
+        description: "List link copied to clipboard.",
       });
     } catch (err) {
       toast({
@@ -50,24 +50,24 @@ export default function CategoryPage() {
   };
 
   if (!match) {
-    return <div>Category not found</div>;
+    return <div>List not found</div>;
   }
 
-  if (categoryLoading || postsLoading) {
+  if (listLoading || postsLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Loading category...</div>
+          <div className="text-center">Loading list...</div>
         </div>
       </div>
     );
   }
 
-  if (!category) {
+  if (!list) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Category not found</div>
+          <div className="text-center">List not found</div>
         </div>
       </div>
     );
