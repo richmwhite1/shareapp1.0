@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connection Privacy Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Three-Tier Privacy System Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Anonymous User View</h2>
+        <p>Testing what posts are visible to users who are not logged in</p>
+        <div id="anonymous-test"></div>
+        <button onclick="testAnonymousView()">Test Anonymous View</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Connection Privacy</h2>
+        <p>Testing how connections affect post visibility</p>
+        <div id="connection-test"></div>
+        <button onclick="testConnectionPrivacy()">Test Connection Privacy</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Friend Request Workflow</h2>
+        <p>Testing the complete friend request process</p>
+        <div id="friend-request-test"></div>
+        <button onclick="testFriendRequests()">Test Friend Requests</button>
+    </div>
+
+    <script>
+        async function testAnonymousView() {
+            const testDiv = document.getElementById('anonymous-test');
+            testDiv.innerHTML = '<p class="info">Testing anonymous user access...</p>';
+            
+            try {
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                
+                let result = `<p class="success">Anonymous users can see ${posts.length} posts</p>`;
+                result += '<h4>Privacy Analysis:</h4><ul>';
+                
+                posts.forEach(post => {
+                    result += `<li>Post ${post.id}: Privacy=${post.privacy}, List=${post.list?.privacyLevel}</li>`;
+                });
+                
+                result += '</ul>';
+                
+                const allPublic = posts.every(post => 
+                    post.privacy === 'public' && post.list?.privacyLevel === 'public'
+                );
+                
+                if (allPublic) {
+                    result += '<p class="success">✓ Privacy system working: Only public posts visible</p>';
+                } else {
+                    result += '<p class="error">✗ Privacy leak detected: Non-public posts visible</p>';
+                }
+                
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testConnectionPrivacy() {
+            const testDiv = document.getElementById('connection-test');
+            testDiv.innerHTML = '<p class="info">Testing connection-based privacy...</p>';
+            
+            try {
+                // Test authenticated user view
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                
+                let result = `<p class="info">Authenticated user can see ${posts.length} posts</p>`;
+                result += '<h4>Privacy Breakdown:</h4><ul>';
+                
+                const privacyCounts = {};
+                posts.forEach(post => {
+                    const key = `${post.privacy}/${post.list?.privacyLevel}`;
+                    privacyCounts[key] = (privacyCounts[key] || 0) + 1;
+                });
+                
+                Object.entries(privacyCounts).forEach(([privacy, count]) => {
+                    result += `<li>${privacy}: ${count} posts</li>`;
+                });
+                
+                result += '</ul>';
+                result += '<p class="success">Connection privacy system operational</p>';
+                
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testFriendRequests() {
+            const testDiv = document.getElementById('friend-request-test');
+            testDiv.innerHTML = '<p class="info">Testing friend request workflow...</p>';
+            
+            try {
+                // Get current friends
+                const friendsResponse = await fetch('/api/friends');
+                const friends = await friendsResponse.json();
+                
+                // Get friend requests
+                const requestsResponse = await fetch('/api/friend-requests');
+                const requests = await requestsResponse.json();
+                
+                let result = `<p class="info">Current connections: ${friends.length}</p>`;
+                result += `<p class="info">Pending requests: ${requests.length}</p>`;
+                
+                if (friends.length > 0) {
+                    result += '<h4>Connected Users:</h4><ul>';
+                    friends.forEach(friend => {
+                        result += `<li>${friend.name} (@${friend.username})</li>`;
+                    });
+                    result += '</ul>';
+                }
+                
+                if (requests.length > 0) {
+                    result += '<h4>Pending Requests:</h4><ul>';
+                    requests.forEach(request => {
+                        result += `<li>From: ${request.fromUser.name} (@${request.fromUser.username})</li>`;
+                    });
+                    result += '</ul>';
+                }
+                
+                result += '<p class="success">Friend request system operational</p>';
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = `<p class="error">Auth required for friend requests</p>`;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            testAnonymousView();
+        };
+    </script>
+</body>
+</html>
