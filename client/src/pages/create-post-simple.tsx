@@ -493,8 +493,8 @@ END:VCALENDAR`;
   };
 
   // Data fetching
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['/api/categories']
+  const { data: lists, isLoading: listsLoading } = useQuery({
+    queryKey: ['/api/lists']
   });
 
   const { data: friends } = useQuery({
@@ -525,7 +525,7 @@ END:VCALENDAR`;
       formDataToSend.append('primaryLink', postData.primaryLink);
       formDataToSend.append('primaryDescription', postData.primaryDescription);
       formDataToSend.append('discountCode', postData.discountCode);
-      formDataToSend.append('categoryId', postData.categoryId);
+      formDataToSend.append('listId', postData.listId);
       formDataToSend.append('spotifyUrl', postData.spotifyUrl);
       formDataToSend.append('youtubeUrl', postData.youtubeUrl);
       formDataToSend.append('privacy', postData.privacy);
@@ -616,10 +616,10 @@ END:VCALENDAR`;
       return;
     }
 
-    if (!formData.categoryId) {
+    if (!formData.listId) {
       toast({
         title: "Error", 
-        description: "Please select a category",
+        description: "Please select a list",
         variant: "destructive"
       });
       return;
@@ -894,22 +894,22 @@ END:VCALENDAR`;
                     <Label htmlFor="category" className="text-sm">List</Label>
                     <div className="flex gap-2">
                       <Select
-                        value={formData.categoryId}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
+                        value={formData.listId}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, listId: value }))}
                       >
                         <SelectTrigger className="w-40 h-8 text-sm bg-input border-border">
                           <SelectValue placeholder="Select list" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
-                          {Array.isArray(categories) && categories.map((category: any) => (
-                            <SelectItem key={category.id} value={category.id.toString()}>
-                              {category.name}
+                          {Array.isArray(lists) && lists.map((list: any) => (
+                            <SelectItem key={list.id} value={list.id.toString()}>
+                              {list.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       
-                      <Dialog open={showNewCategoryDialog} onOpenChange={setShowNewCategoryDialog}>
+                      <Dialog open={showNewListDialog} onOpenChange={setShowNewListDialog}>
                         <DialogTrigger asChild>
                           <Button
                             type="button"
@@ -926,22 +926,22 @@ END:VCALENDAR`;
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label htmlFor="categoryName">List Name *</Label>
+                              <Label htmlFor="listName">List Name *</Label>
                               <Input
-                                id="categoryName"
+                                id="listName"
                                 placeholder="e.g., Christmas, Travel, Recipes"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                value={newListName}
+                                onChange={(e) => setNewListName(e.target.value)}
                                 className="bg-input border-border"
                               />
                             </div>
                             <div>
-                              <Label htmlFor="categoryDescription">Description (Optional)</Label>
+                              <Label htmlFor="listDescription">Description (Optional)</Label>
                               <Textarea
-                                id="categoryDescription"
+                                id="listDescription"
                                 placeholder="Describe this list..."
-                                value={newCategoryDescription}
-                                onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                value={newListDescription}
+                                onChange={(e) => setNewListDescription(e.target.value)}
                                 className="bg-input border-border"
                                 rows={3}
                               />
@@ -950,15 +950,15 @@ END:VCALENDAR`;
                               <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => setShowNewCategoryDialog(false)}
+                                onClick={() => setShowNewListDialog(false)}
                                 className="border-border"
                               >
                                 Cancel
                               </Button>
                               <Button
                                 type="button"
-                                onClick={handleCreateCategory}
-                                disabled={!newCategoryName.trim() || mutation.isPending}
+                                onClick={handleCreateList}
+                                disabled={!newListName.trim() || mutation.isPending}
                                 className="bg-pinterest-red hover:bg-red-700 text-white"
                               >
                                 {mutation.isPending ? 'Creating...' : 'Create List'}
