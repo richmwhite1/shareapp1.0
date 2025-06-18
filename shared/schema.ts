@@ -154,7 +154,6 @@ export const notifications = pgTable("notifications", {
   type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept, list_invite, list_access_request, list_invitation, access_request, access_response
   postId: integer("post_id"),
   fromUserId: integer("from_user_id"),
-  categoryId: integer("category_id"),
   viewed: boolean("viewed").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

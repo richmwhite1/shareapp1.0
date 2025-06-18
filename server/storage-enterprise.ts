@@ -1525,8 +1525,7 @@ export class EnterpriseStorage implements IStorage {
         userId: notification.userId,
         type: notification.type,
         postId: notification.postId || null,
-        fromUserId: notification.fromUserId || null,
-        categoryId: notification.categoryId || null
+        fromUserId: notification.fromUserId || null
       })
       .returning();
     return notif;
