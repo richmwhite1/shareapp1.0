@@ -287,43 +287,55 @@ export default function ProfilePage() {
     }
   };
 
-  // Drag and drop handlers
+  // Drag and drop handlers with proper reordering
   const handleDragStart = (e: React.DragEvent, listId: number) => {
     setDraggedList(listId);
+    e.dataTransfer.effectAllowed = 'move';
     startAutoExitTimer(); // Reset timer on interaction
   };
 
-  const handleDragOver = (e: React.DragEvent, listId: number) => {
+  const handleDragOver = (e: React.DragEvent, targetListId: number) => {
     e.preventDefault();
-    setDraggedOverList(listId);
-  };
-
-  const handleDragLeave = () => {
-    setDraggedOverList(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetListId: number) => {
-    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     
-    if (!draggedList || draggedList === targetListId) {
-      setDraggedList(null);
-      setDraggedOverList(null);
+    if (!draggedList || draggedList === targetListId || draggedOverList === targetListId) {
       return;
     }
 
+    // Real-time reordering while dragging
     const newSortedLists = [...sortedLists];
     const draggedIndex = newSortedLists.findIndex(list => list.id === draggedList);
     const targetIndex = newSortedLists.findIndex(list => list.id === targetListId);
 
-    if (draggedIndex !== -1 && targetIndex !== -1) {
+    if (draggedIndex !== -1 && targetIndex !== -1 && draggedIndex !== targetIndex) {
       const [draggedItem] = newSortedLists.splice(draggedIndex, 1);
       newSortedLists.splice(targetIndex, 0, draggedItem);
       setSortedLists(newSortedLists);
+      setDraggedOverList(targetListId);
     }
+  };
 
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if actually leaving the drop zone
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDraggedOverList(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetListId: number) => {
+    e.preventDefault();
     setDraggedList(null);
     setDraggedOverList(null);
     startAutoExitTimer(); // Reset timer after reorder
+  };
+
+  const handleDragEnd = () => {
+    setDraggedList(null);
+    setDraggedOverList(null);
   };
 
   // Get aura color based on rating
@@ -526,7 +538,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-3" style={{ minHeight: '200px' }}>
               {(sortedLists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
                 // Get the most recent post image from this list
                 const recentPost = userPosts?.find(post => post.listId === list.id);
@@ -536,12 +548,22 @@ export default function ProfilePage() {
                   // Management mode - floating with delete button and drag/drop
                   <div 
                     key={list.id}
-                    className={`relative animate-wiggle ${draggedOverList === list.id ? 'scale-110 opacity-75' : ''} transition-all duration-200`}
+                    className={`relative animate-wiggle ${draggedOverList === list.id ? 'scale-105 ring-2 ring-blue-400' : ''} ${
+                      draggedList === list.id ? 'opacity-50 scale-95' : ''
+                    } transition-all duration-200`}
                     draggable={isManagingLists}
                     onDragStart={(e) => handleDragStart(e, list.id)}
-                    onDragOver={(e) => handleDragOver(e, list.id)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      handleDragOver(e, list.id);
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      setDraggedOverList(list.id);
+                    }}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, list.id)}
+                    onDragEnd={handleDragEnd}
                   >
                     <div className={`bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-all relative transform hover:scale-105 shadow-lg ${
                       draggedList === list.id ? 'opacity-50 scale-95' : ''
