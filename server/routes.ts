@@ -1792,6 +1792,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/trending-hashtags', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const trendingHashtags = await storage.getTrendingHashtags(limit);
+      res.json(trendingHashtags);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/hashtags/:name/posts', async (req, res) => {
     try {
       const hashtagName = req.params.name;
