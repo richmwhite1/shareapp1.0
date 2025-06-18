@@ -32,7 +32,7 @@ export default function Header() {
           {/* Love Logo - Acts as Home Button */}
           <Link href="/">
             <h1 className="text-2xl font-bold cursor-pointer" style={{color: '#ba9971'}}>
-              Love
+              Share
             </h1>
           </Link>
 

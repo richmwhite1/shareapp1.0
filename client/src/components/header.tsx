@@ -47,7 +47,7 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <Link href="/">
               <h1 className="text-2xl font-bold text-yellow-400 cursor-pointer">
-                Love
+                Share
               </h1>
             </Link>
             
