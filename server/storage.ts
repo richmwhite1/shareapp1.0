@@ -526,16 +526,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async filterPostsByPrivacy(allPosts: PostWithUser[], viewerId?: number): Promise<PostWithUser[]> {
-    console.log('Privacy filter - viewerId:', viewerId, 'posts count:', allPosts.length);
-    console.log('First post data:', JSON.stringify(allPosts[0], null, 2));
     if (!viewerId) {
       // Anonymous users can only see posts in public lists or posts without lists
-      const filtered = allPosts.filter(post => {
-        console.log('Checking post:', post.id, 'list:', post.list);
-        return !post.list || (post.list && post.list.privacyLevel === 'public');
-      });
-      console.log('Anonymous user - filtered to:', filtered.length);
-      return filtered;
+      return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
     }
 
     const filteredPosts = [];
@@ -871,7 +864,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string, viewerId?: number): Promise<PostWithUser[]> {
-    console.log('Searching for hashtags:', hashtagNames);
     if (hashtagNames.length === 0) {
       return [];
     }
@@ -884,7 +876,6 @@ export class DatabaseStorage implements IStorage {
       .where(inArray(hashtags.name, hashtagNames))
       .groupBy(postHashtags.postId);
 
-    console.log('Found post IDs:', postIds);
     if (postIds.length === 0) {
       return [];
     }
@@ -916,11 +907,8 @@ export class DatabaseStorage implements IStorage {
       list: r.list || undefined
     })) as PostWithUser[];
 
-    console.log('Posts before privacy filtering:', allPosts.length);
-    
     // Apply privacy filtering
     const filteredPosts = await this.filterPostsByPrivacy(allPosts, viewerId);
-    console.log('Posts after privacy filtering:', filteredPosts.length);
     return filteredPosts;
   }
 
