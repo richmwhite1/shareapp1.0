@@ -1,0 +1,135 @@
+Non-connections can see everything except posts marked as "Connections only" or "Private."
+Private lists, once accepted via a notification (similar to a follow request), should appear in both the creator’s and the invited user’s profile views, but not be visible to visitors viewing a friend’s profile unless they have access.
+Invitations are only needed for private lists, not other actions.
+The system already uses "lists" everywhere, so I’ll review and build on that assumption.
+Below is a prompt for Replit that updates the backend API to enforce these privacy rules and handle the invitation process for private lists.
+
+python
+
+Collapse
+
+Wrap
+
+Run
+
+Copy
+from flask import Flask, request, jsonify
+from flask_login import current_user, login_required
+import db  # Assuming a database module for PostgreSQL
+
+app = Flask(__name__)
+
+# Helper function to check if two users are mutual connections
+def is_connection(user_id1, user_id2):
+    # Placeholder logic: check if user_id1 and user_id2 are mutual connections
+    # This would typically query a `connections` table
+    return db.check_connection(user_id1, user_id2)
+
+# Fetch lists with privacy enforcement
+@app.route('/lists', methods=['GET'])
+@login_required
+def get_lists():
+    all_lists = db.get_lists()  # Fetch all lists from the database
+    visible_lists = []
+
+    for lst in all_lists:
+        if lst.privacy_level == "public":
+            visible_lists.append(lst)
+        elif lst.privacy_level == "connections" and is_connection(current_user.id, lst.creator_id):
+            visible_lists.append(lst)
+        elif lst.privacy_level == "private":
+            # Check if the current user is the creator or has accepted access
+            access = db.get_list_access(current_user.id, lst.id)
+            if lst.creator_id == current_user.id or (access and access.status == "accepted"):
+                visible_lists.append(lst)
+
+    return jsonify([{"id": lst.id, "title": lst.title, "privacy": lst.privacy_level} for lst in visible_lists])
+
+# Fetch a user's profile lists (for visitors or self)
+@app.route('/profile/<int:user_id>/lists', methods=['GET'])
+@login_required
+def get_profile_lists(user_id):
+    profile_lists = db.get_lists_by_user(user_id)  # Fetch lists created by the user
+    visible_lists = []
+
+    for lst in profile_lists:
+        if lst.privacy_level == "public":
+            visible_lists.append(lst)
+        elif lst.privacy_level == "connections" and is_connection(current_user.id, user_id):
+            visible_lists.append(lst)
+        elif lst.privacy_level == "private":
+            # Only show private lists if the current user is the profile owner or has access
+            access = db.get_list_access(current_user.id, lst.id)
+            if current_user.id == user_id or (access and access.status == "accepted"):
+                visible_lists.append(lst)
+
+    return jsonify([{"id": lst.id, "title": lst.title, "privacy": lst.privacy_level} for lst in visible_lists])
+
+# Invite a user to a private list
+@app.route('/lists/<int:list_id>/invite', methods=['POST'])
+@login_required
+def invite_to_list(list_id):
+    data = request.json
+    invited_user_id = data['user_id']
+    role = data['role']  # "collaborator" or "viewer"
+
+    lst = db.get_list(list_id)
+    if not lst or lst.creator_id != current_user.id or lst.privacy_level != "private":
+        return jsonify({"error": "Unauthorized or not a private list"}), 403
+
+    # Add pending access and send notification
+    db.add_list_access(list_id, invited_user_id, role, status="pending")
+    db.send_notification(invited_user_id, "list_invite", f"You’ve been invited to {lst.title} as a {role}", list_id)
+    return jsonify({"message": "Invite sent successfully"})
+
+# Accept an invitation to a private list
+@app.route('/lists/<int:list_id>/accept', methods=['POST'])
+@login_required
+def accept_invite(list_id):
+    access = db.get_pending_access(current_user.id, list_id)
+    if not access:
+        return jsonify({"error": "No pending invite found"}), 404
+
+    db.update_list_access_status(current_user.id, list_id, "accepted")
+    return jsonify({"message": "Invite accepted, list added to your profile"})
+
+# Reject an invitation to a private list
+@app.route('/lists/<int:list_id>/reject', methods=['POST'])
+@login_required
+def reject_invite(list_id):
+    access = db.get_pending_access(current_user.id, list_id)
+    if not access:
+        return jsonify({"error": "No pending invite found"}), 404
+
+    db.update_list_access_status(current_user.id, list_id, "rejected")
+    return jsonify({"message": "Invite rejected"})
+
+# Fetch posts with privacy enforcement
+@app.route('/posts', methods=['GET'])
+@login_required
+def get_posts():
+    all_posts = db.get_posts()  # Fetch all posts
+    visible_posts = []
+
+    for post in all_posts:
+        if post.privacy_level == "public":
+            visible_posts.append(post)
+        elif post.privacy_level == "connections" and is_connection(current_user.id, post.creator_id):
+            visible_posts.append(post)
+        elif post.privacy_level == "private":
+            # Assuming private posts are tied to lists or specific users
+            access = db.get_post_access(current_user.id, post.id)  # Custom access check
+            if post.creator_id == current_user.id or access:
+                visible_posts.append(post)
+
+    return jsonify([{"id": post.id, "content": post.content, "privacy": post.privacy_level} for post in visible_posts])
+Show in sidebar
+Explanation of the Prompt
+Database Assumptions: The schema includes lists (with privacy_level), list_access (for private list permissions), and notifications (for invites). These align with your requirements and the thinking trace.
+Privacy Enforcement:
+Public lists and posts are visible to everyone.
+Connections-only lists and posts are visible only to mutual connections.
+Private lists are visible only to the creator and users who have accepted an invite.
+Non-connections can see everything except connections-only or private posts.
+Profile Lists: The /profile/<user_id>/lists endpoint ensures visitors don’t see private lists unless they’re the profile owner or have access.
+Invitation Process: Invites for private lists trigger notifications, and accepting them makes the list visible in both the creator’s and invited user’s profile views.

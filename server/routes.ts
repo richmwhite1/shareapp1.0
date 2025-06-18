@@ -629,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get categories by user ID (public categories only for unauthenticated users)
+  // Get profile lists with enhanced privacy enforcement
   app.get('/api/lists/user/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -639,26 +639,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const lists = await storage.getListsByUserId(userId);
       
-      // Filter only public lists for unauthenticated requests
+      // Check authorization
       const token = req.headers['authorization']?.split(' ')[1];
       if (!token) {
-        const publicLists = lists.filter(list => list.isPublic);
+        // Non-authenticated users can only see public lists
+        const publicLists = lists.filter(list => list.privacyLevel === 'public');
         return res.json(publicLists);
       }
 
-      // For authenticated users viewing their own profile, return all lists
       try {
         const decoded = jwt.verify(token, JWT_SECRET) as any;
-        if (decoded.userId === userId) {
+        const viewerId = decoded.userId;
+        
+        if (viewerId === userId) {
+          // User viewing their own profile - show all lists
           return res.json(lists);
         } else {
-          // Authenticated user viewing another's profile - show only public lists
-          const publicLists = lists.filter(list => list.isPublic);
-          return res.json(publicLists);
+          // Authenticated user viewing another's profile
+          const visibleLists = [];
+          
+          for (const list of lists) {
+            if (list.privacyLevel === 'public') {
+              // Public lists visible to everyone
+              visibleLists.push(list);
+            } else if (list.privacyLevel === 'connections') {
+              // Connections-only lists visible only to mutual connections
+              const areConnected = await storage.areFriends(viewerId, userId);
+              if (areConnected) {
+                visibleLists.push(list);
+              }
+            } else if (list.privacyLevel === 'private') {
+              // Private lists visible only if user has accepted access
+              const access = await storage.hasListAccess(viewerId, list.id);
+              if (access && access.hasAccess) {
+                visibleLists.push(list);
+              }
+            }
+          }
+          
+          return res.json(visibleLists);
         }
       } catch {
         // Invalid token - show only public lists
-        const publicLists = lists.filter(list => list.isPublic);
+        const publicLists = lists.filter(list => list.privacyLevel === 'public');
         return res.json(publicLists);
       }
     } catch (error) {
@@ -698,19 +721,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'User ID and valid role required' });
       }
 
-      // Check if user owns the list
+      // Check if the list exists and is private
       const list = await storage.getList(listId);
-      if (!list || list.userId !== req.user.userId) {
-        return res.status(403).json({ message: 'Unauthorized' });
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
       }
 
-      // Only allow invites for private lists
+      if (list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Only list owners can send invitations' });
+      }
+
       if (list.privacyLevel !== 'private') {
-        return res.status(400).json({ message: 'Invitations are only available for private lists' });
+        return res.status(400).json({ message: 'Invitations are only for private lists' });
       }
 
+      // Send invitation and create notification
       await storage.inviteToList(listId, userId, role, req.user.userId);
+      
       res.json({ message: 'Invitation sent successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Accept invitation to private list
+  app.post('/api/lists/:id/accept', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      
+      // Find pending invitation for this user and list
+      const userAccess = await storage.getUserListAccess(req.user.userId);
+      const pendingAccess = userAccess.find(access => 
+        access.listId === listId && access.status === 'pending'
+      );
+      
+      if (!pendingAccess) {
+        return res.status(404).json({ message: 'No pending invitation found' });
+      }
+
+      // Accept the invitation
+      await storage.respondToListInvite(pendingAccess.listId, 'accept');
+      
+      res.json({ message: 'Invitation accepted, list added to your profile' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Reject invitation to private list
+  app.post('/api/lists/:id/reject', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      
+      // Find pending invitation for this user and list
+      const userAccess = await storage.getUserListAccess(req.user.userId);
+      const pendingAccess = userAccess.find(access => 
+        access.listId === listId && access.status === 'pending'
+      );
+      
+      if (!pendingAccess) {
+        return res.status(404).json({ message: 'No pending invitation found' });
+      }
+
+      // Reject the invitation
+      await storage.respondToListInvite(pendingAccess.listId, 'reject');
+      
+      res.json({ message: 'Invitation rejected' });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
