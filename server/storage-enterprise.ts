@@ -789,14 +789,14 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async getFriendsPosts(userId: number): Promise<PostWithUser[]> {
-    const friendships = await db
+    const userFriendships = await db
       .select({ friendId: friendships.friendId })
       .from(friendships)
       .where(eq(friendships.userId, userId));
 
-    if (friendships.length === 0) return [];
+    if (userFriendships.length === 0) return [];
 
-    const friendIds = friendships.map(f => f.friendId);
+    const friendIds = userFriendships.map(f => f.friendId);
 
     const result = await db
       .select({
