@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
 import EnergyRating from "@/components/energy-rating";
 import AuricField from "@/components/auric-field";
-import type { User, PostWithUser, CategoryWithPosts } from "@shared/schema";
+import type { User, PostWithUser, ListWithPosts } from "@shared/schema";
 
 interface UserResponse {
   id: number;
@@ -45,8 +45,8 @@ export default function ProfilePage() {
 
   const displayUser = isOwnProfile ? user : profileUser;
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery<CategoryWithPosts[]>({
-    queryKey: [`/api/categories/user/${profileUserId}`],
+  const { data: lists = [], isLoading: listsLoading } = useQuery<ListWithPosts[]>({
+    queryKey: [`/api/lists/user/${profileUserId}`],
     queryFn: getQueryFn({ on401: "returnNull" }),
     enabled: !!profileUserId,
   });
@@ -186,17 +186,17 @@ export default function ProfilePage() {
     },
   });
 
-  // Delete category mutation
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (categoryId: number) => {
-      return apiRequest('DELETE', `/api/categories/${categoryId}`);
+  // Delete list mutation
+  const deleteListMutation = useMutation({
+    mutationFn: async (listId: number) => {
+      return apiRequest('DELETE', `/api/lists/${listId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
       queryClient.invalidateQueries({ queryKey: ['/api/posts/user'] });
       toast({
-        title: "Category deleted",
-        description: "Category has been deleted and posts moved to General.",
+        title: "List deleted",
+        description: "List has been deleted and posts moved to General.",
       });
     },
   });
@@ -255,7 +255,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (categoriesLoading || postsLoading) {
+  if (listsLoading || postsLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -381,7 +381,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-400">Posts</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-white">{categories?.length || 0}</div>
+              <div className="text-xl font-bold text-white">{lists?.length || 0}</div>
               <div className="text-sm text-gray-400">Lists</div>
             </div>
             <div>
@@ -407,7 +407,7 @@ export default function ProfilePage() {
           <div className="px-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-white">Lists</h2>
-              <span className="text-sm text-gray-400">{categories?.length || 0} lists</span>
+              <span className="text-sm text-gray-400">{lists?.length || 0} lists</span>
             </div>
             
             <div className="grid grid-cols-4 gap-3">
