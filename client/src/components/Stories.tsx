@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { AuricField } from '@/components/auric-field';
+import AuricField from '@/components/auric-field';
 
 interface Story {
   user: {
@@ -36,7 +36,7 @@ export function Stories() {
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
 
-  const { data: stories = [], isLoading } = useQuery({
+  const { data: stories = [], isLoading } = useQuery<Story[]>({
     queryKey: ['/api/connection-stories'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
