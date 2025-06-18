@@ -51,6 +51,12 @@ export default function CreatePostPage() {
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
   const [newListPrivacy, setNewListPrivacy] = useState("public");
+  const [newListCollaborators, setNewListCollaborators] = useState<Array<{
+    userId: number;
+    username: string;
+    name: string;
+    role: "collaborator" | "viewer";
+  }>>([]);
 
   // Photo state
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);

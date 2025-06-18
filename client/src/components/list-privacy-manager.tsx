@@ -236,7 +236,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                     <CardContent>
                       <div className="space-y-4">
                         {/* Show Connections First */}
-                        {userConnections && userConnections.length > 0 && (
+                        {userConnections && Array.isArray(userConnections) && userConnections.length > 0 && (
                           <div className="space-y-2">
                             <Label>Your Connections</Label>
                             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -244,9 +244,9 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                                 <SelectValue placeholder="Select a connection to invite" />
                               </SelectTrigger>
                               <SelectContent>
-                                {userConnections.map((connection: any) => (
+                                {userConnections.filter(c => c && c.id).map((connection: any) => (
                                   <SelectItem key={connection.id} value={connection.id.toString()}>
-                                    @{connection.username} ({connection.name})
+                                    @{connection.username || 'unknown'} ({connection.name || 'Unknown User'})
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -265,7 +265,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                           />
                         </div>
 
-                        {searchResults && searchResults.length > 0 && (
+                        {searchResults && Array.isArray(searchResults) && searchResults.length > 0 && (
                           <div className="space-y-2">
                             <Label>Search Results</Label>
                             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -275,7 +275,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                               <SelectContent>
                                 {searchResults.map((user: any) => (
                                   <SelectItem key={user.id} value={user.id.toString()}>
-                                    @{user.username} ({user.name})
+                                    @{user.username || 'unknown'} ({user.name || 'Unknown User'})
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -319,7 +319,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                   </Card>
 
                   {/* Current Access */}
-                  {listAccess && listAccess.length > 0 && (
+                  {listAccess && Array.isArray(listAccess) && listAccess.length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle>Current Access</CardTitle>
@@ -333,8 +333,8 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                             <div key={access.userId} className="flex items-center justify-between p-3 border rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div>
-                                  <div className="font-medium">@{access.user.username}</div>
-                                  <div className="text-sm text-gray-600 dark:text-gray-400">{access.user.name}</div>
+                                  <div className="font-medium">@{access.user?.username || access.username || 'unknown'}</div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-400">{access.user?.name || access.name || 'Unknown User'}</div>
                                 </div>
                                 <Badge className={getRoleBadgeColor(access.role)}>
                                   {access.role}
