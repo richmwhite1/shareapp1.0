@@ -22,6 +22,7 @@ import ProfileIconWithAura from "@/components/profile-icon-with-aura";
 import FeedLikeButton from "@/components/feed-like-button";
 import FeedShareButton from "@/components/feed-share-button";
 import EventTaskList from "@/components/event-task-list";
+import TagFriendsContent from "@/components/tag-friends-content";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -37,6 +38,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const [reportDescription, setReportDescription] = useState("");
   const [showTagDialog, setShowTagDialog] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
 
   // Delete post mutation
   const deleteMutation = useMutation({
@@ -131,12 +133,41 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     setShowSaveDialog(true);
   };
 
-  const handleFlag = () => {
-    // Implement flag functionality
-    toast({
-      title: "Flag",
-      description: "Flag functionality coming soon",
-    });
+  const handleFlag = async () => {
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please log in to flag posts",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/flag`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ reason: 'inappropriate_content' }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Post flagged",
+          description: "Thank you for reporting. We'll review this content.",
+        });
+      } else {
+        throw new Error('Failed to flag post');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to flag post. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Get post stats
@@ -390,37 +421,27 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* Tag Friends Dialog */}
       <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
-        <DialogContent className="bg-gray-900 border-gray-700">
+        <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">Tag Friends</DialogTitle>
+            <DialogTitle className="text-white">Tag Friends in Post</DialogTitle>
           </DialogHeader>
-          <div className="p-4">
-            <p className="text-gray-300">Tag friends functionality will be implemented soon.</p>
-            <Button
-              onClick={() => setShowTagDialog(false)}
-              className="mt-4 bg-purple-600 hover:bg-purple-700"
-            >
-              Close
-            </Button>
-          </div>
+          <TagFriendsContent
+            postId={post.id}
+            onClose={() => setShowTagDialog(false)}
+          />
         </DialogContent>
       </Dialog>
 
       {/* Save to Category Dialog */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="bg-gray-900 border-gray-700">
+        <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white">Save Post</DialogTitle>
           </DialogHeader>
-          <div className="p-4">
-            <p className="text-gray-300">Save to category functionality will be implemented soon.</p>
-            <Button
-              onClick={() => setShowSaveDialog(false)}
-              className="mt-4 bg-purple-600 hover:bg-purple-700"
-            >
-              Close
-            </Button>
-          </div>
+          <SavePostContent
+            postId={post.id}
+            onClose={() => setShowSaveDialog(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>
