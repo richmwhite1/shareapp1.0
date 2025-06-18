@@ -964,11 +964,11 @@ END:VCALENDAR`;
                             <FolderPlus className="h-3 w-3" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-card border-border">
+                        <DialogContent className="bg-card border-border max-h-[80vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="text-foreground">Create New List</DialogTitle>
                           </DialogHeader>
-                          <div className="space-y-4">
+                          <div className="space-y-4 pr-2">
                             <div>
                               <Label htmlFor="listName">List Name *</Label>
                               <Input
