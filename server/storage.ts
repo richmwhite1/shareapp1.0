@@ -774,6 +774,25 @@ export class DatabaseStorage implements IStorage {
       .where(eq(lists.id, listId));
   }
 
+  async deleteList(listId: number): Promise<void> {
+    // First, move all posts in this list to the General list
+    const [generalList] = await db
+      .select()
+      .from(lists)
+      .where(eq(lists.name, "General"))
+      .limit(1);
+
+    if (generalList) {
+      await db
+        .update(posts)
+        .set({ listId: generalList.id })
+        .where(eq(posts.listId, listId));
+    }
+
+    // Delete the list
+    await db.delete(lists).where(eq(lists.id, listId));
+  }
+
   async inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void> {
     // Check if invitation already exists
     const existing = await db

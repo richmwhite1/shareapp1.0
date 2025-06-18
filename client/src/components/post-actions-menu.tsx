@@ -42,7 +42,7 @@ interface User {
   profilePictureUrl: string | null;
 }
 
-interface Category {
+interface List {
   id: number;
   name: string;
 }
@@ -53,7 +53,7 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
   const [flagDialogOpen, setFlagDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFriends, setSelectedFriends] = useState<number[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedList, setSelectedList] = useState<number | null>(null);
   const [flagReason, setFlagReason] = useState('');
   const [selectedFlagReason, setSelectedFlagReason] = useState('');
   const [customFlagReason, setCustomFlagReason] = useState('');
@@ -70,9 +70,9 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
     enabled: tagDialogOpen,
   });
 
-  // Fetch categories for saving
-  const { data: categories = [] } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
+  // Fetch lists for saving
+  const { data: lists = [] } = useQuery<List[]>({
+    queryKey: ['/api/lists'],
     enabled: saveDialogOpen,
   });
 
@@ -124,14 +124,14 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
 
   // Save post mutation
   const savePostMutation = useMutation({
-    mutationFn: async (categoryId: number) => {
+    mutationFn: async (listId: number) => {
       const response = await fetch(`/api/posts/${postId}/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ categoryId }),
+        body: JSON.stringify({ listId }),
       });
       if (!response.ok) throw new Error('Failed to save post');
       return response.json();
@@ -139,7 +139,7 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
     onSuccess: () => {
       toast({ title: 'Post saved to list!' });
       setSaveDialogOpen(false);
-      setSelectedCategory(null);
+      setSelectedList(null);
     },
     onError: () => {
       toast({ title: 'Failed to save post', variant: 'destructive' });
