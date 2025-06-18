@@ -89,20 +89,23 @@ export default function ConnectionsPage() {
   // Send follow request mutation
   const sendRequestMutation = useMutation({
     mutationFn: async (toUserId: number) => {
-      return apiRequest('POST', '/api/friend-request', { friendId: toUserId });
+      return apiRequest('POST', '/api/friends/send-request', { friendId: toUserId });
     },
     onSuccess: () => {
       toast({
-        title: "Now following",
-        description: "You are now following this user.",
+        title: "Connection request sent",
+        description: "Your connection request has been sent successfully.",
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/outgoing-friend-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: (error: any) => {
+      // Remove optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['/api/outgoing-friend-requests'] });
       toast({
-        title: "Failed to follow",
-        description: error.message || "Could not follow this user.",
+        title: "Error",
+        description: error.message || "Failed to send connection request",
         variant: "destructive",
       });
     },
@@ -184,6 +187,16 @@ export default function ConnectionsPage() {
   };
 
   const handleSendRequest = (toUserId: number) => {
+    // Optimistically update the outgoing requests cache
+    queryClient.setQueryData(['/api/outgoing-friend-requests'], (old: any) => [
+      ...(old || []),
+      { 
+        id: Date.now(), 
+        toUser: filteredUsers.find(u => u.id === toUserId),
+        createdAt: new Date() 
+      }
+    ]);
+    
     sendRequestMutation.mutate(toUserId);
   };
 
