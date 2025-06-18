@@ -860,14 +860,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/posts/category/:categoryId', async (req, res) => {
+  app.get('/api/posts/list/:listId', async (req, res) => {
     try {
-      const categoryId = parseInt(req.params.categoryId);
-      if (isNaN(categoryId)) {
-        return res.status(400).json({ message: 'Invalid category ID' });
+      const listId = parseInt(req.params.listId);
+      if (isNaN(listId)) {
+        return res.status(400).json({ message: 'Invalid list ID' });
       }
 
-      const posts = await storage.getPostsByCategoryId(categoryId);
+      const posts = await storage.getPostsByListId(listId);
       res.json(posts);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
@@ -1303,21 +1303,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete category endpoint
-  app.delete('/api/categories/:id', authenticateToken, async (req: any, res) => {
+  // Delete list endpoint
+  app.delete('/api/lists/:id', authenticateToken, async (req: any, res) => {
     try {
-      const categoryId = parseInt(req.params.id);
-      const category = await storage.getCategory(categoryId);
+      const listId = parseInt(req.params.id);
+      const list = await storage.getList(listId);
       
-      if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
       }
       
-      if (category.userId !== req.user.userId) {
-        return res.status(403).json({ message: 'Not authorized to delete this category' });
+      if (list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Not authorized to delete this list' });
       }
       
-      await storage.deleteCategory(categoryId);
+      await storage.deleteList(listId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });

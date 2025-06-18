@@ -28,6 +28,7 @@ export interface IStorage {
   getListWithPosts(id: number): Promise<ListWithPosts | undefined>;
   getListsWithAccess(viewerId?: number): Promise<ListWithPosts[]>;
   updateListPrivacy(listId: number, privacyLevel: string): Promise<void>;
+  deleteList(listId: number): Promise<void>;
   
   // List access control methods
   inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;

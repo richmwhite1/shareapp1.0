@@ -88,10 +88,10 @@ export default function CategoryPage() {
             
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center">
-                {category?.firstPostImage ? (
+                {list?.firstPostImage ? (
                   <img 
-                    src={category.firstPostImage} 
-                    alt={category.name}
+                    src={list.firstPostImage} 
+                    alt={list.name}
                     className="w-full h-full object-cover rounded-lg"
                   />
                 ) : (
@@ -101,20 +101,20 @@ export default function CategoryPage() {
               
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-foreground">{category?.name}</h1>
-                  {category?.privacyLevel === 'public' && (
+                  <h1 className="text-2xl font-bold text-foreground">{list?.name}</h1>
+                  {list?.privacyLevel === 'public' && (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                       <Globe className="h-3 w-3 mr-1" />
                       Public
                     </Badge>
                   )}
-                  {category?.privacyLevel === 'connections' && (
+                  {list?.privacyLevel === 'connections' && (
                     <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
                       <UserCheck className="h-3 w-3 mr-1" />
                       Connections
                     </Badge>
                   )}
-                  {category?.privacyLevel === 'private' && (
+                  {list?.privacyLevel === 'private' && (
                     <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                       <Lock className="h-3 w-3 mr-1" />
                       Private
@@ -122,29 +122,29 @@ export default function CategoryPage() {
                   )}
                 </div>
                 <p className="text-muted-foreground">
-                  {category?.description || `${posts?.length || 0} posts in this category`}
+                  {list?.description || `${posts?.length || 0} posts in this list`}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex gap-2">
-            {user?.id === category?.userId && (
+            {user?.id === list?.userId && (
               <ListPrivacyManager
-                listId={parseInt(categoryId!)}
-                currentPrivacy={category?.privacyLevel || 'public'}
+                listId={parseInt(listId!)}
+                currentPrivacy={list?.privacyLevel || 'public'}
                 isOwner={true}
               />
             )}
-            {user?.id !== category?.userId && category?.privacyLevel === 'private' && (
+            {user?.id !== list?.userId && list?.privacyLevel === 'private' && (
               <ListPrivacyManager
-                listId={parseInt(categoryId!)}
-                currentPrivacy={category?.privacyLevel || 'public'}
+                listId={parseInt(listId!)}
+                currentPrivacy={list?.privacyLevel || 'public'}
                 isOwner={false}
               />
             )}
             <Button
-              onClick={handleShareCategory}
+              onClick={handleShareList}
               variant="outline"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
