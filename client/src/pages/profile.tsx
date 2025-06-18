@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth.tsx";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -543,7 +543,9 @@ export default function ProfilePage() {
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, list.id)}
                   >
-                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-all relative transform hover:scale-105 shadow-lg">
+                    <div className={`bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-all relative transform hover:scale-105 shadow-lg ${
+                      draggedList === list.id ? 'opacity-50 scale-95' : ''
+                    }`}>
                       {/* Delete Button */}
                       <button
                         onClick={(e) => handleDeleteList(list.id, list.name, e)}
