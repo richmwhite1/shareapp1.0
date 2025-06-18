@@ -526,9 +526,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async filterPostsByPrivacy(allPosts: PostWithUser[], viewerId?: number): Promise<PostWithUser[]> {
+    console.log('Privacy filter - viewerId:', viewerId, 'posts count:', allPosts.length);
     if (!viewerId) {
       // Anonymous users can only see posts in public lists or posts without lists
-      return allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
+      const filtered = allPosts.filter(post => !post.list || (post.list && post.list.privacyLevel === 'public'));
+      console.log('Anonymous user - filtered to:', filtered.length);
+      return filtered;
     }
 
     const filteredPosts = [];
@@ -908,8 +911,12 @@ export class DatabaseStorage implements IStorage {
       list: r.list || undefined
     })) as PostWithUser[];
 
+    console.log('Posts before privacy filtering:', allPosts.length);
+    
     // Apply privacy filtering
-    return this.filterPostsByPrivacy(allPosts, viewerId);
+    const filteredPosts = await this.filterPostsByPrivacy(allPosts, viewerId);
+    console.log('Posts after privacy filtering:', filteredPosts.length);
+    return filteredPosts;
   }
 
   async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {
