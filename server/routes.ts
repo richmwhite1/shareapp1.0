@@ -2120,24 +2120,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Multiple hashtag search with sorting
+  // Bulletproof hashtag search - only public posts in public lists
   app.get('/api/search/hashtags', async (req: any, res) => {
     try {
       const tags = req.query.tags as string;
-      const sort = req.query.sort as string || 'popular';
-      const viewerId = req.user?.userId;
+      const q = req.query.q as string;
       
-      if (!tags) {
+      // Support both 'tags' and 'q' query parameters
+      const searchQuery = tags || q;
+      
+      if (!searchQuery) {
         return res.json([]);
       }
 
-      const hashtagNames = tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
+      // For multiple hashtags, search each one individually and combine results
+      const hashtagNames = searchQuery.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
       if (hashtagNames.length === 0) {
         return res.json([]);
       }
 
-      const posts = await storage.getPostsByMultipleHashtags(hashtagNames, sort, viewerId);
-      res.json(posts);
+      // Search for posts with any of the hashtags (bulletproof privacy enforced in storage layer)
+      const allPosts = [];
+      const seenPostIds = new Set();
+      
+      for (const hashtagName of hashtagNames) {
+        const posts = await storage.getPostsByHashtag(hashtagName);
+        for (const post of posts) {
+          if (!seenPostIds.has(post.id)) {
+            seenPostIds.add(post.id);
+            allPosts.push(post);
+          }
+        }
+      }
+
+      // Sort by creation date (most recent first)
+      allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      res.json(allPosts);
     } catch (error) {
       console.error('Hashtag search error:', error);
       res.status(500).json({ message: 'Internal server error' });
