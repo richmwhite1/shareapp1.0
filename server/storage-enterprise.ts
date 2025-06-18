@@ -717,8 +717,6 @@ export class EnterpriseStorage implements IStorage {
   }
 
   // Helper methods for privacy checking
-  // Helper method for checking friendships - removed duplicate
-
   // BULLETPROOF PRIVACY: Only public posts in public lists are searchable
   async getPostsByHashtag(hashtagName: string, viewerId?: number): Promise<PostWithUser[]> {
     const result = await db
@@ -1190,7 +1188,7 @@ export class EnterpriseStorage implements IStorage {
       )
       .limit(1);
     
-    return friendship.length > 0;
+    return friendship.length > 0 && friendship[0]?.status === 'accepted';
   }
 
   async getFriends(userId: number): Promise<User[]> {

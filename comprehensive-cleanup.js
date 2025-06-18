@@ -5,8 +5,8 @@
  * Addresses critical issues before admin section development
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const CLEANUP_TASKS = {
   // Critical LSP errors that need immediate fixing
