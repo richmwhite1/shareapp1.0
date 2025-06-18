@@ -435,6 +435,11 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-xs text-white font-medium truncate">{list.name}</div>
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
+                      {list.privacyLevel !== 'public' && (
+                        <div className="mt-1">
+                          <ListCollaboratorAvatars listId={list.id} size="xs" maxVisible={3} />
+                        </div>
+                      )}
                     </div>
                   </Link>
                 );
