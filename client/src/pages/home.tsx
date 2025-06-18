@@ -105,6 +105,8 @@ export default function Home() {
       />
       
       <main className="w-full">
+        {/* List Invitation Notifications */}
+        {isAuthenticated && <ListInvitationNotifications />}
 
         {/* Content */}
         {isLoading ? (
