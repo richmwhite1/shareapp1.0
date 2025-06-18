@@ -148,9 +148,10 @@ export default function CategoryPage() {
               variant="outline"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
+              disabled={list?.privacyLevel === 'private' || list?.privacyLevel === 'connections'}
             >
               <Share2 className="h-4 w-4 mr-2" />
-              Share List
+              {list?.privacyLevel === 'private' || list?.privacyLevel === 'connections' ? 'Sharing Disabled' : 'Share List'}
             </Button>
           </div>
         </div>

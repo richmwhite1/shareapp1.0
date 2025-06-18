@@ -193,14 +193,14 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
           {isOwner ? 'Manage Access' : 'Request Access'}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isOwner ? 'List Privacy & Collaboration' : 'Request List Access'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[60vh] overflow-y-auto">
           {isOwner && (
             <>
               {/* Privacy Settings */}

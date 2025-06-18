@@ -419,8 +419,8 @@ export default function ProfilePage() {
                 
                 return (
                   <Link key={list.id} href={`/list/${list.id}`}>
-                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors">
-                      <div className="w-full aspect-square rounded-xl mx-auto mb-2 overflow-hidden">
+                    <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-colors relative">
+                      <div className="w-full aspect-square rounded-xl mx-auto mb-2 overflow-hidden relative">
                         {hasImage ? (
                           <img 
                             src={recentPost.primaryPhotoUrl} 
@@ -432,6 +432,24 @@ export default function ProfilePage() {
                             <Folder className="h-6 w-6 text-pinterest-red" />
                           </div>
                         )}
+                        {/* Privacy Indicator */}
+                        <div className="absolute top-2 right-2">
+                          {list.privacyLevel === 'private' && (
+                            <div className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                              Private
+                            </div>
+                          )}
+                          {list.privacyLevel === 'connections' && (
+                            <div className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                              Friends
+                            </div>
+                          )}
+                          {list.privacyLevel === 'public' && (
+                            <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                              Public
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="text-xs text-white font-medium truncate">{list.name}</div>
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>

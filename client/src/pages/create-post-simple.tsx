@@ -72,6 +72,22 @@ export default function CreatePostPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Get user's default privacy setting
+  const { data: userPrivacy } = useQuery({
+    queryKey: ['/api/user', user?.id, 'privacy'],
+    enabled: !!user?.id
+  });
+
+  // Update form data privacy when user privacy loads
+  useEffect(() => {
+    if (userPrivacy?.defaultPrivacy && formData.privacy === "public") {
+      setFormData(prev => ({
+        ...prev,
+        privacy: userPrivacy.defaultPrivacy === 'connections' ? 'friends' : userPrivacy.defaultPrivacy
+      }));
+    }
+  }, [userPrivacy]);
+
   // Image processing functions
   const resizeImage = (file: File, maxSizeMB: number = 5): Promise<File> => {
     return new Promise((resolve, reject) => {
