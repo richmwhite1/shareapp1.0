@@ -50,6 +50,7 @@ export default function CreatePostPage() {
   const [showNewListDialog, setShowNewListDialog] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
+  const [newListPrivacy, setNewListPrivacy] = useState("public");
 
   // Photo state
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
@@ -158,7 +159,8 @@ export default function CreatePostPage() {
         credentials: 'include',
         body: JSON.stringify({
           name: newListName.trim(),
-          description: newListDescription.trim() || ""
+          description: newListDescription.trim() || "",
+          privacyLevel: newListPrivacy
         })
       });
       
@@ -167,6 +169,7 @@ export default function CreatePostPage() {
         setFormData(prev => ({ ...prev, listId: newList.id.toString() }));
         setNewListName('');
         setNewListDescription('');
+        setNewListPrivacy('public');
         setShowNewListDialog(false);
         queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
         
@@ -509,6 +512,16 @@ END:VCALENDAR`;
         setFormData(prev => ({ ...prev, listId: generalList.id.toString() }));
       } else if (lists.length > 0) {
         setFormData(prev => ({ ...prev, listId: lists[0].id.toString() }));
+      }
+    }
+  }, [lists, formData.listId]);
+
+  // Automatically inherit privacy level from selected list
+  useEffect(() => {
+    if (lists && formData.listId && Array.isArray(lists)) {
+      const selectedList = lists.find((list: any) => list.id.toString() === formData.listId);
+      if (selectedList && selectedList.privacyLevel) {
+        setFormData(prev => ({ ...prev, privacy: selectedList.privacyLevel }));
       }
     }
   }, [lists, formData.listId]);
@@ -945,6 +958,43 @@ END:VCALENDAR`;
                                 className="bg-input border-border"
                                 rows={3}
                               />
+                            </div>
+                            <div>
+                              <Label htmlFor="listPrivacy">Privacy Level</Label>
+                              <Select value={newListPrivacy} onValueChange={setNewListPrivacy}>
+                                <SelectTrigger className="bg-input border-border">
+                                  <SelectValue placeholder="Select privacy level" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border">
+                                  <SelectItem value="public">
+                                    <div className="flex items-center gap-2">
+                                      <Globe className="h-4 w-4 text-green-500" />
+                                      <div>
+                                        <div className="font-medium">Public</div>
+                                        <div className="text-xs text-muted-foreground">Visible to everyone</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="connections">
+                                    <div className="flex items-center gap-2">
+                                      <Users className="h-4 w-4 text-blue-500" />
+                                      <div>
+                                        <div className="font-medium">Connections Only</div>
+                                        <div className="text-xs text-muted-foreground">Only your friends can see</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="private">
+                                    <div className="flex items-center gap-2">
+                                      <Lock className="h-4 w-4 text-red-500" />
+                                      <div>
+                                        <div className="font-medium">Private</div>
+                                        <div className="text-xs text-muted-foreground">Only you and invited collaborators</div>
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex justify-end space-x-2">
                               <Button
