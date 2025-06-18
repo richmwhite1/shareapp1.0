@@ -2346,10 +2346,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/posts/:id/save', authenticateToken, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const { categoryId } = req.body;
-      await storage.savePost(postId, req.user.userId, categoryId);
+      const { listId, categoryId } = req.body;
+      const targetListId = listId || categoryId; // Support both for backwards compatibility
+      await storage.savePost(postId, req.user.userId, targetListId);
       res.json({ success: true });
     } catch (error) {
+      console.error('Save post error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });

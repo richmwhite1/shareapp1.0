@@ -767,11 +767,107 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]> {
-    return []; // Simplified implementation
+    const result = await db
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        listId: posts.listId,
+        primaryPhotoUrl: posts.primaryPhotoUrl,
+        primaryLink: posts.primaryLink,
+        primaryDescription: posts.primaryDescription,
+        discountCode: posts.discountCode,
+        additionalPhotos: posts.additionalPhotos,
+        additionalPhotoData: posts.additionalPhotoData,
+        spotifyUrl: posts.spotifyUrl,
+        youtubeUrl: posts.youtubeUrl,
+        mediaMetadata: posts.mediaMetadata,
+        privacy: posts.privacy,
+        engagement: posts.engagement,
+        isEvent: posts.isEvent,
+        eventDate: posts.eventDate,
+        reminders: posts.reminders,
+        isRecurring: posts.isRecurring,
+        recurringType: posts.recurringType,
+        taskList: posts.taskList,
+        allowRsvp: posts.allowRsvp,
+        createdAt: posts.createdAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(posts)
+      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(eq(hashtags.name, hashtagName))
+      .orderBy(desc(posts.engagement));
+
+    return result.map(r => ({
+      ...r,
+      user: r.user as User
+    })) as PostWithUser[];
   }
 
   async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]> {
-    return []; // Simplified implementation
+    if (hashtagNames.length === 0) {
+      return [];
+    }
+
+    // Use AND logic: find posts that contain ALL of the selected hashtags
+    const result = await db
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        listId: posts.listId,
+        primaryPhotoUrl: posts.primaryPhotoUrl,
+        primaryLink: posts.primaryLink,
+        primaryDescription: posts.primaryDescription,
+        discountCode: posts.discountCode,
+        additionalPhotos: posts.additionalPhotos,
+        additionalPhotoData: posts.additionalPhotoData,
+        spotifyUrl: posts.spotifyUrl,
+        youtubeUrl: posts.youtubeUrl,
+        mediaMetadata: posts.mediaMetadata,
+        privacy: posts.privacy,
+        engagement: posts.engagement,
+        isEvent: posts.isEvent,
+        eventDate: posts.eventDate,
+        reminders: posts.reminders,
+        isRecurring: posts.isRecurring,
+        recurringType: posts.recurringType,
+        taskList: posts.taskList,
+        allowRsvp: posts.allowRsvp,
+        createdAt: posts.createdAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(posts)
+      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(inArray(hashtags.name, hashtagNames))
+      .groupBy(
+        posts.id, posts.userId, posts.listId, posts.primaryPhotoUrl, posts.primaryLink,
+        posts.primaryDescription, posts.discountCode, posts.additionalPhotos, posts.additionalPhotoData,
+        posts.spotifyUrl, posts.youtubeUrl, posts.mediaMetadata, posts.privacy, posts.engagement,
+        posts.isEvent, posts.eventDate, posts.reminders, posts.isRecurring, posts.recurringType,
+        posts.taskList, posts.allowRsvp, posts.createdAt,
+        users.id, users.username, users.name, users.profilePictureUrl
+      )
+      .having(sql`count(*) = ${hashtagNames.length}`)
+      .orderBy(sortBy === 'recent' ? desc(posts.createdAt) : desc(posts.engagement));
+
+    return result.map(r => ({
+      ...r,
+      user: r.user as User
+    })) as PostWithUser[];
   }
 
   async getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]> {

@@ -137,7 +137,10 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: 'Post saved to list!' });
+      toast({ 
+        title: 'Post saved to list!',
+        duration: 2000 // Auto-dismiss after 2 seconds
+      });
       setSaveDialogOpen(false);
       setSelectedList(null);
     },

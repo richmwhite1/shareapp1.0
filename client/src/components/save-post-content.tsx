@@ -51,8 +51,11 @@ export default function SavePostContent({ postId, onClose }: SavePostContentProp
       toast({
         title: "Post saved",
         description: "Post has been saved to your collection",
+        duration: 2000, // Auto-dismiss after 2 seconds
       });
       queryClient.invalidateQueries({ queryKey: [`/api/posts/${postId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/saved-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/posts/list'] });
       onClose();
     },
     onError: () => {
