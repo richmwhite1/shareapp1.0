@@ -44,6 +44,7 @@ export interface IStorage {
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
   getPostsByListId(listId: number): Promise<PostWithUser[]>;
   getPostsByHashtag(hashtagName: string, viewerId?: number): Promise<PostWithUser[]>;
+  getPostsByMultipleHashtags(hashtagNames: string[]): Promise<PostWithUser[]>;
   getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
   deletePost(postId: number): Promise<void>;
   updatePost(postId: number, updates: Partial<Post>): Promise<void>;
@@ -767,6 +768,49 @@ export class EnterpriseStorage implements IStorage {
     })) as PostWithUser[];
   }
 
+  // BULLETPROOF PRIVACY: Find posts that contain ALL selected hashtags (AND logic)
+  async getPostsByMultipleHashtags(hashtagNames: string[]): Promise<PostWithUser[]> {
+    if (hashtagNames.length === 0) return [];
+    
+    const result = await db
+      .select({
+        post: posts,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        },
+        list: {
+          id: lists.id,
+          name: lists.name,
+          privacyLevel: lists.privacyLevel
+        },
+        hashtagCount: count()
+      })
+      .from(posts)
+      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(lists, eq(posts.listId, lists.id))
+      .where(
+        and(
+          inArray(hashtags.name, hashtagNames),
+          eq(posts.privacy, 'public'),
+          eq(lists.privacyLevel, 'public')
+        )
+      )
+      .groupBy(posts.id, users.id, users.username, users.name, users.profilePictureUrl, lists.id, lists.name, lists.privacyLevel)
+      .having(sql`count(*) = ${hashtagNames.length}`)
+      .orderBy(desc(posts.createdAt));
+
+    return result.map(r => ({
+      ...r.post,
+      user: r.user!,
+      list: r.list || undefined
+    })) as PostWithUser[];
+  }
+
   async getPostsByUserId(userId: number): Promise<PostWithUser[]> {
     const result = await db
       .select({
@@ -1134,9 +1178,9 @@ export class EnterpriseStorage implements IStorage {
         count: count(postHashtags.postId)
       })
       .from(hashtags)
-      .leftJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
-      .leftJoin(posts, eq(postHashtags.postId, posts.id))
-      .leftJoin(lists, eq(posts.listId, lists.id))
+      .innerJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
+      .innerJoin(posts, eq(postHashtags.postId, posts.id))
+      .innerJoin(lists, eq(posts.listId, lists.id))
       .where(
         and(
           eq(posts.privacy, 'public'),
@@ -1145,7 +1189,6 @@ export class EnterpriseStorage implements IStorage {
       )
       .groupBy(hashtags.id, hashtags.name)
       .orderBy(desc(count(postHashtags.postId)))
-      .having(sql`count(${postHashtags.postId}) > 0`)
       .limit(limit);
 
     return result;

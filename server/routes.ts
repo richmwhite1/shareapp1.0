@@ -2177,19 +2177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      // Search for posts with any of the hashtags (bulletproof privacy enforced in storage layer)
-      const allPosts = [];
-      const seenPostIds = new Set();
-      
-      for (const hashtagName of hashtagNames) {
-        const posts = await storage.getPostsByHashtag(hashtagName);
-        for (const post of posts) {
-          if (!seenPostIds.has(post.id)) {
-            seenPostIds.add(post.id);
-            allPosts.push(post);
-          }
-        }
-      }
+      // Search for posts with ALL of the hashtags (AND logic)
+      const allPosts = await storage.getPostsByMultipleHashtags(hashtagNames);
 
       // Sort by creation date (most recent first)
       allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
