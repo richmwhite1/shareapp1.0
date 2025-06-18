@@ -28,6 +28,7 @@ export interface IStorage {
   
   // List access control - Enterprise Collaboration
   inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
+  addListCollaborator(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
   respondToListInvite(accessId: number, action: string): Promise<void>;
   getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>>;
   getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>>;

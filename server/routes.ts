@@ -719,6 +719,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add collaborator directly to list (for immediate access)
+  app.post('/api/lists/:id/collaborators', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const { userId, role } = req.body;
+
+      if (!userId || !role || !['collaborator', 'viewer'].includes(role)) {
+        return res.status(400).json({ message: 'User ID and valid role required' });
+      }
+
+      // Check if the list exists
+      const list = await storage.getList(listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+
+      if (list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Only list owners can add collaborators' });
+      }
+
+      // Add collaborator directly and send notification
+      await storage.addListCollaborator(listId, userId, role, req.user.userId);
+      
+      res.json({ message: 'Collaborator added successfully' });
+    } catch (error) {
+      console.error('Add collaborator error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/lists/:id/invite', authenticateToken, async (req: any, res) => {
     try {
       const listId = parseInt(req.params.id);
