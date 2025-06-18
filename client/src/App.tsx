@@ -27,7 +27,7 @@ function Router() {
       <Route path="/create-post" component={CreatePostPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/profile/:id" component={ProfilePage} />
-      <Route path="/category/:id" component={CategoryPage} />
+      <Route path="/list/:id" component={CategoryPage} />
       <Route path="/search" component={SearchPage} />
       <Route path="/friends" component={ConnectionsPage} />
       <Route path="/notifications" component={NotificationsPage} />

@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth.tsx";
 import type { ListWithPosts, PostWithUser } from "@shared/schema";
 
 export default function CategoryPage() {
-  const [match, params] = useRoute('/category/:id');
+  const [match, params] = useRoute('/list/:id');
   const listId = params?.id;
   const { toast } = useToast();
   const { user } = useAuth();

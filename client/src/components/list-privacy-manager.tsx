@@ -47,10 +47,7 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
   // Update privacy mutation
   const updatePrivacyMutation = useMutation({
     mutationFn: (privacyLevel: string) =>
-      apiRequest(`/api/lists/${listId}/privacy`, {
-        method: 'PUT',
-        body: JSON.stringify({ privacyLevel })
-      }),
+      apiRequest('PUT', `/api/lists/${listId}/privacy`, { privacyLevel }),
     onSuccess: () => {
       toast({ title: "Privacy updated successfully" });
       queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
