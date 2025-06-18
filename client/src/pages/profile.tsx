@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import PostCard from "@/components/post-card";
 import EnergyRating from "@/components/energy-rating";
 import AuricField from "@/components/auric-field";
+import ListCollaboratorAvatars from "@/components/list-collaborator-avatars";
 import type { User, PostWithUser, ListWithPosts } from "@shared/schema";
 
 interface UserResponse {

@@ -36,6 +36,18 @@ export interface IStorage {
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
   getPostsByListId(listId: number): Promise<PostWithUser[]>;
 
+  // Post stats and interactions
+  getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number; viewCount: number }>;
+  isPostLiked(postId: number, userId: number): Promise<boolean>;
+  getPostViewCount(postId: number): Promise<number>;
+  recordPostView(postId: number, userId?: number): Promise<void>;
+
+  // User energy ratings
+  getUserEnergyStats(userId: number): Promise<{ average: number; count: number }>;
+
+  // Friends system
+  getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>>;
+
   // Notification methods
   createNotification(notification: CreateNotificationData): Promise<Notification>;
   getNotifications(userId: number): Promise<any[]>;
@@ -525,6 +537,31 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
     
     return result[0]?.count || 0;
+  }
+
+  // Stub implementations for missing methods to prevent errors
+  async getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number; viewCount: number }> {
+    return { likeCount: 0, commentCount: 0, shareCount: 0, viewCount: 0 };
+  }
+
+  async isPostLiked(postId: number, userId: number): Promise<boolean> {
+    return false;
+  }
+
+  async getPostViewCount(postId: number): Promise<number> {
+    return 0;
+  }
+
+  async recordPostView(postId: number, userId?: number): Promise<void> {
+    // Stub implementation
+  }
+
+  async getUserEnergyStats(userId: number): Promise<{ average: number; count: number }> {
+    return { average: 4, count: 0 };
+  }
+
+  async getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>> {
+    return [];
   }
 }
 
