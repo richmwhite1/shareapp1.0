@@ -339,9 +339,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             </Link>
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
             
-            {/* Inline compact aura rating to the right of share */}
-            <div className="w-20">
-              <EnergyRating postId={post.id} className="scale-75 origin-left" />
+            {/* Inline aura rating to the right of share */}
+            <div className="w-32">
+              <EnergyRating postId={post.id} className="scale-[3.75] origin-left" />
             </div>
           </div>
           
@@ -389,8 +389,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             rel="noopener noreferrer"
             className="text-yellow-400 hover:text-yellow-300 font-medium transition-colors inline-flex items-center space-x-2 text-lg"
           >
-            <ExternalLink className="w-4 h-4" />
-            <span className="truncate">{post.primaryLink}</span>
+            <ExternalLink className="w-5 h-5" />
+            <span>Link</span>
           </a>
           <p className="text-gray-300 leading-relaxed mt-3">
             {post.primaryDescription}
