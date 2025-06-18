@@ -21,6 +21,8 @@ export interface IStorage {
   getListsWithAccess(viewerId?: number): Promise<ListWithPosts[]>;
   updateListPrivacy(listId: number, privacyLevel: string): Promise<void>;
   deleteList(listId: number): Promise<void>;
+  getListWithCreator(id: number): Promise<any>;
+  getListById(listId: number): Promise<List | undefined>;
   
   // List access control methods
   inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
@@ -29,14 +31,22 @@ export interface IStorage {
   getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>>;
   hasListAccess(userId: number, listId: number): Promise<{ hasAccess: boolean; role?: string }>;
   removeListAccess(listId: number, userId: number): Promise<void>;
+  createAccessRequest(listId: number, userId: number, requestedRole: string, message?: string): Promise<void>;
+  getAccessRequests(listId: number): Promise<Array<{ id: number; userId: number; requestedRole: string; message?: string; user: any }>>;
+  respondToAccessRequest(requestId: number, action: string): Promise<void>;
   
   // Post methods
-  createPost(post: InsertPost & { userId: number; listId?: number; hashtags?: string[] }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[] }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(viewerId?: number): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
   getPostsByListId(listId: number): Promise<PostWithUser[]>;
   getPostsByHashtag(hashtagName: string, viewerId?: number): Promise<PostWithUser[]>;
+  getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
+  deletePost(postId: number): Promise<void>;
+  updatePost(postId: number, updates: Partial<Post>): Promise<void>;
+  getTaggedPosts(userId: number): Promise<PostWithUser[]>;
+  getFriendsPosts(userId: number): Promise<PostWithUser[]>;
 
   // Comment methods
   createComment(comment: InsertComment & { postId: number; userId: number }): Promise<Comment>;
@@ -48,31 +58,89 @@ export interface IStorage {
   unlikePost(postId: number, userId: number): Promise<void>;
   isPostLiked(postId: number, userId: number): Promise<boolean>;
   getPostLikeCount(postId: number): Promise<number>;
+  getUserLike(postId: number, userId: number): Promise<boolean>;
 
   // Share methods
   sharePost(postId: number, userId: number): Promise<void>;
   getPostShareCount(postId: number): Promise<number>;
+  getUserTotalShares(userId: number): Promise<number>;
+
+  // Repost methods
+  repost(postId: number, userId: number): Promise<void>;
+  unrepost(postId: number, userId: number): Promise<void>;
+  isReposted(postId: number, userId: number): Promise<boolean>;
+  getReposts(postId: number): Promise<number>;
+  repostPost(postId: number, userId: number): Promise<void>;
+
+  // Save methods
+  savePost(postId: number, userId: number): Promise<void>;
+  unsavePost(postId: number, userId: number): Promise<void>;
+  isSaved(postId: number, userId: number): Promise<boolean>;
+  getSavedPosts(userId: number): Promise<PostWithUser[]>;
 
   // Hashtag methods
   createHashtag(name: string): Promise<Hashtag>;
   getHashtagsByPostId(postId: number): Promise<Hashtag[]>;
+  getTrendingHashtags(limit?: number): Promise<Hashtag[]>;
+  followHashtag(userId: number, hashtagId: number): Promise<void>;
+  unfollowHashtag(userId: number, hashtagId: number): Promise<void>;
+  getFollowedHashtags(userId: number): Promise<Hashtag[]>;
+  isFollowingHashtag(userId: number, hashtagId: number): Promise<boolean>;
+
+  // Tag methods
+  tagFriendInPost(postId: number, userId: number, taggedUserId: number): Promise<void>;
+  tagFriendsToPost(postId: number, friendIds: number[], taggedBy: number): Promise<void>;
+
+  // Flag/Report methods
+  flagPost(postId: number, userId: number, reason: string, comment?: string): Promise<void>;
+  unflagPost(postId: number, userId: number): Promise<void>;
+  getPostFlags(postId: number): Promise<any[]>;
+  checkAutoDelete(postId: number): Promise<boolean>;
+  createReport(report: any): Promise<any>;
+  getReports(): Promise<any[]>;
+  deleteReport(reportId: number): Promise<void>;
+  flagUser(userId: number, flaggedBy: number, reason: string): Promise<void>;
+  unflagUser(userId: number): Promise<void>;
 
   // Post stats and interactions
   getPostStats(postId: number): Promise<{ likeCount: number; commentCount: number; shareCount: number; viewCount: number }>;
   getPostViewCount(postId: number): Promise<number>;
   recordPostView(postId: number, userId?: number): Promise<void>;
+  trackView(postId: number, userId: number): Promise<void>;
+  getPostViews(postId: number): Promise<number>;
 
   // User energy ratings
   getUserEnergyStats(userId: number): Promise<{ average: number; count: number }>;
 
-  // Friends system
+  // Friends/Connections system
   getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>>;
+  getFriends(userId: number): Promise<User[]>;
+  getFriendsOrderedByRecentTags(userId: number): Promise<User[]>;
+  sendFriendRequest(fromUserId: number, toUserId: number): Promise<void>;
+  getFriendRequests(userId: number): Promise<any[]>;
+  getOutgoingFriendRequests(userId: number): Promise<Array<{ id: number; toUser: User; createdAt: Date }>>;
+  respondToFriendRequest(requestId: number, action: 'accept' | 'reject'): Promise<void>;
+
+  // RSVP methods
+  getRsvp(eventId: number, userId: number): Promise<any>;
+  createRsvp(eventId: number, userId: number, status: string): Promise<void>;
+  updateRsvp(eventId: number, userId: number, status: string): Promise<void>;
+  getRsvpStats(eventId: number): Promise<{ going: number; maybe: number; notGoing: number }>;
+  getRsvpList(eventId: number): Promise<Array<{ user: User; status: string }>>;
 
   // Notification methods
   createNotification(notification: CreateNotificationData): Promise<Notification>;
   getNotifications(userId: number): Promise<any[]>;
   markNotificationAsRead(notificationId: number): Promise<void>;
+  markNotificationAsViewed(notificationId: number): Promise<void>;
   getUnreadNotificationCount(userId: number): Promise<number>;
+
+  // Analytics and admin
+  getAnalytics(): Promise<any>;
+  getBlacklist(userId: number): Promise<any[]>;
+  addToBlacklist(userId: number, blockedUserId: number): Promise<void>;
+  getSharedWithMePosts(userId: number): Promise<PostWithUser[]>;
+  markTaggedPostViewed(postId: number, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
