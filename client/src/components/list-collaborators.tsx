@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -53,6 +53,11 @@ export function ListCollaborators({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Sync collaborators with props when they change
+  useEffect(() => {
+    setCollaborators(initialCollaborators);
+  }, [initialCollaborators]);
+
   // Get user's connections
   const { data: userConnections } = useQuery({
     queryKey: ['/api/friends'],
@@ -87,7 +92,8 @@ export function ListCollaborators({
       setSelectedRole("viewer");
       toast({
         title: "Success",
-        description: "Collaborator added successfully"
+        description: "Collaborator added successfully",
+        duration: 2000
       });
     },
     onError: (error) => {
@@ -120,7 +126,8 @@ export function ListCollaborators({
       }
       toast({
         title: "Success",
-        description: "Collaborator removed successfully"
+        description: "Collaborator removed successfully",
+        duration: 2000
       });
     },
     onError: (error) => {
@@ -196,7 +203,8 @@ export function ListCollaborators({
       setSelectedRole("viewer");
       toast({
         title: "Success",
-        description: "Collaborator added successfully"
+        description: "Collaborator added successfully",
+        duration: 2000
       });
     }
   };
