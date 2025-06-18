@@ -346,6 +346,7 @@ export const createPostRequestSchema = z.object({
   primaryLink: z.string().optional(),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
   discountCode: z.string().optional(),
+  listId: z.coerce.number().optional(),
   categoryId: z.coerce.number().optional(),
   spotifyUrl: z.string().optional(),
   youtubeUrl: z.string().optional(),

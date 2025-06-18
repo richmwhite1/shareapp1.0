@@ -237,6 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryLink: req.body.primaryLink,
         primaryDescription: req.body.primaryDescription,
         discountCode: req.body.discountCode || undefined,
+        listId: req.body.listId ? parseInt(req.body.listId) : undefined,
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1,
         spotifyUrl: req.body.spotifyUrl || undefined,
         youtubeUrl: req.body.youtubeUrl || undefined,
@@ -266,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data" });
       }
       
-      const { primaryLink, primaryDescription, discountCode, categoryId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers, isEvent, eventDate, reminders, isRecurring, recurringType, taskList } = validatedData;
+      const { primaryLink, primaryDescription, discountCode, listId, categoryId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers, isEvent, eventDate, reminders, isRecurring, recurringType, taskList } = validatedData;
       
       // Parse hashtags from the hashtags string
       const parseHashtags = (input: string): string[] => {
@@ -551,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discountCode,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
         additionalPhotoData: additionalPhotoData.length > 0 ? additionalPhotoData : null,
-        listId: categoryId || undefined, // Let storage handle default list
+        listId: listId || undefined, // Use the actual listId from form data
         spotifyUrl,
         youtubeUrl,
         mediaMetadata,
