@@ -10,9 +10,10 @@ import fs from "fs";
 import { 
   signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createListSchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
+  createListAccessSchema, respondListAccessSchema, createAccessRequestSchema,
   type AdditionalPhotoData, users, posts, lists, comments, postLikes, postShares, friendships, friendRequests, 
   hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
-  reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments
+  reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments, listAccess, accessRequests
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg } from 'drizzle-orm';
@@ -660,6 +661,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const publicLists = lists.filter(list => list.isPublic);
         return res.json(publicLists);
       }
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // List privacy and collaboration endpoints
+  app.put('/api/lists/:id/privacy', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const { privacyLevel } = req.body;
+
+      if (!privacyLevel || !['public', 'connections', 'private'].includes(privacyLevel)) {
+        return res.status(400).json({ message: 'Valid privacy level required' });
+      }
+
+      // Check if user owns the list
+      const list = await storage.getList(listId);
+      if (!list || list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await storage.updateListPrivacy(listId, privacyLevel);
+      res.json({ message: 'Privacy updated successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/lists/:id/invite', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const { userId, role } = req.body;
+
+      if (!userId || !role || !['collaborator', 'viewer'].includes(role)) {
+        return res.status(400).json({ message: 'User ID and valid role required' });
+      }
+
+      // Check if user owns the list
+      const list = await storage.getList(listId);
+      if (!list || list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      // Only allow invites for private lists
+      if (list.privacyLevel !== 'private') {
+        return res.status(400).json({ message: 'Invitations are only available for private lists' });
+      }
+
+      await storage.inviteToList(listId, userId, role, req.user.userId);
+      res.json({ message: 'Invitation sent successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/lists/access/:accessId/respond', authenticateToken, async (req: any, res) => {
+    try {
+      const accessId = parseInt(req.params.accessId);
+      const { action } = req.body;
+
+      if (!action || !['accept', 'reject'].includes(action)) {
+        return res.status(400).json({ message: 'Valid action required' });
+      }
+
+      await storage.respondToListInvite(accessId, action);
+      res.json({ message: `Invitation ${action}ed successfully` });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/lists/:id/access', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+
+      // Check if user owns the list
+      const list = await storage.getList(listId);
+      if (!list || list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const access = await storage.getListAccess(listId);
+      res.json(access);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.delete('/api/lists/:id/access/:userId', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+
+      // Check if user owns the list
+      const list = await storage.getList(listId);
+      if (!list || list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await storage.removeListAccess(listId, userId);
+      res.json({ message: 'Access removed successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/user/list-access', authenticateToken, async (req: any, res) => {
+    try {
+      const access = await storage.getUserListAccess(req.user.userId);
+      res.json(access);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/lists/:id/request-access', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const { requestedRole, message } = req.body;
+
+      if (!requestedRole || !['collaborator', 'viewer'].includes(requestedRole)) {
+        return res.status(400).json({ message: 'Valid requested role required' });
+      }
+
+      // Check if list exists and is private
+      const list = await storage.getList(listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+
+      if (list.privacyLevel !== 'private') {
+        return res.status(400).json({ message: 'Access requests are only for private lists' });
+      }
+
+      if (list.userId === req.user.userId) {
+        return res.status(400).json({ message: 'Cannot request access to your own list' });
+      }
+
+      await storage.createAccessRequest(listId, req.user.userId, requestedRole, message);
+      res.json({ message: 'Access request sent successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/lists/:id/access-requests', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+
+      // Check if user owns the list
+      const list = await storage.getList(listId);
+      if (!list || list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const requests = await storage.getAccessRequests(listId);
+      res.json(requests);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/access-requests/:id/respond', authenticateToken, async (req: any, res) => {
+    try {
+      const requestId = parseInt(req.params.id);
+      const { action } = req.body;
+
+      if (!action || !['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: 'Valid action required' });
+      }
+
+      await storage.respondToAccessRequest(requestId, action);
+      res.json({ message: `Request ${action}d successfully` });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }

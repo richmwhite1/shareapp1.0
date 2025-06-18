@@ -1,7 +1,7 @@
 import { 
   users, posts, comments, lists, postLikes, postShares, friendships, friendRequests, hashtags, 
   postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows, rsvps,
-  postViews, savedPosts, reposts, postFlags, taggedPosts,
+  postViews, savedPosts, reposts, postFlags, taggedPosts, listAccess, accessRequests,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
   type PostWithUser, type CommentWithUser, type List, type InsertList, type ListWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
@@ -26,6 +26,21 @@ export interface IStorage {
   getListsByUserId(userId: number): Promise<ListWithPosts[]>;
   getList(id: number): Promise<List | undefined>;
   getListWithPosts(id: number): Promise<ListWithPosts | undefined>;
+  getListsWithAccess(viewerId?: number): Promise<ListWithPosts[]>;
+  updateListPrivacy(listId: number, privacyLevel: string): Promise<void>;
+  
+  // List access control methods
+  inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
+  respondToListInvite(accessId: number, action: string): Promise<void>;
+  getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>>;
+  getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>>;
+  hasListAccess(userId: number, listId: number): Promise<{ hasAccess: boolean; role?: string }>;
+  removeListAccess(listId: number, userId: number): Promise<void>;
+  
+  // Access request methods
+  createAccessRequest(listId: number, userId: number, requestedRole: string, message?: string): Promise<void>;
+  getAccessRequests(listId: number): Promise<Array<{ id: number; userId: number; requestedRole: string; message?: string; user: any }>>;
+  respondToAccessRequest(requestId: number, action: string): Promise<void>;
 
   // Post methods
   createPost(post: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
@@ -745,6 +760,287 @@ export class DatabaseStorage implements IStorage {
 
   async unrepost(postId: number, userId: number): Promise<void> {
     // Simplified implementation
+  }
+
+  // List privacy and collaboration methods
+  async updateListPrivacy(listId: number, privacyLevel: string): Promise<void> {
+    await db
+      .update(lists)
+      .set({ 
+        privacyLevel,
+        isPublic: privacyLevel === 'public'
+      })
+      .where(eq(lists.id, listId));
+  }
+
+  async inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void> {
+    // Check if invitation already exists
+    const existing = await db
+      .select()
+      .from(listAccess)
+      .where(
+        and(
+          eq(listAccess.listId, listId),
+          eq(listAccess.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Update existing invitation
+      await db
+        .update(listAccess)
+        .set({ 
+          role, 
+          status: 'pending',
+          invitedBy,
+          updatedAt: new Date()
+        })
+        .where(eq(listAccess.id, existing[0].id));
+    } else {
+      // Create new invitation
+      await db.insert(listAccess).values({
+        listId,
+        userId,
+        role,
+        status: 'pending',
+        invitedBy
+      });
+    }
+
+    // Create notification
+    const list = await this.getList(listId);
+    if (list) {
+      await this.createNotification({
+        userId,
+        type: 'list_invitation',
+        message: `You've been invited to collaborate on "${list.name}"`,
+        metadata: { listId, role, invitedBy }
+      });
+    }
+  }
+
+  async respondToListInvite(accessId: number, action: string): Promise<void> {
+    await db
+      .update(listAccess)
+      .set({ 
+        status: action === 'accept' ? 'accepted' : 'rejected',
+        updatedAt: new Date()
+      })
+      .where(eq(listAccess.id, accessId));
+  }
+
+  async getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>> {
+    const result = await db
+      .select({
+        userId: listAccess.userId,
+        role: listAccess.role,
+        status: listAccess.status,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(listAccess)
+      .leftJoin(users, eq(listAccess.userId, users.id))
+      .where(eq(listAccess.listId, listId));
+
+    return result.map(r => ({
+      userId: r.userId,
+      role: r.role,
+      status: r.status,
+      user: r.user
+    }));
+  }
+
+  async getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>> {
+    const result = await db
+      .select({
+        listId: listAccess.listId,
+        role: listAccess.role,
+        status: listAccess.status,
+        list: {
+          id: lists.id,
+          name: lists.name,
+          description: lists.description,
+          privacyLevel: lists.privacyLevel,
+          userId: lists.userId
+        }
+      })
+      .from(listAccess)
+      .leftJoin(lists, eq(listAccess.listId, lists.id))
+      .where(eq(listAccess.userId, userId));
+
+    return result.map(r => ({
+      listId: r.listId,
+      role: r.role,
+      status: r.status,
+      list: r.list
+    }));
+  }
+
+  async hasListAccess(userId: number, listId: number): Promise<{ hasAccess: boolean; role?: string }> {
+    const list = await this.getList(listId);
+    if (!list) return { hasAccess: false };
+
+    // Owner always has access
+    if (list.userId === userId) {
+      return { hasAccess: true, role: 'owner' };
+    }
+
+    // Check privacy level
+    if (list.privacyLevel === 'public') {
+      return { hasAccess: true, role: 'public' };
+    }
+
+    if (list.privacyLevel === 'connections') {
+      // Check if user is a connection (friend)
+      const friendship = await db
+        .select()
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.userId, list.userId),
+            eq(friendships.friendId, userId),
+            eq(friendships.status, 'accepted')
+          )
+        )
+        .limit(1);
+
+      if (friendship.length > 0) {
+        return { hasAccess: true, role: 'connection' };
+      }
+    }
+
+    // Check explicit access for private lists
+    const access = await db
+      .select()
+      .from(listAccess)
+      .where(
+        and(
+          eq(listAccess.listId, listId),
+          eq(listAccess.userId, userId),
+          eq(listAccess.status, 'accepted')
+        )
+      )
+      .limit(1);
+
+    if (access.length > 0) {
+      return { hasAccess: true, role: access[0].role };
+    }
+
+    return { hasAccess: false };
+  }
+
+  async removeListAccess(listId: number, userId: number): Promise<void> {
+    await db
+      .delete(listAccess)
+      .where(
+        and(
+          eq(listAccess.listId, listId),
+          eq(listAccess.userId, userId)
+        )
+      );
+  }
+
+  async createAccessRequest(listId: number, userId: number, requestedRole: string, message?: string): Promise<void> {
+    await db.insert(accessRequests).values({
+      listId,
+      userId,
+      requestedRole,
+      message: message || null,
+      status: 'pending'
+    });
+
+    // Notify list owner
+    const list = await this.getList(listId);
+    if (list) {
+      await this.createNotification({
+        userId: list.userId,
+        type: 'access_request',
+        message: `Someone requested access to your list "${list.name}"`,
+        metadata: { listId, requesterId: userId, requestedRole }
+      });
+    }
+  }
+
+  async getAccessRequests(listId: number): Promise<Array<{ id: number; userId: number; requestedRole: string; message?: string; user: any }>> {
+    const result = await db
+      .select({
+        id: accessRequests.id,
+        userId: accessRequests.userId,
+        requestedRole: accessRequests.requestedRole,
+        message: accessRequests.message,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(accessRequests)
+      .leftJoin(users, eq(accessRequests.userId, users.id))
+      .where(
+        and(
+          eq(accessRequests.listId, listId),
+          eq(accessRequests.status, 'pending')
+        )
+      );
+
+    return result.map(r => ({
+      id: r.id,
+      userId: r.userId,
+      requestedRole: r.requestedRole,
+      message: r.message || undefined,
+      user: r.user
+    }));
+  }
+
+  async respondToAccessRequest(requestId: number, action: string): Promise<void> {
+    const request = await db
+      .select()
+      .from(accessRequests)
+      .where(eq(accessRequests.id, requestId))
+      .limit(1);
+
+    if (request.length === 0) return;
+
+    const accessRequest = request[0];
+
+    // Update request status
+    await db
+      .update(accessRequests)
+      .set({ 
+        status: action === 'approve' ? 'approved' : 'rejected',
+        updatedAt: new Date()
+      })
+      .where(eq(accessRequests.id, requestId));
+
+    // If approved, grant access
+    if (action === 'approve') {
+      await db.insert(listAccess).values({
+        listId: accessRequest.listId,
+        userId: accessRequest.userId,
+        role: accessRequest.requestedRole,
+        status: 'accepted',
+        invitedBy: accessRequest.userId // Self-approved through request
+      });
+    }
+
+    // Notify requester
+    const list = await this.getList(accessRequest.listId);
+    if (list) {
+      await this.createNotification({
+        userId: accessRequest.userId,
+        type: 'access_response',
+        message: action === 'approve' 
+          ? `Your request to access "${list.name}" was approved`
+          : `Your request to access "${list.name}" was declined`,
+        metadata: { listId: accessRequest.listId, action }
+      });
+    }
   }
 }
 

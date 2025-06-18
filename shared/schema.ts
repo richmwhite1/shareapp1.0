@@ -151,7 +151,7 @@ export const commentHashtags = pgTable("comment_hashtags", {
 export const notifications = pgTable("notifications", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept, list_invite, list_access_request
+  type: text("type").notNull(), // tag, friend_request, like, comment, share, friend_accept, list_invite, list_access_request, list_invitation, access_request, access_response
   postId: integer("post_id"),
   fromUserId: integer("from_user_id"),
   categoryId: integer("category_id"),
