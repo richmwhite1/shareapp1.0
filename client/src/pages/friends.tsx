@@ -328,15 +328,33 @@ export default function ConnectionsPage() {
                                   Connected
                                 </Button>
                               ) : hasPendingRequest ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled
-                                  className="flex items-center gap-2"
-                                >
-                                  <Clock className="h-4 w-4" />
-                                  Request Received
-                                </Button>
+                                <div className="flex items-center space-x-2">
+                                  <Button
+                                    onClick={() => {
+                                      const request = connectionRequests.find((req: any) => req.fromUser.id === searchUser.id);
+                                      if (request) handleAcceptRequest(request.id);
+                                    }}
+                                    disabled={acceptRequestMutation.isPending}
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      const request = connectionRequests.find((req: any) => req.fromUser.id === searchUser.id);
+                                      if (request) handleRejectRequest(request.id);
+                                    }}
+                                    disabled={rejectRequestMutation.isPending}
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center gap-2"
+                                  >
+                                    <X className="h-4 w-4" />
+                                    Decline
+                                  </Button>
+                                </div>
                               ) : hasOutgoingRequest ? (
                                 <Button
                                   size="sm"
