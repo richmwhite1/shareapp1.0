@@ -1062,6 +1062,393 @@ export class DatabaseStorage implements IStorage {
       });
     }
   }
+
+  // Friend request methods
+  async sendFriendRequest(fromUserId: number, toUserId: number): Promise<void> {
+    // Check if request already exists
+    const existing = await db
+      .select()
+      .from(friendRequests)
+      .where(
+        and(
+          eq(friendRequests.fromUserId, fromUserId),
+          eq(friendRequests.toUserId, toUserId),
+          eq(friendRequests.status, 'pending')
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) return;
+
+    // Create friend request
+    await db.insert(friendRequests).values({
+      fromUserId,
+      toUserId,
+      status: 'pending'
+    });
+
+    // Create notification
+    await this.createNotification({
+      userId: toUserId,
+      type: 'friend_request',
+      message: 'You have a new connection request',
+      metadata: { fromUserId }
+    });
+  }
+
+  async getOutgoingFriendRequests(userId: number): Promise<Array<{ id: number; toUser: User; createdAt: Date }>> {
+    const requests = await db
+      .select({
+        id: friendRequests.id,
+        createdAt: friendRequests.createdAt,
+        toUser: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(friendRequests)
+      .leftJoin(users, eq(friendRequests.toUserId, users.id))
+      .where(
+        and(
+          eq(friendRequests.fromUserId, userId),
+          eq(friendRequests.status, 'pending')
+        )
+      );
+
+    return requests.map(r => ({
+      id: r.id,
+      toUser: r.toUser as User,
+      createdAt: r.createdAt
+    }));
+  }
+
+  async getUserLike(postId: number, userId: number): Promise<boolean> {
+    return this.isPostLiked(postId, userId);
+  }
+
+  async repostPost(postId: number, userId: number): Promise<void> {
+    // Check if already reposted
+    const existing = await db
+      .select()
+      .from(reposts)
+      .where(
+        and(
+          eq(reposts.postId, postId),
+          eq(reposts.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) return;
+
+    await db.insert(reposts).values({
+      postId,
+      userId
+    });
+  }
+
+  async flagPost(postId: number, userId: number, reason: string, comment?: string): Promise<void> {
+    await db.insert(postFlags).values({
+      postId,
+      userId,
+      reason,
+      comment
+    });
+  }
+
+  async tagFriendInPost(postId: number, userId: number, taggedUserId: number): Promise<void> {
+    await db.insert(taggedPosts).values({
+      postId,
+      userId: taggedUserId,
+      taggedBy: userId
+    });
+  }
+
+  async getUserTotalShares(userId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(postShares)
+      .where(eq(postShares.userId, userId));
+    
+    return result[0]?.count || 0;
+  }
+
+  async getFriendsOrderedByRecentTags(userId: number): Promise<User[]> {
+    const friends = await this.getFriends(userId);
+    return friends.map(f => f as User);
+  }
+
+  async isFollowingHashtag(userId: number, hashtagId: number): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(hashtagFollows)
+      .where(
+        and(
+          eq(hashtagFollows.userId, userId),
+          eq(hashtagFollows.hashtagId, hashtagId)
+        )
+      )
+      .limit(1);
+
+    return result.length > 0;
+  }
+
+  async getTaggedPosts(userId: number): Promise<PostWithUser[]> {
+    const taggedPostIds = await db
+      .select({ postId: taggedPosts.postId })
+      .from(taggedPosts)
+      .where(eq(taggedPosts.userId, userId));
+
+    if (taggedPostIds.length === 0) return [];
+
+    const posts = await db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        content: posts.content,
+        primaryPhotoUrl: posts.primaryPhotoUrl,
+        additionalPhotos: posts.additionalPhotos,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+        userId: posts.userId,
+        listId: posts.listId,
+        privacy: posts.privacy,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(posts)
+      .leftJoin(users, eq(posts.userId, users.id))
+      .where(inArray(posts.id, taggedPostIds.map(t => t.postId)))
+      .orderBy(desc(posts.createdAt));
+
+    return posts.map(p => ({
+      ...p,
+      user: p.user as User
+    })) as PostWithUser[];
+  }
+
+  async markNotificationAsViewed(notificationId: number): Promise<void> {
+    await this.markNotificationAsRead(notificationId);
+  }
+
+  // Additional missing methods
+  async getRsvp(eventId: number, userId: number): Promise<Rsvp | undefined> {
+    const [rsvp] = await db
+      .select()
+      .from(rsvps)
+      .where(
+        and(
+          eq(rsvps.eventId, eventId),
+          eq(rsvps.userId, userId)
+        )
+      )
+      .limit(1);
+
+    return rsvp || undefined;
+  }
+
+  async updateRsvp(eventId: number, userId: number, status: string): Promise<void> {
+    await db
+      .update(rsvps)
+      .set({ status, updatedAt: new Date() })
+      .where(
+        and(
+          eq(rsvps.eventId, eventId),
+          eq(rsvps.userId, userId)
+        )
+      );
+  }
+
+  async createRsvp(eventId: number, userId: number, status: string): Promise<void> {
+    await db.insert(rsvps).values({
+      eventId,
+      userId,
+      status
+    });
+  }
+
+  async getRsvpStats(eventId: number): Promise<{ going: number; maybe: number; notGoing: number }> {
+    const stats = await db
+      .select({
+        status: rsvps.status,
+        count: count()
+      })
+      .from(rsvps)
+      .where(eq(rsvps.eventId, eventId))
+      .groupBy(rsvps.status);
+
+    const result = { going: 0, maybe: 0, notGoing: 0 };
+    stats.forEach(stat => {
+      if (stat.status === 'going') result.going = stat.count;
+      else if (stat.status === 'maybe') result.maybe = stat.count;
+      else if (stat.status === 'not_going') result.notGoing = stat.count;
+    });
+
+    return result;
+  }
+
+  async getRsvpList(eventId: number): Promise<Array<{ user: User; status: string }>> {
+    const rsvps = await db
+      .select({
+        status: rsvps.status,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(rsvps)
+      .leftJoin(users, eq(rsvps.userId, users.id))
+      .where(eq(rsvps.eventId, eventId));
+
+    return rsvps.map(r => ({
+      user: r.user as User,
+      status: r.status
+    }));
+  }
+
+  async getReports(): Promise<Report[]> {
+    return db.select().from(reports);
+  }
+
+  async deleteReport(reportId: number): Promise<void> {
+    await db.delete(reports).where(eq(reports.id, reportId));
+  }
+
+  async getAnalytics(): Promise<any> {
+    const userCount = await db.select({ count: count() }).from(users);
+    const postCount = await db.select({ count: count() }).from(posts);
+    
+    return {
+      users: userCount[0]?.count || 0,
+      posts: postCount[0]?.count || 0
+    };
+  }
+
+  async flagUser(userId: number, flaggedBy: number, reason: string): Promise<void> {
+    await db.insert(blacklist).values({
+      userId,
+      flaggedBy,
+      reason
+    });
+  }
+
+  async unflagUser(userId: number): Promise<void> {
+    await db.delete(blacklist).where(eq(blacklist.userId, userId));
+  }
+
+  async trackView(postId: number, userId: number): Promise<void> {
+    // Check if view already exists today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existing = await db
+      .select()
+      .from(postViews)
+      .where(
+        and(
+          eq(postViews.postId, postId),
+          eq(postViews.userId, userId),
+          sql`DATE(${postViews.createdAt}) = DATE(${today})`
+        )
+      )
+      .limit(1);
+
+    if (existing.length === 0) {
+      await db.insert(postViews).values({
+        postId,
+        userId
+      });
+    }
+  }
+
+  async getPostViews(postId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(postViews)
+      .where(eq(postViews.postId, postId));
+
+    return result[0]?.count || 0;
+  }
+
+  async isSaved(postId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(savedPosts)
+      .where(
+        and(
+          eq(savedPosts.postId, postId),
+          eq(savedPosts.userId, userId)
+        )
+      )
+      .limit(1);
+
+    return result.length > 0;
+  }
+
+  async isReposted(postId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(reposts)
+      .where(
+        and(
+          eq(reposts.postId, postId),
+          eq(reposts.userId, userId)
+        )
+      )
+      .limit(1);
+
+    return result.length > 0;
+  }
+
+  async getReposts(postId: number): Promise<number> {
+    const result = await db
+      .select({ count: count() })
+      .from(reposts)
+      .where(eq(reposts.postId, postId));
+
+    return result[0]?.count || 0;
+  }
+
+  async checkAutoDelete(postId: number): Promise<boolean> {
+    return false; // Not implemented
+  }
+
+  async unflagPost(postId: number, userId: number): Promise<void> {
+    await db
+      .delete(postFlags)
+      .where(
+        and(
+          eq(postFlags.postId, postId),
+          eq(postFlags.userId, userId)
+        )
+      );
+  }
+
+  async getPostFlags(postId: number): Promise<PostFlag[]> {
+    return db.select().from(postFlags).where(eq(postFlags.postId, postId));
+  }
+
+  async tagFriendsToPost(postId: number, friendIds: number[], taggedBy: number): Promise<void> {
+    for (const friendId of friendIds) {
+      await this.tagFriendInPost(postId, taggedBy, friendId);
+    }
+  }
+
+  async getSharedWithMePosts(userId: number): Promise<PostWithUser[]> {
+    return this.getTaggedPosts(userId);
+  }
+
+  async markTaggedPostViewed(postId: number, userId: number): Promise<void> {
+    await this.trackView(postId, userId);
+  }
 }
 
 export const storage = new DatabaseStorage();
