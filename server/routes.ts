@@ -550,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discountCode,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,
         additionalPhotoData: additionalPhotoData.length > 0 ? additionalPhotoData : null,
-        categoryId: categoryId || undefined, // Let storage handle default category
+        listId: categoryId || undefined, // Let storage handle default list
         spotifyUrl,
         youtubeUrl,
         mediaMetadata,
@@ -615,14 +615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/categories/:id', async (req, res) => {
+  app.get('/api/lists/:id', async (req, res) => {
     try {
-      const categoryId = parseInt(req.params.id);
-      const category = await storage.getCategoryWithPosts(categoryId);
-      if (!category) {
-        return res.status(404).json({ message: 'Category not found' });
+      const listId = parseInt(req.params.id);
+      const list = await storage.getListWithPosts(listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
       }
-      res.json(category);
+      res.json(list);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
