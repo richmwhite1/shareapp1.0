@@ -1126,19 +1126,29 @@ export class EnterpriseStorage implements IStorage {
     return result.map(r => r.hashtag);
   }
 
-  async getTrendingHashtags(limit: number = 10): Promise<Hashtag[]> {
+  async getTrendingHashtags(limit: number = 10): Promise<any[]> {
     const result = await db
       .select({
-        hashtag: hashtags,
-        postCount: count(postHashtags.postId)
+        id: hashtags.id,
+        name: hashtags.name,
+        count: count(postHashtags.postId)
       })
       .from(hashtags)
       .leftJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
-      .groupBy(hashtags.id)
+      .leftJoin(posts, eq(postHashtags.postId, posts.id))
+      .leftJoin(lists, eq(posts.listId, lists.id))
+      .where(
+        and(
+          eq(posts.privacy, 'public'),
+          eq(lists.privacyLevel, 'public')
+        )
+      )
+      .groupBy(hashtags.id, hashtags.name)
       .orderBy(desc(count(postHashtags.postId)))
+      .having(sql`count(${postHashtags.postId}) > 0`)
       .limit(limit);
 
-    return result.map(r => r.hashtag);
+    return result;
   }
 
   async followHashtag(userId: number, hashtagId: number): Promise<void> {
