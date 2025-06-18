@@ -868,31 +868,21 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
 
-    // Use AND logic: find posts that contain ALL of the selected hashtags
+    // Find posts that contain ANY of the selected hashtags (simpler approach)
+    const postIds = await db
+      .select({ postId: postHashtags.postId })
+      .from(postHashtags)
+      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .where(inArray(hashtags.name, hashtagNames))
+      .groupBy(postHashtags.postId);
+
+    if (postIds.length === 0) {
+      return [];
+    }
+
     const result = await db
       .select({
-        id: posts.id,
-        userId: posts.userId,
-        listId: posts.listId,
-        primaryPhotoUrl: posts.primaryPhotoUrl,
-        primaryLink: posts.primaryLink,
-        primaryDescription: posts.primaryDescription,
-        discountCode: posts.discountCode,
-        additionalPhotos: posts.additionalPhotos,
-        additionalPhotoData: posts.additionalPhotoData,
-        spotifyUrl: posts.spotifyUrl,
-        youtubeUrl: posts.youtubeUrl,
-        mediaMetadata: posts.mediaMetadata,
-        privacy: posts.privacy,
-        engagement: posts.engagement,
-        isEvent: posts.isEvent,
-        eventDate: posts.eventDate,
-        reminders: posts.reminders,
-        isRecurring: posts.isRecurring,
-        recurringType: posts.recurringType,
-        taskList: posts.taskList,
-        allowRsvp: posts.allowRsvp,
-        createdAt: posts.createdAt,
+        post: posts,
         user: {
           id: users.id,
           username: users.username,
@@ -901,30 +891,18 @@ export class DatabaseStorage implements IStorage {
         },
         list: {
           id: lists.id,
-          name: lists.name,
-          privacyLevel: lists.privacyLevel
+          name: lists.name
         }
       })
       .from(posts)
-      .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
-      .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
       .leftJoin(users, eq(posts.userId, users.id))
       .leftJoin(lists, eq(posts.listId, lists.id))
-      .where(inArray(hashtags.name, hashtagNames))
-      .groupBy(
-        posts.id, posts.userId, posts.listId, posts.primaryPhotoUrl, posts.primaryLink,
-        posts.primaryDescription, posts.discountCode, posts.spotifyUrl, posts.youtubeUrl,
-        posts.privacy, posts.engagement, posts.isEvent, posts.eventDate, posts.isRecurring, 
-        posts.recurringType, posts.allowRsvp, posts.createdAt,
-        users.id, users.username, users.name, users.profilePictureUrl,
-        lists.id, lists.name, lists.privacyLevel
-      )
-      .having(sql`count(*) = ${hashtagNames.length}`)
+      .where(inArray(posts.id, postIds.map(p => p.postId)))
       .orderBy(sortBy === 'recent' ? desc(posts.createdAt) : desc(posts.engagement));
 
     const allPosts = result.map(r => ({
-      ...r,
-      user: r.user as User,
+      ...r.post,
+      user: r.user!,
       list: r.list || undefined
     })) as PostWithUser[];
 
