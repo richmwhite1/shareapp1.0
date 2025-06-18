@@ -1242,7 +1242,7 @@ export class EnterpriseStorage implements IStorage {
         count: count()
       })
       .from(profileEnergyRatings)
-      .where(eq(profileEnergyRatings.ratedUserId, userId));
+      .where(eq(profileEnergyRatings.profileId, userId));
 
     return {
       average: Number(result.average) || 4,
@@ -1326,13 +1326,13 @@ export class EnterpriseStorage implements IStorage {
 
   // EVENTS & RSVP
   async getRsvp(eventId: number, userId: number): Promise<any> {
-    const [rsvp] = await db.select().from(rsvps).where(and(eq(rsvps.eventId, eventId), eq(rsvps.userId, userId))).limit(1);
+    const [rsvp] = await db.select().from(rsvps).where(and(eq(rsvps.postId, eventId), eq(rsvps.userId, userId))).limit(1);
     return rsvp || null;
   }
 
   async createRsvp(eventId: number, userId: number, status: string): Promise<void> {
     await db.insert(rsvps).values({
-      eventId,
+      postId: eventId,
       userId,
       status
     }).onConflictDoNothing();
@@ -1342,7 +1342,7 @@ export class EnterpriseStorage implements IStorage {
     await db
       .update(rsvps)
       .set({ status })
-      .where(and(eq(rsvps.eventId, eventId), eq(rsvps.userId, userId)));
+      .where(and(eq(rsvps.postId, eventId), eq(rsvps.userId, userId)));
   }
 
   async getRsvpStats(eventId: number): Promise<{ going: number; maybe: number; notGoing: number }> {
@@ -1352,7 +1352,7 @@ export class EnterpriseStorage implements IStorage {
         count: count()
       })
       .from(rsvps)
-      .where(eq(rsvps.eventId, eventId))
+      .where(eq(rsvps.postId, eventId))
       .groupBy(rsvps.status);
 
     const result = { going: 0, maybe: 0, notGoing: 0 };
@@ -1373,7 +1373,7 @@ export class EnterpriseStorage implements IStorage {
       })
       .from(rsvps)
       .innerJoin(users, eq(rsvps.userId, users.id))
-      .where(eq(rsvps.eventId, eventId));
+      .where(eq(rsvps.postId, eventId));
 
     return result.map(r => ({
       user: r.user,
