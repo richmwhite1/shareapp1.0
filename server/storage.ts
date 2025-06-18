@@ -766,7 +766,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(posts).set(updates).where(eq(posts.id, postId));
   }
 
-  async getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]> {
+  async getPostsByHashtag(hashtagName: string, viewerId?: number): Promise<PostWithUser[]> {
     const result = await db
       .select({
         id: posts.id,
@@ -778,7 +778,7 @@ export class DatabaseStorage implements IStorage {
         discountCode: posts.discountCode,
         additionalPhotos: posts.additionalPhotos,
         additionalPhotoData: posts.additionalPhotoData,
-        spotifyUrl: posts.spotifyUrl,
+        spotifyUrl: posts.youtubeUrl,
         youtubeUrl: posts.youtubeUrl,
         mediaMetadata: posts.mediaMetadata,
         privacy: posts.privacy,
@@ -796,19 +796,29 @@ export class DatabaseStorage implements IStorage {
           username: users.username,
           name: users.name,
           profilePictureUrl: users.profilePictureUrl
+        },
+        list: {
+          id: lists.id,
+          name: lists.name,
+          privacyLevel: lists.privacyLevel
         }
       })
       .from(posts)
       .innerJoin(postHashtags, eq(posts.id, postHashtags.postId))
       .innerJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
       .leftJoin(users, eq(posts.userId, users.id))
+      .leftJoin(lists, eq(posts.listId, lists.id))
       .where(eq(hashtags.name, hashtagName))
       .orderBy(desc(posts.engagement));
 
-    return result.map(r => ({
+    const allPosts = result.map(r => ({
       ...r,
-      user: r.user as User
+      user: r.user as User,
+      list: r.list || undefined
     })) as PostWithUser[];
+
+    // Apply privacy filtering similar to getAllPosts
+    return this.filterPostsByPrivacy(allPosts, viewerId);
   }
 
   async getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]> {
