@@ -8,9 +8,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { 
-  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
+  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createListSchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData, users, posts, categories, comments, postLikes, postShares, friendships, friendRequests, 
+  type AdditionalPhotoData, users, posts, lists, comments, postLikes, postShares, friendships, friendRequests, 
   hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
   reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments
 } from "@shared/schema";

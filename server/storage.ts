@@ -1,9 +1,9 @@
 import { 
-  users, posts, comments, categories, postLikes, postShares, friendships, friendRequests, hashtags, 
+  users, posts, comments, lists, postLikes, postShares, friendships, friendRequests, hashtags, 
   postHashtags, postTags, commentTags, commentHashtags, notifications, reports, blacklist, hashtagFollows, rsvps,
   postViews, savedPosts, reposts, postFlags, taggedPosts,
   type User, type InsertUser, type Post, type InsertPost, type Comment, type InsertComment, 
-  type PostWithUser, type CommentWithUser, type Category, type InsertCategory, type CategoryWithPosts,
+  type PostWithUser, type CommentWithUser, type List, type InsertList, type ListWithPosts,
   type Friendship, type CreateFriendshipData, type FriendRequest, type Hashtag, type CreateHashtagData,
   type Notification, type CreateNotificationData, type Report, type CreateReportData,
   type BlacklistItem, type UserWithFriends, type NotificationWithUser, type HashtagFollow, type Rsvp,
