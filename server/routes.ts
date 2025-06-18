@@ -749,6 +749,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove collaborator from list
+  app.delete('/api/lists/:id/collaborators/:userId', authenticateToken, async (req: any, res) => {
+    try {
+      const listId = parseInt(req.params.id);
+      const userId = parseInt(req.params.userId);
+
+      if (isNaN(listId) || isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid list ID or user ID' });
+      }
+
+      // Check if the list exists
+      const list = await storage.getList(listId);
+      if (!list) {
+        return res.status(404).json({ message: 'List not found' });
+      }
+
+      if (list.userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Only list owners can remove collaborators' });
+      }
+
+      // Remove collaborator access
+      await storage.removeListAccess(listId, userId);
+      
+      res.json({ message: 'Collaborator removed successfully' });
+    } catch (error) {
+      console.error('Remove collaborator error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/lists/:id/invite', authenticateToken, async (req: any, res) => {
     try {
       const listId = parseInt(req.params.id);

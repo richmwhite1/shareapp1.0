@@ -390,6 +390,46 @@ export class EnterpriseStorage implements IStorage {
     });
   }
 
+  async addListCollaborator(listId: number, userId: number, role: string, invitedBy: number): Promise<void> {
+    const existing = await db
+      .select()
+      .from(listAccess)
+      .where(
+        and(
+          eq(listAccess.listId, listId),
+          eq(listAccess.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(listAccess)
+        .set({ 
+          role, 
+          status: 'accepted',
+          invitedBy
+        })
+        .where(eq(listAccess.id, existing[0].id));
+    } else {
+      await db.insert(listAccess).values({
+        listId,
+        userId,
+        role,
+        status: 'accepted',
+        invitedBy
+      });
+    }
+
+    // Create notification for direct collaboration add
+    await this.createNotification({
+      userId,
+      type: 'list_invite',
+      postId: listId,
+      fromUserId: invitedBy
+    });
+  }
+
   async respondToListInvite(accessId: number, action: string): Promise<void> {
     const status = action === 'accept' ? 'accepted' : 'rejected';
     await db
