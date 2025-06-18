@@ -583,6 +583,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Category routes
   app.get('/api/categories', authenticateToken, async (req: any, res) => {
     try {
+      const categories = await storage.getCategoriesWithAccess(req.user.userId);
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/categories/my', authenticateToken, async (req: any, res) => {
+    try {
       const categories = await storage.getCategoriesByUserId(req.user.userId);
       res.json(categories);
     } catch (error) {

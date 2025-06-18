@@ -252,6 +252,141 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Enhanced category methods with privacy control
+  async getCategoriesWithAccess(viewerId?: number): Promise<CategoryWithPosts[]> {
+    if (!viewerId) {
+      // Public categories only for unauthenticated users
+      const publicCategories = await db.select().from(categories).where(eq(categories.isPublic, true));
+      const categoriesWithPosts: CategoryWithPosts[] = [];
+      
+      for (const category of publicCategories) {
+        const categoryPosts = await this.getPostsByCategoryId(category.id);
+        categoriesWithPosts.push({
+          ...category,
+          posts: categoryPosts,
+          postCount: categoryPosts.length,
+          firstPostImage: categoryPosts[0]?.primaryPhotoUrl
+        });
+      }
+      return categoriesWithPosts;
+    }
+
+    // Get all categories the user can access
+    const publicCategories = await db.select().from(categories).where(eq(categories.isPublic, true));
+    
+    // Get user's own categories
+    const ownCategories = await db.select().from(categories).where(eq(categories.userId, viewerId));
+    
+    // Get categories shared with connections (friends)
+    const friendIds = await db
+      .select({ friendId: friendships.friendId })
+      .from(friendships)
+      .where(and(eq(friendships.userId, viewerId), eq(friendships.status, 'accepted')));
+
+    let connectionCategories: Category[] = [];
+    if (friendIds.length > 0) {
+      connectionCategories = await db
+        .select()
+        .from(categories)
+        .where(
+          and(
+            inArray(categories.userId, friendIds.map(f => f.friendId)),
+            eq(categories.privacyLevel, 'connections')
+          )
+        );
+    }
+
+    // Combine and deduplicate
+    const allCategories = [...publicCategories, ...ownCategories, ...connectionCategories];
+    const unique = allCategories.filter((cat, index, self) => 
+      self.findIndex(c => c.id === cat.id) === index
+    );
+
+    // Convert to CategoryWithPosts
+    const categoriesWithPosts: CategoryWithPosts[] = [];
+    for (const category of unique) {
+      const categoryPosts = await this.getPostsByCategoryId(category.id);
+      categoriesWithPosts.push({
+        ...category,
+        posts: categoryPosts,
+        postCount: categoryPosts.length,
+        firstPostImage: categoryPosts[0]?.primaryPhotoUrl
+      });
+    }
+
+    return categoriesWithPosts;
+  }
+
+  async createCategoryWithPrivacy(categoryData: InsertCategory & { privacyLevel?: string }): Promise<Category> {
+    const [category] = await db.insert(categories).values({
+      ...categoryData,
+      privacyLevel: categoryData.privacyLevel || 'public',
+      isPublic: (categoryData.privacyLevel || 'public') === 'public'
+    }).returning();
+
+    return category;
+  }
+
+  async canAccessCategory(categoryId: number, userId?: number): Promise<boolean> {
+    if (!userId) {
+      // Check if it's public
+      const [category] = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.id, categoryId), eq(categories.isPublic, true)))
+        .limit(1);
+      return !!category;
+    }
+
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1);
+
+    if (!category) return false;
+
+    // Owner can always access
+    if (category.userId === userId) return true;
+
+    // Public categories
+    if (category.isPublic) return true;
+
+    // Check if it's a connections-only category and user is a friend
+    if (category.description?.includes('[privacy:connections]')) {
+      const [friendship] = await db
+        .select()
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.userId, category.userId),
+            eq(friendships.friendId, userId),
+            eq(friendships.status, 'accepted')
+          )
+        )
+        .limit(1);
+      return !!friendship;
+    }
+
+    return false;
+  }
+
+  async getCategoryPrivacyLevel(categoryId: number): Promise<string> {
+    const [category] = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1);
+
+    if (!category) return 'public';
+
+    if (category.isPublic) return 'public';
+    if (category.description?.includes('[privacy:connections]')) return 'connections';
+    if (category.description?.includes('[privacy:private]')) return 'private';
+    
+    return 'public';
+  }
+
   async createPost(postData: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[] }): Promise<Post> {
     let categoryId = postData.categoryId;
     
