@@ -337,13 +337,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                 <span>{stats?.commentCount || 0}</span>
               </Button>
             </Link>
-            
-            {/* Inline compact aura rating */}
-            <div className="w-8">
-              <EnergyRating postId={post.id} className="scale-25 origin-left" />
-            </div>
-            
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
+            
+            {/* Inline compact aura rating to the right of share */}
+            <div className="w-20">
+              <EnergyRating postId={post.id} className="scale-75 origin-left" />
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
