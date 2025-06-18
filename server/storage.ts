@@ -694,7 +694,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createReport(report: CreateReportData): Promise<Report> {
-    const [rep] = await db.insert(reports).values(report).returning();
+    const [rep] = await db.insert(reports).values({
+      userId: report.userId,
+      postId: report.postId,
+      reason: report.reason,
+      comment: report.comment
+    }).returning();
     return rep;
   }
 
