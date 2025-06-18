@@ -173,10 +173,34 @@ export default function CreatePostPage() {
       
       if (response.ok) {
         const newList = await response.json();
+        
+        // Add collaborators if this is a private list and collaborators were specified
+        if (newListPrivacy === 'private' && newListCollaborators.length > 0) {
+          for (const collaborator of newListCollaborators) {
+            try {
+              await fetch(`/api/lists/${newList.id}/collaborators`, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  userId: collaborator.userId,
+                  role: collaborator.role
+                })
+              });
+            } catch (error) {
+              console.error('Failed to add collaborator:', error);
+            }
+          }
+        }
+        
         setFormData(prev => ({ ...prev, listId: newList.id.toString() }));
         setNewListName('');
         setNewListDescription('');
         setNewListPrivacy('public');
+        setNewListCollaborators([]);
         setShowNewListDialog(false);
         queryClient.invalidateQueries({ queryKey: ['/api/lists'] });
         
