@@ -229,14 +229,10 @@ export default function ConnectionsPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <Tabs defaultValue="find" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="find" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 Find People
-              </TabsTrigger>
-              <TabsTrigger value="connections" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Connections ({connections.length})
               </TabsTrigger>
               <TabsTrigger value="requests" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
@@ -371,66 +367,7 @@ export default function ConnectionsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="friends" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>My Connections</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {connections.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600 dark:text-gray-400">
-                        You haven't connected with anyone yet. Start by searching for people!
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {connections.map((connection: any) => (
-                        <div
-                          key={connection.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <AuricField profileId={connection.id} intensity={0.2}>
-                              <Avatar>
-                                <AvatarImage 
-                                  src={connection.profilePictureUrl || undefined} 
-                                  alt={connection.name}
-                                />
-                                <AvatarFallback>
-                                  {connection.name.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            </AuricField>
-                            <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {connection.name}
-                              </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                @{connection.username}
-                              </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400">
-                                {(connection as any).relationshipStatus === 'connected' ? 'Connected' : 'Following'}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => handleUnfollow(connection.id)}
-                            disabled={unfollowMutation.isPending}
-                            size="sm"
-                            variant="outline"
-                            className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900"
-                          >
-                            <UserMinus className="h-4 w-4" />
-                            Unfollow
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+
 
             <TabsContent value="requests" className="space-y-6">
               <Card>

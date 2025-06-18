@@ -38,6 +38,12 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
     enabled: isOwner
   });
 
+  // Get user's connections for invitations
+  const { data: userConnections } = useQuery({
+    queryKey: ['/api/friends'],
+    enabled: isOwner && currentPrivacy === 'private'
+  });
+
   // Search users for invitations
   const { data: searchResults } = useQuery({
     queryKey: ['/api/search/users', searchQuery],
@@ -229,8 +235,28 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
+                        {/* Show Connections First */}
+                        {userConnections && userConnections.length > 0 && (
+                          <div className="space-y-2">
+                            <Label>Your Connections</Label>
+                            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a connection to invite" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {userConnections.map((connection: any) => (
+                                  <SelectItem key={connection.id} value={connection.id.toString()}>
+                                    @{connection.username} ({connection.name})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Search for Other Users */}
                         <div>
-                          <Label htmlFor="search">Search Users</Label>
+                          <Label htmlFor="search">Or Search Other Users</Label>
                           <Input
                             id="search"
                             placeholder="Type username to search..."
@@ -241,10 +267,10 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner }: ListPriv
 
                         {searchResults && searchResults.length > 0 && (
                           <div className="space-y-2">
-                            <Label>Select User</Label>
+                            <Label>Search Results</Label>
                             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                               <SelectTrigger>
-                                <SelectValue placeholder="Choose a user" />
+                                <SelectValue placeholder="Choose from search results" />
                               </SelectTrigger>
                               <SelectContent>
                                 {searchResults.map((user: any) => (
