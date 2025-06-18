@@ -8,9 +8,9 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { 
-  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createCategorySchema, 
+  signUpSchema, signInSchema, createPostSchema, createPostRequestSchema, createCommentSchema, createListSchema, 
   createFriendshipSchema, createHashtagSchema, createReportSchema, createNotificationSchema,
-  type AdditionalPhotoData, users, posts, categories, comments, postLikes, postShares, friendships, friendRequests, 
+  type AdditionalPhotoData, users, posts, lists, comments, postLikes, postShares, friendships, friendRequests, 
   hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
   reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments
 } from "@shared/schema";
@@ -580,33 +580,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Category routes
-  app.get('/api/categories', authenticateToken, async (req: any, res) => {
+  // List routes
+  app.get('/api/lists', authenticateToken, async (req: any, res) => {
     try {
-      const categories = await storage.getCategoriesWithAccess(req.user.userId);
-      res.json(categories);
+      const lists = await storage.getListsWithAccess(req.user.userId);
+      res.json(lists);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
 
-  app.get('/api/categories/my', authenticateToken, async (req: any, res) => {
+  app.get('/api/lists/my', authenticateToken, async (req: any, res) => {
     try {
-      const categories = await storage.getCategoriesByUserId(req.user.userId);
-      res.json(categories);
+      const lists = await storage.getListsByUserId(req.user.userId);
+      res.json(lists);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
 
-  app.post('/api/categories', authenticateToken, async (req: any, res) => {
+  app.post('/api/lists', authenticateToken, async (req: any, res) => {
     try {
-      const categoryData = createCategorySchema.parse(req.body);
-      const category = await storage.createCategory({
-        ...categoryData,
+      const listData = createListSchema.parse(req.body);
+      const list = await storage.createList({
+        ...listData,
         userId: req.user.userId,
       });
-      res.json(category);
+      res.json(list);
     } catch (error: any) {
       if (error.name === 'ZodError') {
         return res.status(400).json({ message: error.errors[0].message });
