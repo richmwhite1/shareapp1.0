@@ -95,7 +95,7 @@ export default function TagFriendsContent({ postId, onClose }: TagFriendsContent
   if (isLoading) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-300">Loading friends...</p>
+        <p className="text-gray-300">Loading connections...</p>
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function TagFriendsContent({ postId, onClose }: TagFriendsContent
     return (
       <div className="p-4 text-center">
         <UserPlus className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-        <p className="text-gray-300 mb-4">You don't have any friends yet.</p>
+        <p className="text-gray-300 mb-4">You don't have any connections yet.</p>
         <Button onClick={onClose} className="bg-purple-600 hover:bg-purple-700">
           Close
         </Button>
@@ -118,14 +118,14 @@ export default function TagFriendsContent({ postId, onClose }: TagFriendsContent
       <div className="relative mb-4">
         <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         <Input
-          placeholder="Search friends..."
+          placeholder="Search connections..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 bg-gray-800 border-gray-600 text-white"
         />
       </div>
 
-      {/* Friends list */}
+      {/* Connections list */}
       <div className="max-h-64 overflow-y-auto mb-4">
         {filteredFriends.map((friend) => (
           <div key={friend.id} className="flex items-center space-x-3 p-2 hover:bg-gray-800 rounded">

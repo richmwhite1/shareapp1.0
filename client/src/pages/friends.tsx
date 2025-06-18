@@ -92,10 +92,11 @@ export default function ConnectionsPage() {
     },
     onSuccess: () => {
       toast({
-        title: "Follow request sent",
-        description: "Your follow request has been sent successfully.",
+        title: "Now following",
+        description: "You are now following this user.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/friends'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
     onError: (error: any) => {
       toast({
@@ -329,11 +330,10 @@ export default function ConnectionsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled
-                                  className="flex items-center gap-2"
+                                  className="flex items-center gap-2 bg-blue-50 text-blue-600 border-blue-300"
                                 >
-                                  <Clock className="h-4 w-4" />
-                                  Request Sent
+                                  <Check className="h-4 w-4" />
+                                  Following
                                 </Button>
                               ) : (
                                 <Button

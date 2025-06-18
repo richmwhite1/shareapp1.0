@@ -281,11 +281,11 @@ export function PostActionsMenu({ postId, postTitle, postUserId, className, acti
         <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Tag Friends</DialogTitle>
+              <DialogTitle>Tag Connections</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <Input
-                placeholder="Search friends..."
+                placeholder="Search connections..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
