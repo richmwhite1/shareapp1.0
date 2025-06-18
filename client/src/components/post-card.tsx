@@ -23,6 +23,7 @@ import FeedLikeButton from "@/components/feed-like-button";
 import FeedShareButton from "@/components/feed-share-button";
 import EventTaskList from "@/components/event-task-list";
 import TagFriendsContent from "@/components/tag-friends-content";
+import SavePostContent from "@/components/save-post-content";
 
 interface PostCardProps {
   post: PostWithUser;
