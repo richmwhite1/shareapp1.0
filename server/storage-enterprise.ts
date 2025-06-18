@@ -243,20 +243,11 @@ export class EnterpriseStorage implements IStorage {
       .groupBy(lists.id, listAccess.role)
       .orderBy(desc(lists.createdAt));
 
-    // Debug logging
-    console.log(`User ${userId}: Found ${ownedLists.length} owned lists, ${collaborativeLists.length} collaborative lists`);
-    if (collaborativeLists.length > 0) {
-      console.log(`Collaborative lists:`, collaborativeLists.map(cl => ({ name: cl.list.name, role: cl.role })));
-    }
-    
     // Combine both result sets
     const allResults = [...ownedLists, ...collaborativeLists];
-
-    console.log(`Combined results count: ${allResults.length}`);
     
     const listsWithPosts = await Promise.all(
       allResults.map(async (row) => {
-        console.log(`Processing list: ${row.list.name} (Role: ${row.role})`);
         const listPosts = await this.getPostsByListId(row.list.id);
         return {
           ...row.list,
@@ -268,7 +259,6 @@ export class EnterpriseStorage implements IStorage {
       })
     );
 
-    console.log(`Final result count: ${listsWithPosts.length}`);
     return listsWithPosts;
   }
 
