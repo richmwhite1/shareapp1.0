@@ -35,6 +35,8 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const [selectedImage, setSelectedImage] = useState(post.primaryPhotoUrl);
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
+  const [showTagDialog, setShowTagDialog] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   // Delete post mutation
   const deleteMutation = useMutation({
@@ -67,6 +69,47 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       });
     },
   });
+
+  // Handler functions
+  const handleShare = () => {
+    const postUrl = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(postUrl).then(() => {
+      toast({
+        title: "Link copied",
+        description: "Post link has been copied to clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const handleTagFriends = () => {
+    setShowTagDialog(true);
+  };
+
+  const handleRepost = () => {
+    // Implement repost functionality
+    toast({
+      title: "Repost",
+      description: "Repost functionality coming soon",
+    });
+  };
+
+  const handleSave = () => {
+    setShowSaveDialog(true);
+  };
+
+  const handleFlag = () => {
+    // Implement flag functionality
+    toast({
+      title: "Flag",
+      description: "Flag functionality coming soon",
+    });
+  };
 
   // Get post stats
   const { data: stats } = useQuery<{ likeCount: number; commentCount: number; shareCount: number }>({
@@ -158,6 +201,49 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               </div>
             </div>
           </Link>
+          
+          {/* Action Icons - Top Right in Header */}
+          <div className="flex items-center gap-2">
+            {/* Share */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              onClick={() => handleShare()}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+            
+            {/* Tag Friends */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              onClick={() => handleTagFriends()}
+            >
+              <Users className="h-4 w-4" />
+            </Button>
+            
+            {/* Repost */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              onClick={() => handleRepost()}
+            >
+              <Repeat2 className="h-4 w-4" />
+            </Button>
+            
+            {/* Save */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              onClick={() => handleSave()}
+            >
+              <Bookmark className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -169,64 +255,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           className="w-full h-96 object-cover"
         />
         
-        {/* Individual Action Icons - Top Right */}
-        <div className="absolute top-4 right-4 flex flex-row gap-2">
-          {/* Tag Friends */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
-            onClick={() => {/* Tag dialog logic */}}
-          >
-            <Users className="h-4 w-4" />
-          </Button>
-          
-          {/* Repost */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
-            onClick={() => {/* Repost logic */}}
-          >
-            <Repeat2 className="h-4 w-4" />
-          </Button>
-          
-          {/* Save */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
-            onClick={() => {/* Save dialog logic */}}
-          >
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          
-          {/* Flag */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="bg-black/50 hover:bg-black/70 text-white backdrop-blur-sm h-8 w-8 p-0"
-            onClick={() => {/* Flag dialog logic */}}
-          >
-            <Flag className="h-4 w-4" />
-          </Button>
-          
-          {/* Delete button for post owner */}
-          {user?.id === post.userId && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (window.confirm('Are you sure you want to delete this post?')) {
-                  deleteMutation.mutate();
-                }
-              }}
-              className="bg-red-600/80 hover:bg-red-700/80 text-white backdrop-blur-sm h-8 w-8 p-0"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+
         
         {/* Event Date Overlay */}
         {post.isEvent && post.eventDate && (
@@ -251,9 +280,36 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
           </div>
           
-          <div className="flex items-center gap-2 text-gray-400 text-sm">
-            <Eye className="h-4 w-4" />
-            <span>{viewData?.viewCount || 0} views</span>
+          <div className="flex items-center gap-2">
+            {/* Flag or Delete button */}
+            {user?.id === post.userId ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this post?')) {
+                    deleteMutation.mutate();
+                  }
+                }}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFlag}
+                className="text-gray-400 hover:text-white"
+              >
+                <Flag className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <div className="flex items-center gap-2 text-gray-400 text-sm">
+              <Eye className="h-4 w-4" />
+              <span>{viewData?.viewCount || 0} views</span>
+            </div>
           </div>
         </div>
       </div>
@@ -303,6 +359,42 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       
       {/* Event Task List */}
       {post.isEvent && <EventTaskList post={post} />}
+
+      {/* Tag Friends Dialog */}
+      <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Tag Friends</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-gray-300">Tag friends functionality will be implemented soon.</p>
+            <Button
+              onClick={() => setShowTagDialog(false)}
+              className="mt-4 bg-purple-600 hover:bg-purple-700"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save to Category Dialog */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Save Post</DialogTitle>
+          </DialogHeader>
+          <div className="p-4">
+            <p className="text-gray-300">Save to category functionality will be implemented soon.</p>
+            <Button
+              onClick={() => setShowSaveDialog(false)}
+              className="mt-4 bg-purple-600 hover:bg-purple-700"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
