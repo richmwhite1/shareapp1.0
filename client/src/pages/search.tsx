@@ -223,29 +223,29 @@ export default function SearchPage() {
           </CardContent>
         </Card>
 
-        {/* My Hashtags */}
+        {/* Following Hashtags - Compact */}
         {followedHashtags && followedHashtags.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Hash className="h-5 w-5" />
-                Following
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Hash className="h-4 w-4" />
+                <span className="text-sm font-medium">Following</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-1.5">
                 {followedHashtags.map((hashtag: any) => (
                   <div key={hashtag.id} className="flex items-center gap-1">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleHashtagClick(hashtag.name)}
-                      className="flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                      className="h-7 px-2 py-0 text-xs flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
                       disabled={selectedHashtags.includes(hashtag.name)}
                     >
-                      <Hash className="h-3 w-3" />
+                      <Hash className="h-2.5 w-2.5" />
                       {hashtag.name}
-                      <Badge variant="secondary" className="ml-1">
+                      <Badge variant="secondary" className="ml-1 text-xs px-1 py-0 h-4">
                         {hashtag.count}
                       </Badge>
                     </Button>
@@ -253,9 +253,9 @@ export default function SearchPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => unfollowHashtag(hashtag.id)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="h-7 w-7 p-0 text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                     </Button>
                   </div>
                 ))}
