@@ -3,19 +3,23 @@ import { useRoute } from "wouter";
 import { getQueryFn } from "@/lib/queryClient";
 
 import PostCard from "@/components/post-card";
+import { ListPrivacyManager } from "@/components/list-privacy-manager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Folder, Lock, Users, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Folder, Lock, Users, Share2, Globe, UserCheck } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import type { CategoryWithPosts, PostWithUser } from "@shared/schema";
+import { useAuth } from "@/lib/auth.tsx";
+import type { ListWithPosts, PostWithUser } from "@shared/schema";
 
 export default function CategoryPage() {
   const [match, params] = useRoute('/category/:id');
   const categoryId = params?.id;
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const { data: category, isLoading: categoryLoading } = useQuery<CategoryWithPosts>({
+  const { data: category, isLoading: categoryLoading } = useQuery<ListWithPosts>({
     queryKey: [`/api/categories/${categoryId}`],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!categoryId,
@@ -98,10 +102,23 @@ export default function CategoryPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold text-foreground">{category?.name}</h1>
-                  {category?.isPublic ? (
-                    <Users className="h-4 w-4 text-green-400" />
-                  ) : (
-                    <Lock className="h-4 w-4 text-muted-foreground" />
+                  {category?.privacyLevel === 'public' && (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <Globe className="h-3 w-3 mr-1" />
+                      Public
+                    </Badge>
+                  )}
+                  {category?.privacyLevel === 'connections' && (
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <UserCheck className="h-3 w-3 mr-1" />
+                      Connections
+                    </Badge>
+                  )}
+                  {category?.privacyLevel === 'private' && (
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Private
+                    </Badge>
                   )}
                 </div>
                 <p className="text-muted-foreground">
@@ -111,15 +128,31 @@ export default function CategoryPage() {
             </div>
           </div>
 
-          <Button
-            onClick={handleShareCategory}
-            variant="outline"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share List
-          </Button>
+          <div className="flex gap-2">
+            {user?.id === category?.userId && (
+              <ListPrivacyManager
+                listId={parseInt(categoryId!)}
+                currentPrivacy={category?.privacyLevel || 'public'}
+                isOwner={true}
+              />
+            )}
+            {user?.id !== category?.userId && category?.privacyLevel === 'private' && (
+              <ListPrivacyManager
+                listId={parseInt(categoryId!)}
+                currentPrivacy={category?.privacyLevel || 'public'}
+                isOwner={false}
+              />
+            )}
+            <Button
+              onClick={handleShareCategory}
+              variant="outline"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share List
+            </Button>
+          </div>
         </div>
 
         {/* Posts Grid */}
