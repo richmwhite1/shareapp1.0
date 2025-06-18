@@ -705,6 +705,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Unauthorized' });
       }
 
+      // Prevent converting private lists back to public (one-way restriction)
+      if (list.privacyLevel === 'private' && privacyLevel === 'public') {
+        return res.status(400).json({ message: 'Private lists cannot be made public for security reasons' });
+      }
+
       await storage.updateListPrivacy(listId, privacyLevel);
       res.json({ message: 'Privacy updated successfully' });
     } catch (error) {

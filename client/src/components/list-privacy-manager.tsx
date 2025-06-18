@@ -226,7 +226,9 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="public">Public - Anyone can see</SelectItem>
+                          {currentPrivacy !== 'private' && (
+                            <SelectItem value="public">Public - Anyone can see</SelectItem>
+                          )}
                           <SelectItem value="connections">Connections - Only friends can see</SelectItem>
                           <SelectItem value="private">Private - Invite only</SelectItem>
                         </SelectContent>
@@ -262,11 +264,13 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
                                 <SelectValue placeholder="Select a connection to invite" />
                               </SelectTrigger>
                               <SelectContent>
-                                {userConnections.filter(c => c && c.id && c.username).map((connection: any) => (
-                                  <SelectItem key={connection.id} value={connection.id.toString()}>
-                                    @{connection.username} ({connection.name || 'Unknown User'})
-                                  </SelectItem>
-                                ))}
+                                {userConnections
+                                  .filter(c => c && c.id && c.username && typeof c.username === 'string')
+                                  .map((connection: any) => (
+                                    <SelectItem key={connection.id} value={connection.id.toString()}>
+                                      @{connection.username} ({connection.name || 'Unknown User'})
+                                    </SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -387,13 +391,15 @@ export function ListPrivacyManager({ listId, currentPrivacy, isOwner, onClose }:
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {accessRequests.map((request: any) => (
+                          {accessRequests
+                            .filter(request => request && request.user && request.user.username && typeof request.user.username === 'string')
+                            .map((request: any) => (
                             <div key={request.id} className="p-3 border rounded-lg">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3">
                                   <div>
                                     <div className="font-medium">@{request.user.username}</div>
-                                    <div className="text-sm text-gray-600 dark:text-gray-400">{request.user.name}</div>
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">{request.user.name || 'Unknown User'}</div>
                                   </div>
                                   <Badge className={getRoleBadgeColor(request.requestedRole)}>
                                     {request.requestedRole}

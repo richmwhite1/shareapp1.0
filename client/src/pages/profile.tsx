@@ -412,7 +412,7 @@ export default function ProfilePage() {
             </div>
             
             <div className="grid grid-cols-4 gap-3">
-              {(lists || []).slice(0, 8).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
+              {(lists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
                 // Get the most recent post image from this list
                 const recentPost = userPosts?.find(post => post.listId === list.id);
                 const hasImage = recentPost?.primaryPhotoUrl;
