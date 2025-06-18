@@ -48,7 +48,19 @@ html, body {
   
   /* Enhanced spacing and typography */
   --post-gap: 0px;
-  --card-radius: 0px;
+}
+
+/* iPhone-style wiggle animation for list management */
+@keyframes wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  50% { transform: rotate(-1deg); }
+  75% { transform: rotate(1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.8s ease-in-out infinite;
 }
 
 /* Dark theme for react-day-picker calendar */

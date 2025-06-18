@@ -35,6 +35,9 @@ export default function ProfilePage() {
   const [isManagingLists, setIsManagingLists] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [draggedList, setDraggedList] = useState<number | null>(null);
+  const [draggedOverList, setDraggedOverList] = useState<number | null>(null);
+  const [autoExitTimer, setAutoExitTimer] = useState<NodeJS.Timeout | null>(null);
+  const [sortedLists, setSortedLists] = useState<ListWithPosts[]>([]);
   
   // If there's an ID param, we're viewing another user's profile
   const profileUserId = params.id ? parseInt(params.id) : user?.id;
@@ -227,12 +230,19 @@ export default function ProfilePage() {
     rateUserMutation.mutate(rating);
   };
 
+  // Initialize sorted lists when lists data changes
+  useEffect(() => {
+    if (lists && lists.length > 0) {
+      setSortedLists([...lists]);
+    }
+  }, [lists]);
+
   // Long press handlers for list management
   const handleMouseDown = (listId: number) => {
     if (!isOwnProfile) return;
     
     const timer = setTimeout(() => {
-      setIsManagingLists(true);
+      enterManagingMode();
     }, 500); // 500ms for long press
     
     setLongPressTimer(timer);
@@ -252,9 +262,68 @@ export default function ProfilePage() {
     }
   };
 
+  const enterManagingMode = () => {
+    setIsManagingLists(true);
+    startAutoExitTimer();
+  };
+
+  const startAutoExitTimer = () => {
+    if (autoExitTimer) {
+      clearTimeout(autoExitTimer);
+    }
+    const timer = setTimeout(() => {
+      exitManagingMode();
+    }, 10000); // 10 seconds auto-exit
+    setAutoExitTimer(timer);
+  };
+
   const exitManagingMode = () => {
     setIsManagingLists(false);
     setDraggedList(null);
+    setDraggedOverList(null);
+    if (autoExitTimer) {
+      clearTimeout(autoExitTimer);
+      setAutoExitTimer(null);
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, listId: number) => {
+    setDraggedList(listId);
+    startAutoExitTimer(); // Reset timer on interaction
+  };
+
+  const handleDragOver = (e: React.DragEvent, listId: number) => {
+    e.preventDefault();
+    setDraggedOverList(listId);
+  };
+
+  const handleDragLeave = () => {
+    setDraggedOverList(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetListId: number) => {
+    e.preventDefault();
+    
+    if (!draggedList || draggedList === targetListId) {
+      setDraggedList(null);
+      setDraggedOverList(null);
+      return;
+    }
+
+    const newSortedLists = [...sortedLists];
+    const draggedIndex = newSortedLists.findIndex(list => list.id === draggedList);
+    const targetIndex = newSortedLists.findIndex(list => list.id === targetListId);
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedItem] = newSortedLists.splice(draggedIndex, 1);
+      newSortedLists.splice(targetIndex, 0, draggedItem);
+      setSortedLists(newSortedLists);
+    }
+
+    setDraggedList(null);
+    setDraggedOverList(null);
+    startAutoExitTimer(); // Reset timer after reorder
   };
 
   // Get aura color based on rating
@@ -458,7 +527,7 @@ export default function ProfilePage() {
             )}
 
             <div className="grid grid-cols-4 gap-3">
-              {(lists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
+              {(sortedLists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
                 // Get the most recent post image from this list
                 const recentPost = userPosts?.find(post => post.listId === list.id);
                 const hasImage = recentPost?.primaryPhotoUrl;
@@ -467,10 +536,12 @@ export default function ProfilePage() {
                   // Management mode - floating with delete button and drag/drop
                   <div 
                     key={list.id}
-                    className={`relative ${isManagingLists ? 'animate-pulse' : ''}`}
+                    className={`relative animate-wiggle ${draggedOverList === list.id ? 'scale-110 opacity-75' : ''} transition-all duration-200`}
                     draggable={isManagingLists}
-                    onDragStart={() => setDraggedList(list.id)}
-                    onDragEnd={() => setDraggedList(null)}
+                    onDragStart={(e) => handleDragStart(e, list.id)}
+                    onDragOver={(e) => handleDragOver(e, list.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, list.id)}
                   >
                     <div className="bg-gray-900 rounded-xl p-3 text-center hover:bg-black transition-all relative transform hover:scale-105 shadow-lg">
                       {/* Delete Button */}
