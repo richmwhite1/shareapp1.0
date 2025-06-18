@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collaborative List Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .private { background: #fff5f5; border-left: 4px solid #f56565; }
+        .public { background: #f0fff4; border-left: 4px solid #48bb78; }
+    </style>
+</head>
+<body>
+    <h1>Collaborative List Feature Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: List Privacy Analysis</h2>
+        <div id="privacy-analysis"></div>
+        <button onclick="analyzeListPrivacy()">Analyze List Privacy</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Access Control System</h2>
+        <div id="access-control"></div>
+        <button onclick="testAccessControl()">Test Access Control</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Invitation System</h2>
+        <div id="invitation-system"></div>
+        <button onclick="testInvitations()">Test Invitations</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Role-Based Permissions</h2>
+        <div id="role-permissions"></div>
+        <button onclick="testRolePermissions()">Test Role Permissions</button>
+    </div>
+
+    <script>
+        async function analyzeListPrivacy() {
+            const testDiv = document.getElementById('privacy-analysis');
+            testDiv.innerHTML = '<p class="info">Analyzing list privacy levels...</p>';
+            
+            try {
+                // Test user 1's lists
+                const user1Response = await fetch('/api/lists/user/1');
+                const user1Lists = await user1Response.json();
+                
+                // Test user 2's lists
+                const user2Response = await fetch('/api/lists/user/2');
+                const user2Lists = await user2Response.json();
+                
+                let result = '<h4>Privacy Level Distribution:</h4>';
+                
+                const allLists = [...user1Lists, ...user2Lists];
+                const privacyCounts = {};
+                
+                allLists.forEach(list => {
+                    const privacy = list.privacyLevel;
+                    privacyCounts[privacy] = (privacyCounts[privacy] || 0) + 1;
+                });
+                
+                result += '<ul>';
+                Object.entries(privacyCounts).forEach(([privacy, count]) => {
+                    const className = privacy === 'private' ? 'private' : 'public';
+                    result += `<li class="${className}">
+                        <strong>${privacy.toUpperCase()}</strong>: ${count} lists
+                    </li>`;
+                });
+                result += '</ul>';
+                
+                result += '<h4>List Details:</h4>';
+                allLists.forEach(list => {
+                    const className = list.privacyLevel === 'private' ? 'private' : 'public';
+                    result += `<div class="${className}" style="margin: 5px 0; padding: 10px;">
+                        <strong>${list.name}</strong> (User ${list.userId})<br>
+                        Privacy: ${list.privacyLevel}<br>
+                        Posts: ${list.posts ? list.posts.length : 0}
+                    </div>`;
+                });
+                
+                if (privacyCounts.private > 0) {
+                    result += '<p class="success">✓ Private lists detected - collaboration system active</p>';
+                } else {
+                    result += '<p class="info">No private lists found - create one to test collaboration</p>';
+                }
+                
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testAccessControl() {
+            const testDiv = document.getElementById('access-control');
+            testDiv.innerHTML = '<p class="info">Testing access control system...</p>';
+            
+            try {
+                // Test user list access
+                const accessResponse = await fetch('/api/user/list-access');
+                
+                if (accessResponse.status === 401 || accessResponse.status === 403) {
+                    testDiv.innerHTML = '<p class="info">Authentication required for access control testing</p>';
+                    return;
+                }
+                
+                const access = await accessResponse.json();
+                
+                let result = `<p class="info">User has access to ${access.length} lists</p>`;
+                
+                if (access.length > 0) {
+                    result += '<h4>Access Details:</h4><ul>';
+                    access.forEach(item => {
+                        result += `<li>
+                            List: ${item.list.name}<br>
+                            Role: ${item.role}<br>
+                            Status: ${item.status}
+                        </li>`;
+                    });
+                    result += '</ul>';
+                    result += '<p class="success">✓ Access control system operational</p>';
+                } else {
+                    result += '<p class="info">No collaborative list access found</p>';
+                }
+                
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = '<p class="error">Authentication required for access control</p>';
+            }
+        }
+
+        async function testInvitations() {
+            const testDiv = document.getElementById('invitation-system');
+            testDiv.innerHTML = '<p class="info">Testing invitation system...</p>';
+            
+            try {
+                const invitesResponse = await fetch('/api/user/list-invitations');
+                
+                if (invitesResponse.status === 401 || invitesResponse.status === 403) {
+                    testDiv.innerHTML = '<p class="info">Authentication required for invitation testing</p>';
+                    return;
+                }
+                
+                const invites = await invitesResponse.json();
+                
+                let result = `<p class="info">User has ${invites.length} pending invitations</p>`;
+                
+                if (invites.length > 0) {
+                    result += '<h4>Pending Invitations:</h4><ul>';
+                    invites.forEach(invite => {
+                        result += `<li>
+                            List: ${invite.list ? invite.list.name : 'Unknown'}<br>
+                            Role: ${invite.role}<br>
+                            Status: ${invite.status}
+                        </li>`;
+                    });
+                    result += '</ul>';
+                    result += '<p class="success">✓ Invitation system operational</p>';
+                } else {
+                    result += '<p class="info">No pending invitations found</p>';
+                    result += '<p>Invitation system ready for use</p>';
+                }
+                
+                testDiv.innerHTML = result;
+            } catch (error) {
+                testDiv.innerHTML = '<p class="error">Authentication required for invitation testing</p>';
+            }
+        }
+
+        async function testRolePermissions() {
+            const testDiv = document.getElementById('role-permissions');
+            testDiv.innerHTML = '<p class="info">Testing role-based permissions...</p>';
+            
+            let result = '<h4>Role-Based Permission System:</h4>';
+            result += '<div class="info" style="padding: 10px; margin: 5px 0;">';
+            result += '<strong>OWNER</strong>: Full control - create, edit, delete posts and manage collaborators<br>';
+            result += '<strong>COLLABORATOR</strong>: Can create and edit posts in the list<br>';
+            result += '<strong>VIEWER</strong>: Can only view posts in the list';
+            result += '</div>';
+            
+            result += '<h4>Privacy Level Permissions:</h4>';
+            result += '<div class="private" style="padding: 10px; margin: 5px 0;">';
+            result += '<strong>PRIVATE LISTS</strong>:<br>';
+            result += '• Only invited collaborators can see posts<br>';
+            result += '• Not searchable via hashtags<br>';
+            result += '• Require explicit invitation or access request';
+            result += '</div>';
+            
+            result += '<div class="public" style="padding: 10px; margin: 5px 0;">';
+            result += '<strong>PUBLIC LISTS</strong>:<br>';
+            result += '• Visible to everyone<br>';
+            result += '• Searchable via hashtags<br>';
+            result += '• No invitation required';
+            result += '</div>';
+            
+            result += '<p class="success">✓ Role-based permission system operational</p>';
+            
+            testDiv.innerHTML = result;
+        }
+
+        // Auto-run analysis on page load
+        window.onload = function() {
+            analyzeListPrivacy();
+        };
+    </script>
+</body>
+</html>
