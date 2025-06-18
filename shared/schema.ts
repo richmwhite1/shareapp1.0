@@ -540,13 +540,13 @@ export type AdditionalPhotoData = {
 // Extended types for API responses
 export type PostWithUser = Post & {
   user: Pick<User, 'id' | 'username' | 'name' | 'profilePictureUrl'>;
-  category?: Pick<Category, 'id' | 'name'>;
+  list?: Pick<List, 'id' | 'name'>;
   additionalPhotoData?: AdditionalPhotoData[];
   hashtags?: Hashtag[];
   taggedUsers?: Pick<User, 'id' | 'username' | 'name'>[];
 };
 
-export type CategoryWithPosts = Category & {
+export type ListWithPosts = List & {
   posts: PostWithUser[];
   postCount: number;
   firstPostImage?: string;

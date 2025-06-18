@@ -21,18 +21,18 @@ export interface IStorage {
   searchUsers(query: string): Promise<User[]>;
   updateUserPrivacy(userId: number, privacy: string): Promise<void>;
 
-  // Category methods
-  createCategory(category: InsertCategory & { userId: number }): Promise<Category>;
-  getCategoriesByUserId(userId: number): Promise<CategoryWithPosts[]>;
-  getCategory(id: number): Promise<Category | undefined>;
-  getCategoryWithPosts(id: number): Promise<CategoryWithPosts | undefined>;
+  // List methods
+  createList(list: InsertList & { userId: number }): Promise<List>;
+  getListsByUserId(userId: number): Promise<ListWithPosts[]>;
+  getList(id: number): Promise<List | undefined>;
+  getListWithPosts(id: number): Promise<ListWithPosts | undefined>;
 
   // Post methods
-  createPost(post: InsertPost & { userId: number; categoryId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
+  createPost(post: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[]; privacy?: string; spotifyUrl?: string; youtubeUrl?: string; mediaMetadata?: any; isEvent?: boolean; eventDate?: Date; reminders?: string[]; isRecurring?: boolean; recurringType?: string; taskList?: any[]; allowRsvp?: boolean }): Promise<Post>;
   getPost(id: number): Promise<PostWithUser | undefined>;
   getAllPosts(): Promise<PostWithUser[]>;
   getPostsByUserId(userId: number): Promise<PostWithUser[]>;
-  getPostsByCategoryId(categoryId: number): Promise<PostWithUser[]>;
+  getPostsByListId(listId: number): Promise<PostWithUser[]>;
   getPostsByHashtag(hashtagName: string): Promise<PostWithUser[]>;
   getPostsByMultipleHashtags(hashtagNames: string[], sortBy?: string): Promise<PostWithUser[]>;
   getPostsByPrivacy(privacy: string, userId?: number): Promise<PostWithUser[]>;
