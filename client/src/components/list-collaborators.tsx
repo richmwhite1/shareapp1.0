@@ -256,7 +256,6 @@ export function ListCollaborators({
               </div>
             ) : null}
 
-            {/* Search for Other Users */}
             <div>
               <Label htmlFor="search">Or Search Other Users</Label>
               <Input
@@ -267,7 +266,7 @@ export function ListCollaborators({
               />
             </div>
 
-            {searchResults && Array.isArray(searchResults) && searchResults.length > 0 && (
+            {searchResults && Array.isArray(searchResults) && searchResults.length > 0 ? (
               <div className="space-y-2">
                 <Label>Search Results</Label>
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -285,7 +284,7 @@ export function ListCollaborators({
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            ) : null}
 
             <div>
               <Label>Role</Label>
