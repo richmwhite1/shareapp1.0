@@ -213,10 +213,12 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async getListsByUserId(userId: number): Promise<ListWithPosts[]> {
-    const result = await db
+    // Get lists owned by user
+    const ownedLists = await db
       .select({
         list: lists,
-        postCount: count(posts.id)
+        postCount: count(posts.id),
+        role: sql<string>`'owner'`
       })
       .from(lists)
       .leftJoin(posts, eq(lists.id, posts.listId))
@@ -224,14 +226,35 @@ export class EnterpriseStorage implements IStorage {
       .groupBy(lists.id)
       .orderBy(desc(lists.createdAt));
 
+    // Get lists where user has collaborative access
+    const collaborativeLists = await db
+      .select({
+        list: lists,
+        postCount: count(posts.id),
+        role: listAccess.role
+      })
+      .from(listAccess)
+      .innerJoin(lists, eq(listAccess.listId, lists.id))
+      .leftJoin(posts, eq(lists.id, posts.listId))
+      .where(and(
+        eq(listAccess.userId, userId),
+        eq(listAccess.status, 'accepted')
+      ))
+      .groupBy(lists.id, listAccess.role)
+      .orderBy(desc(lists.createdAt));
+
+    // Combine both result sets
+    const allResults = [...ownedLists, ...collaborativeLists];
+
     const listsWithPosts = await Promise.all(
-      result.map(async (row) => {
+      allResults.map(async (row) => {
         const listPosts = await this.getPostsByListId(row.list.id);
         return {
           ...row.list,
           posts: listPosts,
           postCount: row.postCount,
-          firstPostImage: listPosts[0]?.primaryPhotoUrl
+          firstPostImage: listPosts[0]?.primaryPhotoUrl,
+          userRole: row.role // Add role information
         };
       })
     );
