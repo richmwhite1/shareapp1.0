@@ -1,8 +1,5 @@
-import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue, 
-         type AdminUser, type InsertAdminUser, type AuditLog, type InsertAuditLog, 
-         type ModerationAction, type InsertModerationAction, type SystemConfig, type InsertSystemConfig,
-         type BulkOperation, type ContentReviewItem } from "@shared/admin-schema";
-import { users, posts, lists, postFlags, reports, type User, type Post, type List } from "@shared/schema";
+import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue,
+         users, posts, lists, postFlags, reports, type User, type Post, type List } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, count, gte, lt, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
