@@ -589,14 +589,14 @@ export default function ProfilePage() {
                           </div>
                         )}
                         {/* Privacy Indicator */}
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-1 right-1">
                           {list.privacyLevel === 'private' && (
-                            <div className="bg-red-500/90 text-white p-1.5 rounded-full">
+                            <div className="bg-gray-800/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                               <Lock className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'connections' && (
-                            <div className="bg-blue-500/90 text-white p-1.5 rounded-full">
+                            <div className="bg-gray-800/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                               <Users className="h-4 w-4" />
                             </div>
                           )}
@@ -640,14 +640,14 @@ export default function ProfilePage() {
                           </div>
                         )}
                         {/* Privacy Indicator */}
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-1 right-1">
                           {list.privacyLevel === 'private' && (
-                            <div className="bg-red-500/90 text-white p-1.5 rounded-full">
+                            <div className="bg-gray-800/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                               <Lock className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'connections' && (
-                            <div className="bg-blue-500/90 text-white p-1.5 rounded-full">
+                            <div className="bg-gray-800/90 text-white px-2 py-0.5 rounded text-xs font-medium">
                               <Users className="h-4 w-4" />
                             </div>
                           )}
