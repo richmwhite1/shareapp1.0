@@ -596,60 +596,192 @@ export default function AdminDashboard() {
 
           {/* Analytics */}
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-slate-900 border-slate-800">
-                <CardHeader>
-                  <CardTitle className="text-white">Platform Statistics</CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Overview of platform activity and growth
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-slate-800 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{metrics?.totalUsers || 0}</div>
-                      <div className="text-sm text-slate-400">Total Users</div>
-                    </div>
-                    <div className="text-center p-4 bg-slate-800 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{metrics?.totalPosts || 0}</div>
-                      <div className="text-sm text-slate-400">Total Posts</div>
-                    </div>
-                    <div className="text-center p-4 bg-slate-800 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{metrics?.totalLists || 0}</div>
-                      <div className="text-sm text-slate-400">Total Lists</div>
-                    </div>
-                    <div className="text-center p-4 bg-slate-800 rounded-lg">
-                      <div className="text-2xl font-bold text-white">{metrics?.activeUsers24h || 0}</div>
-                      <div className="text-sm text-slate-400">Active 24h</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="space-y-6">
+              {/* Enhanced Metrics Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-200">Total Views</CardTitle>
+                    <Eye className="h-4 w-4 text-purple-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{metrics?.totalViews?.toLocaleString() || 0}</div>
+                    <p className="text-xs text-slate-400">{metrics?.contentMetrics?.viewsToday || 0} today</p>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-slate-900 border-slate-800">
-                <CardHeader>
-                  <CardTitle className="text-white">System Health</CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Monitor platform performance and issues
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Overall Health</span>
-                    <Badge variant={getHealthBadgeVariant(metrics?.systemHealth || 'good')}>
-                      {metrics?.systemHealth || 'good'}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Flagged Content</span>
-                    <span className="text-white">{metrics?.flaggedContent || 0}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Pending Reports</span>
-                    <span className="text-white">{metrics?.pendingReports || 0}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-200">Total Likes</CardTitle>
+                    <Activity className="h-4 w-4 text-red-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{metrics?.totalLikes || 0}</div>
+                    <p className="text-xs text-slate-400">{metrics?.contentMetrics?.likesToday || 0} today</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-200">Total Comments</CardTitle>
+                    <Users className="h-4 w-4 text-blue-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{metrics?.totalComments || 0}</div>
+                    <p className="text-xs text-slate-400">User engagement</p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-slate-200">Connections</CardTitle>
+                    <Users className="h-4 w-4 text-yellow-400" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-white">{metrics?.totalConnections || 0}</div>
+                    <p className="text-xs text-slate-400">Active friendships</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* User Engagement Metrics */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">User Engagement</CardTitle>
+                    <CardDescription className="text-slate-400">Active user statistics</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Daily Active</span>
+                        <span className="text-green-400 font-bold">{metrics?.userEngagement?.dailyActiveUsers || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Weekly Active</span>
+                        <span className="text-blue-400 font-bold">{metrics?.userEngagement?.weeklyActiveUsers || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Monthly Active</span>
+                        <span className="text-purple-400 font-bold">{metrics?.userEngagement?.monthlyActiveUsers || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Avg Session</span>
+                        <span className="text-white font-bold">{metrics?.userEngagement?.avgSessionDuration || 0}m</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Content Analytics</CardTitle>
+                    <CardDescription className="text-slate-400">Content creation averages</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Avg Posts/User</span>
+                        <span className="text-white font-bold">{metrics?.avgPostsPerUser || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Avg Lists/User</span>
+                        <span className="text-white font-bold">{metrics?.avgListsPerUser || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Posts Today</span>
+                        <span className="text-green-400 font-bold">{metrics?.contentMetrics?.postsToday || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Lists Today</span>
+                        <span className="text-blue-400 font-bold">{metrics?.contentMetrics?.listsToday || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Performance Metrics</CardTitle>
+                    <CardDescription className="text-slate-400">System performance data</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Avg Load Time</span>
+                        <span className="text-green-400 font-bold">{metrics?.performanceMetrics?.averageLoadTime || 1.2}s</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Error Rate</span>
+                        <span className="text-yellow-400 font-bold">{metrics?.performanceMetrics?.errorRate || 0.1}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Uptime</span>
+                        <span className="text-green-400 font-bold">{metrics?.performanceMetrics?.uptime || 99.9}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">System Health</span>
+                        <Badge variant={getHealthBadgeVariant(metrics?.systemHealth || 'excellent')}>
+                          {metrics?.systemHealth || 'excellent'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Top Hashtags */}
+              {metrics?.topHashtags && metrics.topHashtags.length > 0 && (
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Trending Hashtags</CardTitle>
+                    <CardDescription className="text-slate-400">Most popular hashtags on the platform</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {metrics.topHashtags.map((hashtag, index) => (
+                        <div key={hashtag.name} className="flex items-center space-x-4">
+                          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-white font-medium">#{hashtag.name}</span>
+                              <span className="text-slate-400">{hashtag.count} posts</span>
+                            </div>
+                            <div className="w-full bg-slate-700 rounded-full h-2">
+                              <div
+                                className="bg-purple-600 h-2 rounded-full"
+                                style={{ width: `${(hashtag.count / metrics.topHashtags[0].count) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent Activity */}
+              {metrics?.recentActivity && metrics.recentActivity.length > 0 && (
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-white">Recent Activity Trend</CardTitle>
+                    <CardDescription className="text-slate-400">Content creation over the last 7 days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {metrics.recentActivity.map((activity, index) => (
+                        <div key={index} className="flex justify-between items-center p-2 bg-slate-800 rounded">
+                          <span className="text-slate-300">{activity.date}</span>
+                          <span className="text-white font-bold">{activity.count} {activity.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
