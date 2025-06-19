@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
 import { Link } from "wouter";
-import { ListCollaboratorAvatars } from "@/components/list-collaborator-avatars";
+
 
 export default function Profile() {
   const { userId: paramUserId } = useParams();
@@ -59,12 +59,12 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (privacyData?.defaultPrivacy) {
-      setDefaultPrivacy(privacyData.defaultPrivacy);
+    if (privacyData && typeof privacyData === 'object' && privacyData !== null && 'defaultPrivacy' in privacyData) {
+      setDefaultPrivacy((privacyData as any).defaultPrivacy);
     }
   }, [privacyData]);
 
-  const totalPosts = posts?.length || 0;
+  const totalPosts = Array.isArray(posts) ? posts.length : 0;
 
   const updatePrivacyMutation = useMutation({
     mutationFn: async (privacy: 'public' | 'connections' | 'private') => {
@@ -144,14 +144,12 @@ export default function Profile() {
         {/* Profile Info */}
         <div className="px-6 py-6">
           <div className="flex items-center space-x-4 mb-4">
-            <AuricField profileId={profileUserId} intensity={0.3}>
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={userData.profilePictureUrl || ""} />
-                <AvatarFallback className="bg-gray-800 text-white text-lg">
-                  {userData.name?.charAt(0) || userData.username?.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            </AuricField>
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={userData.profilePictureUrl || ""} />
+              <AvatarFallback className="bg-gray-800 text-white text-lg">
+                {userData.name?.charAt(0) || userData.username?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
             
             <div className="flex-1">
               <h2 className="text-xl font-bold">{userData.name || userData.username}</h2>
@@ -205,12 +203,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Aura Rating - Only for other users */}
-        {!isOwnProfile && (
-          <div className="px-6 mb-6">
-            <EnergyRating profileId={profileUserId} className="w-full" />
-          </div>
-        )}
+
 
         {/* Lists Section */}
         <div className="px-6 mb-6">
@@ -264,9 +257,8 @@ export default function Profile() {
                       </span>
                       {isOwnProfile && (
                         <Switch
-                          size="sm"
                           checked={list.privacyLevel === 'public'}
-                          className="ml-2"
+                          className="ml-2 scale-75"
                         />
                       )}
                     </div>
@@ -285,14 +277,12 @@ export default function Profile() {
               {userFriends.slice(0, 10).map((friend: any) => (
                 <Link key={friend.id} href={`/profile/${friend.id}`}>
                   <div className="flex-shrink-0 text-center">
-                    <AuricField profileId={friend.id} intensity={0.2}>
-                      <Avatar className="w-12 h-12 mx-auto mb-1">
-                        <AvatarImage src={friend.profilePictureUrl || ""} />
-                        <AvatarFallback className="bg-gray-800 text-white text-sm">
-                          {friend.name?.charAt(0) || friend.username?.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </AuricField>
+                    <Avatar className="w-12 h-12 mx-auto mb-1">
+                      <AvatarImage src={friend.profilePictureUrl || ""} />
+                      <AvatarFallback className="bg-gray-800 text-white text-sm">
+                        {friend.name?.charAt(0) || friend.username?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="text-xs text-white truncate w-12">
                       {friend.name || friend.username}
                     </div>
