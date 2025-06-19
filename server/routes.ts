@@ -827,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Accept the invitation
-      await storage.respondToListInvite(pendingAccess.listId, 'accept');
+      await storage.respondToListInviteByUserAndList(req.user.userId, listId, 'accept');
       
       res.json({ message: 'Invitation accepted, list added to your profile' });
     } catch (error) {
@@ -851,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Reject the invitation
-      await storage.respondToListInvite(pendingAccess.listId, 'reject');
+      await storage.respondToListInviteByUserAndList(req.user.userId, listId, 'reject');
       
       res.json({ message: 'Invitation rejected' });
     } catch (error) {

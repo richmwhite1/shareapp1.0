@@ -30,6 +30,7 @@ export interface IStorage {
   inviteToList(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
   addListCollaborator(listId: number, userId: number, role: string, invitedBy: number): Promise<void>;
   respondToListInvite(accessId: number, action: string): Promise<void>;
+  respondToListInviteByUserAndList(userId: number, listId: number, action: string): Promise<void>;
   getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>>;
   getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>>;
   getPendingListInvitations(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any; invitedBy: any }>>;
@@ -435,8 +436,20 @@ export class EnterpriseStorage implements IStorage {
     const status = action === 'accept' ? 'accepted' : 'rejected';
     await db
       .update(listAccess)
-      .set({ status })
+      .set({ status, updatedAt: new Date() })
       .where(eq(listAccess.id, accessId));
+  }
+
+  async respondToListInviteByUserAndList(userId: number, listId: number, action: string): Promise<void> {
+    const status = action === 'accept' ? 'accepted' : 'rejected';
+    await db
+      .update(listAccess)
+      .set({ status, updatedAt: new Date() })
+      .where(and(
+        eq(listAccess.userId, userId),
+        eq(listAccess.listId, listId),
+        eq(listAccess.status, 'pending')
+      ));
   }
 
   async getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>> {
@@ -519,6 +532,7 @@ export class EnterpriseStorage implements IStorage {
       .orderBy(desc(listAccess.createdAt));
 
     return result.map(r => ({
+      id: r.listId, // For frontend compatibility
       listId: r.listId,
       role: r.role,
       status: r.status,
