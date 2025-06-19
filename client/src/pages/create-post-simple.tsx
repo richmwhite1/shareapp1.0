@@ -752,10 +752,11 @@ END:VCALENDAR`;
       return;
     }
 
-    if (!primaryPhoto) {
+    // Only require primary photo if no YouTube/Spotify URL is provided
+    if (!primaryPhoto && !formData.youtubeUrl.trim() && !formData.spotifyUrl.trim()) {
       toast({
         title: "Error",
-        description: "Please upload a primary photo",
+        description: "Please upload a primary photo or provide a YouTube/Spotify link",
         variant: "destructive"
       });
       return;
