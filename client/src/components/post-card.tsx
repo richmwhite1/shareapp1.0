@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, Share2, Heart, MessageCircle, Trash2, Copy, Flag, Star, Hash, Calendar, Play, Eye, Users, Repeat2, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState(post.primaryPhotoUrl);
   const [reportReason, setReportReason] = useState("");
   const [reportDescription, setReportDescription] = useState("");
@@ -197,6 +198,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               spotifyUrl={post.spotifyUrl || undefined}
               postId={post.id}
               thumbnailUrl={post.primaryPhotoUrl}
+              onPostClick={() => window.location.href = `/post/${post.id}`}
             />
           </div>
         ) : (

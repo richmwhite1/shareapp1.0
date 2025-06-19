@@ -7,6 +7,7 @@ interface InlineMediaPlayerProps {
   spotifyUrl?: string | null;
   postId: number;
   thumbnailUrl?: string;
+  onPostClick?: () => void;
 }
 
 // Global audio manager to ensure only one plays at a time
@@ -57,7 +58,7 @@ class AudioManager {
   }
 }
 
-export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thumbnailUrl }: InlineMediaPlayerProps) {
+export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thumbnailUrl, onPostClick }: InlineMediaPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -164,7 +165,7 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thum
         // Thumbnail with play button
         <div 
           className="relative w-full h-full cursor-pointer group"
-          onClick={handlePlayClick}
+          onClick={onPostClick}
         >
           <img
             src={thumbnailUrl}
@@ -174,9 +175,17 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thum
           
           {/* Play button overlay */}
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-            <div className="bg-white/90 rounded-full p-4">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePlayClick();
+              }}
+              variant="secondary"
+              size="lg"
+              className="bg-white/90 hover:bg-white rounded-full p-4 shadow-lg"
+            >
               <Play className="w-8 h-8 text-black" />
-            </div>
+            </Button>
           </div>
           
           {/* Media type indicator */}
