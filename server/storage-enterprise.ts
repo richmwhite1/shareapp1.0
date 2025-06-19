@@ -32,6 +32,7 @@ export interface IStorage {
   respondToListInvite(accessId: number, action: string): Promise<void>;
   getListAccess(listId: number): Promise<Array<{ userId: number; role: string; status: string; user: any }>>;
   getUserListAccess(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any }>>;
+  getPendingListInvitations(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any; invitedBy: any }>>;
   hasListAccess(userId: number, listId: number): Promise<{ hasAccess: boolean; role?: string }>;
   removeListAccess(listId: number, userId: number): Promise<void>;
   createAccessRequest(listId: number, userId: number, requestedRole: string, message?: string): Promise<void>;
@@ -486,6 +487,43 @@ export class EnterpriseStorage implements IStorage {
       role: r.role,
       status: r.status,
       list: r.list
+    }));
+  }
+
+  async getPendingListInvitations(userId: number): Promise<Array<{ listId: number; role: string; status: string; list: any; invitedBy: any }>> {
+    const result = await db
+      .select({
+        listId: listAccess.listId,
+        role: listAccess.role,
+        status: listAccess.status,
+        list: {
+          id: lists.id,
+          name: lists.name,
+          description: lists.description,
+          privacyLevel: lists.privacyLevel
+        },
+        invitedBy: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(listAccess)
+      .leftJoin(lists, eq(listAccess.listId, lists.id))
+      .leftJoin(users, eq(listAccess.invitedBy, users.id))
+      .where(and(
+        eq(listAccess.userId, userId),
+        eq(listAccess.status, 'pending')
+      ))
+      .orderBy(desc(listAccess.createdAt));
+
+    return result.map(r => ({
+      listId: r.listId,
+      role: r.role,
+      status: r.status,
+      list: r.list,
+      invitedBy: r.invitedBy
     }));
   }
 

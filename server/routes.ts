@@ -862,9 +862,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's pending list invitations
   app.get('/api/user/list-invitations', authenticateToken, async (req: any, res) => {
     try {
-      const userAccess = await storage.getUserListAccess(req.user.userId);
-      const pendingInvitations = userAccess.filter(access => access.status === 'pending');
-      
+      const pendingInvitations = await storage.getPendingListInvitations(req.user.userId);
       res.json(pendingInvitations);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
