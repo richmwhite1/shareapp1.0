@@ -15,7 +15,6 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function Profile() {
   const { userId: paramUserId } = useParams();
-  const profileUserId = paramUserId ? parseInt(paramUserId) : 8; // Default to user 8 if no param
   const [selectedList, setSelectedList] = useState<number | null>(null);
   const [pressedList, setPressedList] = useState<number | null>(null);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -24,8 +23,23 @@ export default function Profile() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, setLocation] = useLocation();
 
-  // Check if this is the current user's own profile
-  const isOwnProfile = profileUserId === 8; // Current user ID
+  // Get current user first
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/verify'],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No token');
+      const response = await fetch('/api/auth/verify', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Auth failed');
+      const data = await response.json();
+      return data.user;
+    }
+  });
+
+  const profileUserId = paramUserId ? parseInt(paramUserId) : currentUser?.id;
+  const isOwnProfile = profileUserId === currentUser?.id;
 
   // Fetch user data
   const { data: userData, isLoading: userLoading, error: userError } = useQuery({
