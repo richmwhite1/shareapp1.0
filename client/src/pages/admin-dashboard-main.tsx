@@ -286,6 +286,43 @@ export default function AdminDashboard() {
     },
   });
 
+  // URL management mutations
+  const hotSwapUrlMutation = useMutation({
+    mutationFn: async ({ originalUrl, newUrl, discountCode }: { originalUrl: string; newUrl: string; discountCode?: string }) => {
+      return fetchWithAuth(`/api/admin/urls/hot-swap`, {
+        method: 'POST',
+        body: JSON.stringify({ originalUrl, newUrl, discountCode }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/url-analytics'] });
+      toast({ title: "URL hot swap completed successfully" });
+      setHotSwapUrl('');
+      setDiscountCode('');
+      setSelectedUrl(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to perform URL hot swap", variant: "destructive" });
+    },
+  });
+
+  const bulkDiscountMutation = useMutation({
+    mutationFn: async ({ urls, discountCode }: { urls: string[]; discountCode: string }) => {
+      return fetchWithAuth(`/api/admin/urls/bulk-discount`, {
+        method: 'POST',
+        body: JSON.stringify({ urls, discountCode }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/url-analytics'] });
+      toast({ title: "Bulk discount codes applied successfully" });
+      setDiscountCode('');
+    },
+    onError: () => {
+      toast({ title: "Failed to apply bulk discount codes", variant: "destructive" });
+    },
+  });
+
   const handleLogout = () => {
     localStorage.removeItem('admin_token');
     setLocation('/admin/login');
@@ -422,6 +459,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="analytics" className="data-[state=active]:bg-purple-600">
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="urls" className="data-[state=active]:bg-purple-600">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              URLs
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-purple-600">
               <Settings className="h-4 w-4 mr-2" />
@@ -909,6 +950,316 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* URLs Management */}
+          <TabsContent value="urls" className="space-y-6">
+            <Card className="bg-slate-900 border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <ExternalLink className="h-5 w-5 mr-2" />
+                  URL Analytics & Management
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Track URL performance, manage affiliate links, and perform bulk operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex space-x-4 mb-6">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        placeholder="Search URLs by domain or link..."
+                        value={urlSearchTerm}
+                        onChange={(e) => setUrlSearchTerm(e.target.value)}
+                        className="pl-10 bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/url-analytics'] })}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+
+                {urlAnalyticsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                    <p className="text-slate-400">Loading URL analytics...</p>
+                  </div>
+                ) : urlAnalytics.length > 0 ? (
+                  <div className="space-y-4">
+                    {urlAnalytics.filter(url => 
+                      !urlSearchTerm || url.url.toLowerCase().includes(urlSearchTerm.toLowerCase())
+                    ).map((urlData) => (
+                      <Card key={urlData.url} className="bg-slate-800 border-slate-700">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center space-x-2">
+                                <ExternalLink className="h-4 w-4 text-blue-400" />
+                                <span className="text-white font-medium truncate max-w-md">{urlData.url}</span>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  onClick={() => navigator.clipboard.writeText(urlData.url)}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              
+                              <div className="flex items-center space-x-4 text-sm">
+                                <div className="flex items-center space-x-1">
+                                  <BarChart3 className="h-4 w-4 text-green-400" />
+                                  <span className="text-slate-300">{urlData.clickCount} clicks</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <FileText className="h-4 w-4 text-blue-400" />
+                                  <span className="text-slate-300">{urlData.postCount} posts</span>
+                                </div>
+                                {urlData.mapping && (
+                                  <div className="flex items-center space-x-1">
+                                    <Link className="h-4 w-4 text-purple-400" />
+                                    <span className="text-slate-300">Mapped</span>
+                                    {urlData.mapping.discountCode && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {urlData.mapping.discountCode}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+
+                              {urlData.mapping && (
+                                <div className="text-xs text-slate-400 bg-slate-900 p-2 rounded">
+                                  <span className="font-medium">Current URL:</span> {urlData.mapping.currentUrl}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex space-x-2 ml-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedUrl(urlData)}
+                                className="border-slate-600"
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                Hot Swap
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <ExternalLink className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400">No URL data available</p>
+                  </div>
+                )}
+
+                {/* Bulk Operations Section */}
+                <div className="mt-8 pt-6 border-t border-slate-700">
+                  <h3 className="text-lg font-semibold text-white mb-4">Bulk Operations</h3>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Bulk Discount Code Application */}
+                    <Card className="bg-slate-800 border-slate-700">
+                      <CardHeader>
+                        <CardTitle className="text-white text-sm">Apply Bulk Discount Codes</CardTitle>
+                        <CardDescription className="text-slate-400 text-xs">
+                          Apply discount codes to multiple URLs at once
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-slate-300 mb-2 block">
+                            Discount Code
+                          </label>
+                          <Input
+                            placeholder="e.g., SAVE20, HOLIDAY15"
+                            value={discountCode}
+                            onChange={(e) => setDiscountCode(e.target.value)}
+                            className="bg-slate-900 border-slate-600"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-slate-300 mb-2 block">
+                            Selected URLs ({urlAnalytics.filter(url => url.url.includes('amazon') || url.url.includes('target')).length})
+                          </label>
+                          <div className="text-xs text-slate-400 bg-slate-900 p-2 rounded max-h-20 overflow-y-auto">
+                            {urlAnalytics.filter(url => url.url.includes('amazon') || url.url.includes('target')).map(url => (
+                              <div key={url.url} className="truncate">{url.url}</div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <Button
+                          onClick={() => {
+                            const selectedUrls = urlAnalytics
+                              .filter(url => url.url.includes('amazon') || url.url.includes('target'))
+                              .map(url => url.url);
+                            if (discountCode && selectedUrls.length > 0) {
+                              bulkDiscountMutation.mutate({ urls: selectedUrls, discountCode });
+                            }
+                          }}
+                          disabled={!discountCode || bulkDiscountMutation.isPending}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          {bulkDiscountMutation.isPending ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                          )}
+                          Apply to {urlAnalytics.filter(url => url.url.includes('amazon') || url.url.includes('target')).length} URLs
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* URL Statistics */}
+                    <Card className="bg-slate-800 border-slate-700">
+                      <CardHeader>
+                        <CardTitle className="text-white text-sm">URL Statistics</CardTitle>
+                        <CardDescription className="text-slate-400 text-xs">
+                          Overview of URL performance metrics
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-white">
+                              {urlAnalytics.reduce((sum, url) => sum + url.clickCount, 0)}
+                            </div>
+                            <div className="text-xs text-slate-400">Total Clicks</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-white">
+                              {urlAnalytics.length}
+                            </div>
+                            <div className="text-xs text-slate-400">Unique URLs</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-white">
+                              {urlAnalytics.filter(url => url.mapping).length}
+                            </div>
+                            <div className="text-xs text-slate-400">Mapped URLs</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-white">
+                              {urlAnalytics.filter(url => url.mapping?.discountCode).length}
+                            </div>
+                            <div className="text-xs text-slate-400">With Discounts</div>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 border-t border-slate-600">
+                          <div className="text-xs text-slate-400 space-y-1">
+                            <div>Top Domain: {urlAnalytics.length > 0 ? new URL(urlAnalytics[0].url).hostname : 'N/A'}</div>
+                            <div>Avg Clicks: {urlAnalytics.length > 0 ? Math.round(urlAnalytics.reduce((sum, url) => sum + url.clickCount, 0) / urlAnalytics.length) : 0}</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Hot Swap Dialog */}
+            {selectedUrl && (
+              <Dialog open={!!selectedUrl} onOpenChange={() => setSelectedUrl(null)}>
+                <DialogContent className="bg-slate-900 border-slate-700">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Hot Swap URL</DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                      Replace this URL across all posts with a new URL
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-300 mb-2 block">
+                        Current URL
+                      </label>
+                      <div className="text-sm text-slate-400 bg-slate-800 p-2 rounded border border-slate-700">
+                        {selectedUrl.url}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-slate-300 mb-2 block">
+                        New URL
+                      </label>
+                      <Input
+                        placeholder="https://example.com/new-url"
+                        value={hotSwapUrl}
+                        onChange={(e) => setHotSwapUrl(e.target.value)}
+                        className="bg-slate-800 border-slate-600"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-slate-300 mb-2 block">
+                        Discount Code (Optional)
+                      </label>
+                      <Input
+                        placeholder="e.g., SAVE20"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value)}
+                        className="bg-slate-800 border-slate-600"
+                      />
+                    </div>
+                    
+                    <div className="bg-slate-800 p-3 rounded border border-slate-700">
+                      <div className="text-xs text-slate-400">
+                        <div className="font-medium mb-1">Impact:</div>
+                        <div>• Will update {selectedUrl.postCount} posts</div>
+                        <div>• {selectedUrl.clickCount} tracked clicks will be preserved</div>
+                        <div>• URL mapping will be created/updated</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-3 pt-4">
+                      <Button
+                        onClick={() => setSelectedUrl(null)}
+                        variant="outline"
+                        className="flex-1 border-slate-600"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (hotSwapUrl) {
+                            hotSwapUrlMutation.mutate({
+                              originalUrl: selectedUrl.url,
+                              newUrl: hotSwapUrl,
+                              discountCode: discountCode || undefined
+                            });
+                          }
+                        }}
+                        disabled={!hotSwapUrl || hotSwapUrlMutation.isPending}
+                        className="flex-1 bg-purple-600 hover:bg-purple-700"
+                      >
+                        {hotSwapUrlMutation.isPending ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Execute Hot Swap
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </TabsContent>
 
           {/* Analytics */}
