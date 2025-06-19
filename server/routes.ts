@@ -149,6 +149,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
+      // Check if user is suspended by checking moderation actions
+      const { moderationActions } = await import('@shared/schema');
+      const moderationHistory = await db.select()
+        .from(moderationActions)
+        .where(and(
+          eq(moderationActions.contentType, 'user'),
+          eq(moderationActions.contentId, user.id)
+        ))
+        .orderBy(desc(moderationActions.createdAt));
+
+      const latestSuspend = moderationHistory
+        .filter(action => action.action === 'ban' || action.action === 'suspend')[0];
+      const latestUnsuspend = moderationHistory
+        .filter(action => action.action === 'unban' || action.action === 'unsuspend')[0];
+      
+      const isSuspended = latestSuspend && (!latestUnsuspend || new Date(latestSuspend.createdAt) > new Date(latestUnsuspend.createdAt));
+      
+      if (isSuspended) {
+        return res.status(403).json({ message: 'Account suspended. Contact administrator.' });
+      }
+
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
@@ -175,6 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error.name === 'ZodError') {
         return res.status(400).json({ message: error.errors[0].message });
       }
+      console.error('Signin error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
