@@ -320,7 +320,45 @@ router.post('/logout', adminAuth, async (req, res) => {
   }
 });
 
-// User metrics with point system
+// User metrics with comprehensive point system
+router.get('/user-metrics', adminAuth, async (req, res) => {
+  try {
+    const { search, sortBy, sortOrder, minCosmicScore, maxCosmicScore } = req.query;
+    
+    console.log('User metrics request:', { search, sortBy, sortOrder, minCosmicScore, maxCosmicScore });
+    
+    const users = await adminStorage.getUsersWithMetrics(
+      search as string,
+      minCosmicScore ? parseInt(minCosmicScore as string) : undefined,
+      maxCosmicScore ? parseInt(maxCosmicScore as string) : undefined
+    );
+    
+    // Sort results based on sortBy and sortOrder
+    if (sortBy && users.length > 0) {
+      users.sort((a, b) => {
+        let aVal = a[sortBy as keyof typeof a];
+        let bVal = b[sortBy as keyof typeof b];
+        
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+        
+        if (sortOrder === 'asc') {
+          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        } else {
+          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+        }
+      });
+    }
+    
+    console.log(`Returning ${users.length} user metrics`);
+    res.json(users);
+  } catch (error) {
+    console.error('User metrics error:', error);
+    res.status(500).json({ error: 'Failed to fetch user metrics' });
+  }
+});
+
+// Legacy route for compatibility
 router.get('/users/metrics', adminAuth, async (req, res) => {
   try {
     const { search, minCosmicScore, maxCosmicScore } = req.query;
