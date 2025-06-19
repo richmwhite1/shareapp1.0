@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Bell, User } from "lucide-react";
+import { Bell, User, Shield } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Header() {
@@ -86,6 +86,13 @@ export default function Header() {
                       <DropdownMenuItem className="text-white hover:bg-gray-700 cursor-pointer">
                         <User className="w-4 h-4 mr-2" />
                         Profile
+                      </DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <Link href="/admin">
+                      <DropdownMenuItem className="text-purple-400 hover:bg-gray-700 cursor-pointer">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Portal
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuSeparator className="bg-gray-700" />

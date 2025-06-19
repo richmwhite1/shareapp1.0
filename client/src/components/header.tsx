@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, Plus, Home, User, Search, Bell, Users, Hash } from "lucide-react";
+import { ChevronDown, Plus, Home, User, Search, Bell, Users, Hash, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -160,13 +160,13 @@ export default function Header() {
                         Tagged Posts
                       </DropdownMenuItem>
                     </Link>
-                    {user?.username === 'stickles' && (
-                      <Link href="/admin">
-                        <DropdownMenuItem className="text-yellow-400 hover:bg-gray-700 cursor-pointer">
-                          Admin Dashboard
-                        </DropdownMenuItem>
-                      </Link>
-                    )}
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <Link href="/admin">
+                      <DropdownMenuItem className="text-purple-400 hover:bg-gray-700 cursor-pointer">
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Portal
+                      </DropdownMenuItem>
+                    </Link>
                     <DropdownMenuSeparator className="bg-gray-700" />
                     <DropdownMenuItem onClick={signOut} className="text-white hover:bg-gray-700 cursor-pointer">
                       Sign Out
