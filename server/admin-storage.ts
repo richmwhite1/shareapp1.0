@@ -522,7 +522,7 @@ export class AdminStorage implements IAdminStorage {
     // Today's activity
     const [postsToday] = await db.select({ count: count() })
       .from(postsTable)
-      .where(gte(posts.createdAt, today));
+      .where(gte(postsTable.createdAt, today));
     
     const [listsToday] = await db.select({ count: count() })
       .from(lists)
@@ -535,7 +535,7 @@ export class AdminStorage implements IAdminStorage {
     
     const [commentsToday] = await db.select({ count: count() })
       .from(commentsTable)
-      .where(gte(comments.createdAt, today));
+      .where(gte(commentsTable.createdAt, today));
     
     // Calculate top hashtags from actual post content
     const topHashtags: Array<{name: string, count: number}> = [
@@ -558,13 +558,13 @@ export class AdminStorage implements IAdminStorage {
 
     // Recent activity (last 7 days)
     const recentActivity = await db.select({
-      date: sql<string>`DATE(${posts.createdAt})`,
+      date: sql<string>`DATE(${postsTable.createdAt})`,
       count: count()
     })
     .from(postsTable)
-    .where(gte(posts.createdAt, weekAgo))
-    .groupBy(sql`DATE(${posts.createdAt})`)
-    .orderBy(sql`DATE(${posts.createdAt})`);
+    .where(gte(postsTable.createdAt, weekAgo))
+    .groupBy(sql`DATE(${postsTable.createdAt})`)
+    .orderBy(sql`DATE(${postsTable.createdAt})`);
 
     // System health calculation
     const systemHealth = flagStats.count > 20 ? 'critical' : 
@@ -628,13 +628,13 @@ export class AdminStorage implements IAdminStorage {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
     const postStats = await db.select({
-      date: sql`DATE(${posts.createdAt})`,
-      count: count(posts.id)
+      date: sql`DATE(${postsTable.createdAt})`,
+      count: count(postsTable.id)
     })
     .from(postsTable)
-    .where(gte(posts.createdAt, startDate))
-    .groupBy(sql`DATE(${posts.createdAt})`)
-    .orderBy(sql`DATE(${posts.createdAt})`);
+    .where(gte(postsTable.createdAt, startDate))
+    .groupBy(sql`DATE(${postsTable.createdAt})`)
+    .orderBy(sql`DATE(${postsTable.createdAt})`);
 
     return postStats;
   }
@@ -706,7 +706,7 @@ export class AdminStorage implements IAdminStorage {
   }
 
   async exportContentData(filters?: any): Promise<any[]> {
-    const postsData = await db.select().from(postsTable).orderBy(posts.id);
+    const postsData = await db.select().from(postsTable).orderBy(postsTable.id);
     const listsData = await db.select().from(lists).orderBy(lists.id);
     
     return {

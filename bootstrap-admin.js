@@ -9,6 +9,7 @@ async function bootstrapAdmin() {
     const [admin] = await db.insert(adminUsers).values({
       username: 'admin',
       password: hashedPassword,
+      email: 'admin@shareapp.com',
       role: 'super_admin',
       permissions: ['all'],
       isActive: true
