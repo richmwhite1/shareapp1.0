@@ -36,8 +36,9 @@ async function createHashtags() {
     
     // Create a test post for Emily
     const [newPost] = await sql`
-      INSERT INTO posts (user_id, list_id, primary_photo_url, primary_description, privacy, created_at)
+      INSERT INTO posts (user_id, list_id, primary_photo_url, primary_link, primary_description, privacy, created_at)
       VALUES (${emily.id}, ${emilyList.id}, 'https://picsum.photos/400/300?random=1', 
+              'https://byu.edu/athletics/football', 
               'Go BYU Cougars! Love watching football games! #football #byu #sports', 
               'public', NOW())
       RETURNING id
