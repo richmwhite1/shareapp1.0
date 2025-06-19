@@ -23,10 +23,13 @@ export default function Profile() {
   const isOwnProfile = profileUserId === 8; // Current user ID
 
   // Fetch user data
-  const { data: userData } = useQuery({
-    queryKey: ['/api/users', profileUserId],
+  const { data: userData, isLoading: userLoading, error: userError } = useQuery({
+    queryKey: [`/api/users/${profileUserId}`],
     enabled: !!profileUserId
   });
+
+  // Debug logging
+  console.log('Profile debug:', { profileUserId, userData, userLoading, userError });
 
   // Fetch user's posts
   const { data: posts } = useQuery({
@@ -149,7 +152,7 @@ export default function Profile() {
     setPressedList(null);
   };
 
-  if (!userData) {
+  if (userLoading || !userData) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div>Loading profile...</div>
