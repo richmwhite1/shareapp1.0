@@ -106,9 +106,38 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thum
     }
   };
 
+  const getSpotifyEmbedUrl = (url: string) => {
+    // Convert Spotify URLs to embed format
+    const trackMatch = url.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
+    const albumMatch = url.match(/spotify\.com\/album\/([a-zA-Z0-9]+)/);
+    const playlistMatch = url.match(/spotify\.com\/playlist\/([a-zA-Z0-9]+)/);
+    
+    if (trackMatch) {
+      return `https://open.spotify.com/embed/track/${trackMatch[1]}`;
+    } else if (albumMatch) {
+      return `https://open.spotify.com/embed/album/${albumMatch[1]}`;
+    } else if (playlistMatch) {
+      return `https://open.spotify.com/embed/playlist/${playlistMatch[1]}`;
+    }
+    return null;
+  };
+
   const handleSpotifyPlay = () => {
-    // For Spotify, we'll open in a new tab since we can't embed audio directly
-    window.open(spotifyUrl || '', '_blank');
+    const embedUrl = getSpotifyEmbedUrl(spotifyUrl!);
+    if (!embedUrl) {
+      window.open(spotifyUrl || '', '_blank');
+      return;
+    }
+
+    if (showPlayer && isPlaying) {
+      setIsPlaying(false);
+      setShowPlayer(false);
+      audioManager.stop();
+    } else {
+      audioManager.play(null, postId);
+      setShowPlayer(true);
+      setIsPlaying(true);
+    }
   };
 
   return (
@@ -121,6 +150,15 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, thum
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
+        />
+      ) : showPlayer && spotifyUrl ? (
+        // Spotify iframe player
+        <iframe
+          src={getSpotifyEmbedUrl(spotifyUrl!)}
+          className="w-full h-full"
+          frameBorder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
         />
       ) : (
         // Thumbnail with play button
