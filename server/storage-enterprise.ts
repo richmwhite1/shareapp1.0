@@ -1798,12 +1798,44 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async getNotifications(userId: number): Promise<any[]> {
-    return await db
-      .select()
+    const result = await db
+      .select({
+        id: notifications.id,
+        type: notifications.type,
+        userId: notifications.userId,
+        fromUserId: notifications.fromUserId,
+        postId: notifications.postId,
+        viewed: notifications.viewed,
+        createdAt: notifications.createdAt,
+        fromUser: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl,
+        },
+        post: {
+          id: posts.id,
+          primaryDescription: posts.primaryDescription,
+        }
+      })
       .from(notifications)
+      .leftJoin(users, eq(notifications.fromUserId, users.id))
+      .leftJoin(posts, eq(notifications.postId, posts.id))
       .where(eq(notifications.userId, userId))
       .orderBy(desc(notifications.createdAt))
       .limit(50);
+
+    return result.map(r => ({
+      id: r.id,
+      type: r.type,
+      userId: r.userId,
+      fromUserId: r.fromUserId,
+      postId: r.postId,
+      viewed: r.viewed,
+      createdAt: r.createdAt,
+      fromUser: r.fromUser || undefined,
+      post: r.post || undefined,
+    }));
   }
 
   async markNotificationAsRead(notificationId: number): Promise<void> {

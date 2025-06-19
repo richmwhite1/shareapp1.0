@@ -2385,7 +2385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/notifications/:id/viewed', authenticateToken, async (req: any, res) => {
+  app.post('/api/notifications/:id/view', authenticateToken, async (req: any, res) => {
     try {
       const notificationId = parseInt(req.params.id);
       await storage.markNotificationAsViewed(notificationId);

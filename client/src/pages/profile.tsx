@@ -327,13 +327,13 @@ export default function Profile() {
               {userFriends.slice(0, 10).map((friend: any) => (
                 <Link key={friend.id} href={`/profile/${friend.id}`}>
                   <div className="flex-shrink-0 text-center">
-                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                    <Avatar className="w-20 h-20 mx-auto mb-2">
                       <AvatarImage src={friend.profilePictureUrl || ""} />
-                      <AvatarFallback className="bg-gray-800 text-white text-lg">
+                      <AvatarFallback className="bg-gray-800 text-white text-xl">
                         {friend.name?.charAt(0) || friend.username?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="text-xs text-white truncate w-16">
+                    <div className="text-xs text-white truncate w-20">
                       {friend.name || friend.username}
                     </div>
                   </div>
