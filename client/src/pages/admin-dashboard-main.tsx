@@ -27,7 +27,11 @@ import {
   Database,
   LogOut,
   Eye,
-  Filter
+  Filter,
+  Star,
+  Award,
+  Zap,
+  Crown
 } from "lucide-react";
 
 interface AdminMetrics {
@@ -77,6 +81,27 @@ interface User {
   listCount: number;
 }
 
+interface UserMetrics {
+  id: number;
+  username: string;
+  name: string;
+  auraRating: number;
+  totalPoints: number;
+  auraAmplifier: number;
+  cosmicScore: number;
+  postPoints: number;
+  engagementPoints: number;
+  referralPoints: number;
+  postCount: number;
+  likeCount: number;
+  shareCount: number;
+  repostCount: number;
+  tagCount: number;
+  saveCount: number;
+  referralCount: number;
+  createdAt: string;
+}
+
 interface ContentReviewItem {
   id: number;
   contentType: string;
@@ -95,6 +120,11 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userFilter, setUserFilter] = useState("all");
   const [contentFilter, setContentFilter] = useState("all");
+  const [metricsSearchTerm, setMetricsSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("cosmicScore");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [minCosmicScore, setMinCosmicScore] = useState("");
+  const [maxCosmicScore, setMaxCosmicScore] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -148,6 +178,20 @@ export default function AdminDashboard() {
   const { data: reviewQueue = [], isLoading: reviewLoading } = useQuery<ContentReviewItem[]>({
     queryKey: ['/api/admin/review-queue', contentFilter],
     queryFn: () => fetchWithAuth(`/api/admin/review-queue?filter=${contentFilter}`),
+  });
+
+  // User metrics data with search and sorting
+  const { data: userMetrics = [], isLoading: userMetricsLoading } = useQuery<UserMetrics[]>({
+    queryKey: ['/api/admin/user-metrics', metricsSearchTerm, sortBy, sortOrder, minCosmicScore, maxCosmicScore],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (metricsSearchTerm) params.append('search', metricsSearchTerm);
+      if (sortBy) params.append('sortBy', sortBy);
+      if (sortOrder) params.append('sortOrder', sortOrder);
+      if (minCosmicScore) params.append('minCosmicScore', minCosmicScore);
+      if (maxCosmicScore) params.append('maxCosmicScore', maxCosmicScore);
+      return fetchWithAuth(`/api/admin/user-metrics?${params.toString()}`);
+    },
   });
 
   // User actions
@@ -324,10 +368,14 @@ export default function AdminDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-900 border border-slate-800">
+          <TabsList className="grid w-full grid-cols-5 bg-slate-900 border border-slate-800">
             <TabsTrigger value="users" className="data-[state=active]:bg-purple-600">
               <Users className="h-4 w-4 mr-2" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="sharesies" className="data-[state=active]:bg-purple-600">
+              <Star className="h-4 w-4 mr-2" />
+              Sharesies
             </TabsTrigger>
             <TabsTrigger value="content" className="data-[state=active]:bg-purple-600">
               <FileText className="h-4 w-4 mr-2" />
@@ -492,6 +540,237 @@ export default function AdminDashboard() {
                     <p className="text-slate-400">No users found. Try adjusting your search or filter.</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Sharesies - Point System Metrics */}
+          <TabsContent value="sharesies" className="space-y-6">
+            <Card className="bg-slate-900 border-slate-800">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Star className="h-5 w-5 mr-2 text-yellow-400" />
+                  Sharesies Point System Dashboard
+                </CardTitle>
+                <CardDescription>
+                  Comprehensive user metrics, point distribution, aura ratings, and cosmic scores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Search and Filter Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Search users..."
+                      value={metricsSearchTerm}
+                      onChange={(e) => setMetricsSearchTerm(e.target.value)}
+                      className="pl-10 bg-slate-800 border-slate-700 text-white"
+                    />
+                  </div>
+                  
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="bg-slate-800 border-slate-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cosmicScore">Cosmic Score</SelectItem>
+                      <SelectItem value="totalPoints">Total Points</SelectItem>
+                      <SelectItem value="auraRating">Aura Rating</SelectItem>
+                      <SelectItem value="postCount">Post Count</SelectItem>
+                      <SelectItem value="engagementPoints">Engagement</SelectItem>
+                      <SelectItem value="referralCount">Referrals</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={sortOrder} onValueChange={setSortOrder}>
+                    <SelectTrigger className="bg-slate-800 border-slate-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="desc">Highest First</SelectItem>
+                      <SelectItem value="asc">Lowest First</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Min Score"
+                      value={minCosmicScore}
+                      onChange={(e) => setMinCosmicScore(e.target.value)}
+                      className="bg-slate-800 border-slate-700 text-white"
+                      type="number"
+                    />
+                    <Input
+                      placeholder="Max Score"
+                      value={maxCosmicScore}
+                      onChange={(e) => setMaxCosmicScore(e.target.value)}
+                      className="bg-slate-800 border-slate-700 text-white"
+                      type="number"
+                    />
+                  </div>
+                </div>
+
+                {/* Point System Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">Total Users</p>
+                          <p className="text-2xl font-bold text-white">{userMetrics.length}</p>
+                        </div>
+                        <Users className="h-8 w-8 text-blue-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">Avg Cosmic Score</p>
+                          <p className="text-2xl font-bold text-white">
+                            {userMetrics.length > 0 ? Math.round(userMetrics.reduce((sum, user) => sum + user.cosmicScore, 0) / userMetrics.length) : 0}
+                          </p>
+                        </div>
+                        <Crown className="h-8 w-8 text-yellow-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-400">Top Performer</p>
+                          <p className="text-lg font-bold text-white">
+                            {userMetrics.length > 0 ? userMetrics[0]?.username || 'N/A' : 'N/A'}
+                          </p>
+                        </div>
+                        <Award className="h-8 w-8 text-purple-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* User Metrics Table */}
+                {userMetricsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                    <p className="text-slate-400">Loading user metrics...</p>
+                  </div>
+                ) : userMetrics.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-slate-800">
+                        <TableHead className="text-slate-300">Rank</TableHead>
+                        <TableHead className="text-slate-300">User</TableHead>
+                        <TableHead className="text-slate-300">Cosmic Score</TableHead>
+                        <TableHead className="text-slate-300">Total Points</TableHead>
+                        <TableHead className="text-slate-300">Aura Rating</TableHead>
+                        <TableHead className="text-slate-300">Amplifier</TableHead>
+                        <TableHead className="text-slate-300">Posts</TableHead>
+                        <TableHead className="text-slate-300">Engagement</TableHead>
+                        <TableHead className="text-slate-300">Referrals</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userMetrics.map((user, index) => (
+                        <TableRow key={user.id} className="border-slate-800">
+                          <TableCell>
+                            <div className="flex items-center">
+                              {index < 3 ? (
+                                <Crown className={`h-4 w-4 mr-2 ${
+                                  index === 0 ? 'text-yellow-400' : 
+                                  index === 1 ? 'text-gray-400' : 
+                                  'text-orange-400'
+                                }`} />
+                              ) : (
+                                <span className="text-slate-400 mr-2">#{index + 1}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium text-white">{user.name}</div>
+                              <div className="text-sm text-slate-400">@{user.username}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Zap className="h-4 w-4 mr-2 text-yellow-400" />
+                              <span className="font-bold text-yellow-400">{Math.round(user.cosmicScore)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-white font-medium">{user.totalPoints}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.auraRating >= 7 ? "default" : user.auraRating >= 4 ? "secondary" : "destructive"}>
+                              {user.auraRating}/10
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`font-medium ${
+                              user.auraAmplifier > 1 ? 'text-green-400' : 
+                              user.auraAmplifier < 1 ? 'text-red-400' : 
+                              'text-slate-300'
+                            }`}>
+                              {user.auraAmplifier.toFixed(1)}x
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-center">
+                              <div className="text-white font-medium">{user.postCount}</div>
+                              <div className="text-xs text-slate-400">{user.postPoints}pts</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-center">
+                              <div className="text-white font-medium">{user.likeCount + user.shareCount + user.repostCount + user.tagCount + user.saveCount}</div>
+                              <div className="text-xs text-slate-400">{user.engagementPoints}pts</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-center">
+                              <div className="text-white font-medium">{user.referralCount}</div>
+                              <div className="text-xs text-slate-400">{user.referralPoints}pts</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-slate-400">No user metrics found. Try adjusting your search or filters.</p>
+                  </div>
+                )}
+
+                {/* Point System Legend */}
+                <div className="mt-6 p-4 bg-slate-800 rounded-lg border border-slate-700">
+                  <h4 className="text-white font-medium mb-3">Point System Breakdown</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-300 font-medium">Engagement (1pt each):</p>
+                      <p className="text-slate-400">Likes, Shares, Reposts, Tags, Saves</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-300 font-medium">Content Creation (5pts):</p>
+                      <p className="text-slate-400">Each post created</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-300 font-medium">Referrals (10pts):</p>
+                      <p className="text-slate-400">Each user referred to platform</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-slate-700">
+                    <p className="text-slate-300 font-medium">Aura Amplifier System:</p>
+                    <p className="text-slate-400">Rating 7-10: 1.5x | Rating 4-6: 1.0x | Rating 1-3: 0.5x</p>
+                    <p className="text-slate-400">Cosmic Score = Total Points × Aura Amplifier</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
