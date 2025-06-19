@@ -66,26 +66,38 @@ export default function ConnectionsPage() {
   useEffect(() => {
     if (allUsersData.length > 0) {
       setAllUsers(allUsersData);
-      const filtered = allUsersData.filter((u: User) => u.id !== user?.id);
+      // Filter out current user and existing connections
+      const filtered = allUsersData.filter((u: User) => {
+        const isCurrentUser = u.id === user?.id;
+        const isConnected = connections.some((conn: any) => conn.id === u.id);
+        return !isCurrentUser && !isConnected;
+      });
       setFilteredUsers(filtered);
     }
-  }, [allUsersData, user?.id]);
+  }, [allUsersData, user?.id, connections]);
 
   // Handle search filtering
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredUsers(allUsers.filter((u: User) => u.id !== user?.id));
+      // Show all users except current user and existing connections
+      const filtered = allUsers.filter((u: User) => {
+        const isCurrentUser = u.id === user?.id;
+        const isConnected = connections.some((conn: any) => conn.id === u.id);
+        return !isCurrentUser && !isConnected;
+      });
+      setFilteredUsers(filtered);
     } else {
       const searchLower = searchTerm.toLowerCase();
-      const filtered = allUsers.filter((u: User) => 
-        u.id !== user?.id && (
-          u.username.toLowerCase().includes(searchLower) ||
-          u.name.toLowerCase().includes(searchLower)
-        )
-      );
+      const filtered = allUsers.filter((u: User) => {
+        const isCurrentUser = u.id === user?.id;
+        const isConnected = connections.some((conn: any) => conn.id === u.id);
+        const matchesSearch = u.username.toLowerCase().includes(searchLower) ||
+                            u.name.toLowerCase().includes(searchLower);
+        return !isCurrentUser && !isConnected && matchesSearch;
+      });
       setFilteredUsers(filtered);
     }
-  }, [searchTerm, allUsers, user?.id]);
+  }, [searchTerm, allUsers, user?.id, connections]);
 
   // Send follow request mutation
   const sendRequestMutation = useMutation({

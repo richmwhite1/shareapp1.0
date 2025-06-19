@@ -107,7 +107,10 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, onPl
 
   const handleYouTubePlay = () => {
     const videoId = getYouTubeVideoId(youtubeUrl!);
-    if (!videoId) return;
+    if (!videoId) {
+      window.open(youtubeUrl || '', '_blank');
+      return;
+    }
 
     if (isPlaying) {
       // Stop current video
@@ -119,39 +122,51 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, onPl
     } else {
       // Stop any other playing media
       audioManager.play(null as any, postId);
+      setIsLoading(true);
       
-      // Start playing this video
+      // Start playing this video with audio-only parameters
       if (iframeRef.current) {
-        iframeRef.current.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+        iframeRef.current.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&controls=0&modestbranding=1&rel=0&showinfo=0&fs=0&cc_load_policy=0&iv_load_policy=3&autohide=1`;
+        iframeRef.current.onload = () => {
+          setIsLoading(false);
+          setIsPlaying(true);
+        };
       }
-      setIsPlaying(true);
     }
   };
 
   const handleSpotifyPlay = async () => {
     const trackId = getSpotifyTrackId(spotifyUrl!);
-    if (!trackId) return;
+    if (!trackId) {
+      // Fallback: open Spotify in new tab if no track ID found
+      window.open(spotifyUrl || '', '_blank');
+      return;
+    }
 
     if (isPlaying && audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
       audioManager.stop();
     } else {
-      // Stop any other playing media
-      if (audioRef.current) {
-        audioManager.play(audioRef.current, postId);
+      // Since Spotify doesn't allow direct audio streaming without API,
+      // we'll open the track in a new tab for now
+      setIsLoading(true);
+      audioManager.play(null as any, postId);
+      
+      try {
+        // Open Spotify track
+        window.open(spotifyUrl || '', '_blank');
+        setIsPlaying(true);
         
-        try {
-          setIsLoading(true);
-          await audioRef.current.play();
-          setIsPlaying(true);
-        } catch (error) {
-          console.error('Failed to play audio:', error);
-          // Fallback: open Spotify in new tab
-          window.open(spotifyUrl, '_blank');
-        } finally {
-          setIsLoading(false);
-        }
+        // Auto-stop after a short delay to reset UI
+        setTimeout(() => {
+          setIsPlaying(false);
+          audioManager.stop();
+        }, 3000);
+      } catch (error) {
+        console.error('Failed to open Spotify:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
