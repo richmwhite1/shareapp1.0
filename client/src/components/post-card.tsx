@@ -349,7 +349,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
 
       {/* Post Actions - Right under the picture */}
       <div className="px-6 py-4 border-b border-gray-800">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <FeedLikeButton postId={post.id} />
             <Link href={`/post/${post.id}`}>
@@ -359,11 +359,6 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               </Button>
             </Link>
             <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
-            
-            {/* Inline aura rating to the right of share */}
-            <div className="w-52 flex items-center">
-              <EnergyRating postId={post.id} className="w-full" />
-            </div>
           </div>
           
           <div className="flex items-center gap-2">
@@ -397,6 +392,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               </Button>
             )}
           </div>
+        </div>
+        
+        {/* Aura rating moved below icons */}
+        <div className="w-full">
+          <EnergyRating postId={post.id} className="w-full" />
         </div>
       </div>
 
