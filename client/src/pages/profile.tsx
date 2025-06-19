@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
@@ -252,9 +252,9 @@ export default function Profile() {
             <h3 className="text-lg font-semibold">Lists</h3>
             {isOwnProfile && (
               <Link href="/create-list">
-                <Button size="sm" className="bg-pinterest-red hover:bg-pinterest-red/90">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Create
+                <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white text-xs px-2 py-1">
+                  <Plus className="h-3 w-3 mr-1" />
+                  New
                 </Button>
               </Link>
             )}
@@ -291,16 +291,25 @@ export default function Profile() {
                       )}
                     </div>
                     
-                    {/* Simple Toggle for Privacy */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white font-medium truncate flex-1">
                         {list.name}
                       </span>
                       {isOwnProfile && (
-                        <Switch
-                          checked={list.privacyLevel === 'public'}
-                          className="ml-2 scale-75"
-                        />
+                        <div className="ml-2">
+                          {list.privacyLevel === 'public' && (
+                            <Globe className="h-3 w-3 text-green-500" />
+                          )}
+                          {list.privacyLevel === 'connections' && (
+                            <Users className="h-3 w-3 text-blue-500" />
+                          )}
+                          {list.privacyLevel === 'private' && !list.collaborators?.length && (
+                            <Eye className="h-3 w-3 text-gray-500" />
+                          )}
+                          {list.privacyLevel === 'private' && list.collaborators?.length > 0 && (
+                            <User className="h-3 w-3 text-orange-500" />
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -314,28 +323,19 @@ export default function Profile() {
         {Array.isArray(userFriends) && userFriends.length > 0 && (
           <div className="px-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Friends</h3>
-            <div className="grid grid-cols-4 gap-3">
-              {userFriends.slice(0, 8).map((friend: any) => (
+            <div className="flex space-x-4 overflow-x-auto pb-2">
+              {userFriends.slice(0, 10).map((friend: any) => (
                 <Link key={friend.id} href={`/profile/${friend.id}`}>
-                  <div className="flex flex-col items-center p-3 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 mb-2">
-                      <img 
-                        src={friend.profilePictureUrl || ""} 
-                        alt={friend.name || friend.username}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                      <div className="hidden w-full h-full flex items-center justify-center bg-gray-800 text-white text-lg font-bold">
+                  <div className="flex-shrink-0 text-center">
+                    <Avatar className="w-16 h-16 mx-auto mb-2">
+                      <AvatarImage src={friend.profilePictureUrl || ""} />
+                      <AvatarFallback className="bg-gray-800 text-white text-lg">
                         {friend.name?.charAt(0) || friend.username?.charAt(0)}
-                      </div>
-                    </div>
-                    <span className="text-xs text-white font-medium truncate w-full text-center">
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-xs text-white truncate w-16">
                       {friend.name || friend.username}
-                    </span>
+                    </div>
                   </div>
                 </Link>
               ))}
