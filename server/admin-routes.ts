@@ -116,8 +116,8 @@ router.get('/users', adminAuth, async (req, res) => {
 
     // Add post and list counts
     const usersWithCounts = await Promise.all(users.map(async (user) => {
-      const posts = await storage.getPostsByUser ? await storage.getPostsByUser(user.id) : [];
-      const lists = await storage.getListsByUser ? await storage.getListsByUser(user.id) : [];
+      const posts = await storage.getPostsByUserId ? await storage.getPostsByUserId(user.id) : [];
+      const lists = await storage.getListsByUserId ? await storage.getListsByUserId(user.id) : [];
       
       return {
         ...user,
@@ -481,7 +481,7 @@ router.post('/posts/:postId/promote', adminAuth, async (req: Request, res: Respo
       adminId: admin.id,
       action: 'promote_post',
       target: `post:${postId}`,
-      metadata: { hashtag, views }
+      details: { hashtag, views }
     });
     
     res.json({ success: true });
