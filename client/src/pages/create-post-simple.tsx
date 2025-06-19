@@ -950,7 +950,7 @@ END:VCALENDAR`;
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <div>
-                      <Label htmlFor="privacy" className="text-sm">Privacy</Label>
+                      <Label htmlFor="privacy" className="text-sm">Post</Label>
                       <Select
                         value={formData.privacy}
                         onValueChange={(value) => handlePrivacyChange(value as 'public' | 'friends' | 'private')}

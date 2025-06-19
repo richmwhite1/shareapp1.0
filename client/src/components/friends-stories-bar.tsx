@@ -140,7 +140,7 @@ export default function FriendsStoriesBar({
               window.location.href = '/friends';
             }}
           >
-            <Users className="w-8 h-8" />
+            <Users className="w-12 h-12" />
           </Button>
           <span className="text-xs text-gray-400 text-center">Connections</span>
         </div>
