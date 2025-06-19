@@ -28,8 +28,7 @@ export default function Profile() {
     enabled: !!profileUserId
   });
 
-  // Debug logging
-  console.log('Profile debug:', { profileUserId, userData, userLoading, userError });
+
 
   // Fetch user's posts
   const { data: posts } = useQuery({
@@ -177,17 +176,26 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Profile Info */}
+        {/* Profile Picture - Large Square Tile */}
         <div className="px-6 py-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={(userData as any)?.profilePictureUrl || ""} />
-              <AvatarFallback className="bg-gray-800 text-white text-lg">
+          <div className="mb-6">
+            <div className="w-full aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-gray-800">
+              <img 
+                src={(userData as any)?.profilePictureUrl || ""} 
+                alt="Profile"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="hidden w-full h-full flex items-center justify-center bg-gray-800 text-white text-6xl font-bold">
                 {(userData as any)?.name?.charAt(0) || (userData as any)?.username?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+              </div>
+            </div>
             
-            <div className="flex-1">
+            <div className="text-center mt-4">
               <h2 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h2>
               {(userData as any)?.name && (
                 <p className="text-gray-400">@{(userData as any)?.username}</p>
@@ -309,19 +317,28 @@ export default function Profile() {
         {Array.isArray(userFriends) && userFriends.length > 0 && (
           <div className="px-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Friends</h3>
-            <div className="flex space-x-3 overflow-x-auto pb-2">
-              {userFriends.slice(0, 10).map((friend: any) => (
+            <div className="grid grid-cols-4 gap-3">
+              {userFriends.slice(0, 8).map((friend: any) => (
                 <Link key={friend.id} href={`/profile/${friend.id}`}>
-                  <div className="flex-shrink-0 text-center">
-                    <Avatar className="w-12 h-12 mx-auto mb-1">
-                      <AvatarImage src={friend.profilePictureUrl || ""} />
-                      <AvatarFallback className="bg-gray-800 text-white text-sm">
+                  <div className="flex flex-col items-center p-3 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-800 mb-2">
+                      <img 
+                        src={friend.profilePictureUrl || ""} 
+                        alt={friend.name || friend.username}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                      <div className="hidden w-full h-full flex items-center justify-center bg-gray-800 text-white text-lg font-bold">
                         {friend.name?.charAt(0) || friend.username?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-xs text-white truncate w-12">
-                      {friend.name || friend.username}
+                      </div>
                     </div>
+                    <span className="text-xs text-white font-medium truncate w-full text-center">
+                      {friend.name || friend.username}
+                    </span>
                   </div>
                 </Link>
               ))}
