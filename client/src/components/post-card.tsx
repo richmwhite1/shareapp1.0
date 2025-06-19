@@ -190,42 +190,14 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
     return (
       <ViewTracker postId={post.id} viewType="feed" className="relative bg-black">
         {(post.youtubeUrl || post.spotifyUrl) ? (
-          // Media posts: Make entire image clickable for playback
-          <div 
-            className="relative w-full h-96 cursor-pointer group"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              
-              // Direct media handling
-              if (post.youtubeUrl) {
-                const videoId = post.youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1];
-                if (videoId) {
-                  window.open(post.youtubeUrl, '_blank');
-                } else {
-                  window.open(post.youtubeUrl, '_blank');
-                }
-              } else if (post.spotifyUrl) {
-                window.open(post.spotifyUrl, '_blank');
-              }
-            }}
-          >
-            <img
-              src={post.primaryPhotoUrl}
-              alt={post.primaryDescription}
-              className="w-full h-96 object-cover"
+          // Media posts: Inline streaming
+          <div className="relative w-full h-96">
+            <InlineMediaPlayer
+              youtubeUrl={post.youtubeUrl || undefined}
+              spotifyUrl={post.spotifyUrl || undefined}
+              postId={post.id}
+              thumbnailUrl={post.primaryPhotoUrl}
             />
-            {/* Media overlay indicator */}
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-              <div className="bg-white/90 rounded-full p-4">
-                <Play className="w-8 h-8 text-black" />
-              </div>
-            </div>
-            {/* Media type indicator */}
-            <div className="absolute top-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
-              <Play className="w-3 h-3" />
-              {post.youtubeUrl ? 'Video' : 'Music'}
-            </div>
           </div>
         ) : (
           // Regular posts: Navigate to post detail
