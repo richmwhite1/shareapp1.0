@@ -3,11 +3,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { apiRequest } from "@/lib/queryClient";
 
 
 export default function Profile() {
@@ -18,6 +21,8 @@ export default function Profile() {
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [defaultPrivacy, setDefaultPrivacy] = useState<'public' | 'connections' | 'private'>('public');
   const [showPrivacyControls, setShowPrivacyControls] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [, setLocation] = useLocation();
 
   // Check if this is the current user's own profile
   const isOwnProfile = profileUserId === 8; // Current user ID
@@ -151,6 +156,45 @@ export default function Profile() {
     setPressedList(null);
   };
 
+  // Delete profile mutation
+  const deleteProfileMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/users/${profileUserId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete profile');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Profile Deleted",
+        description: "Your profile and all associated data have been permanently deleted."
+      });
+      // Clear local storage and redirect to auth
+      localStorage.removeItem('token');
+      setLocation('/auth');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete profile",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleDeleteProfile = () => {
+    deleteProfileMutation.mutate();
+    setShowDeleteDialog(false);
+  };
+
   if (userLoading || !userData) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -171,13 +215,29 @@ export default function Profile() {
             )}
           </div>
           {isOwnProfile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPrivacyControls(!showPrivacyControls)}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-popover border-border">
+                <DropdownMenuItem 
+                  onClick={() => setShowPrivacyControls(!showPrivacyControls)}
+                  className="text-foreground hover:bg-accent"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Privacy Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Profile
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 
@@ -345,6 +405,47 @@ export default function Profile() {
         
         <div className="h-20"></div>
       </div>
+
+      {/* Delete Profile Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Delete Profile</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-foreground mb-4">
+              Are you sure you want to delete your profile? This action cannot be undone.
+            </p>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+              <p className="text-sm text-destructive font-medium">
+                This will permanently delete:
+              </p>
+              <ul className="text-sm text-destructive mt-2 space-y-1">
+                <li>• Your profile and account</li>
+                <li>• All your posts and content</li>
+                <li>• All your lists and collections</li>
+                <li>• All connections and friendships</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={deleteProfileMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteProfile}
+              disabled={deleteProfileMutation.isPending}
+            >
+              {deleteProfileMutation.isPending ? "Deleting..." : "Delete Forever"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
