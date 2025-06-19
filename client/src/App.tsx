@@ -27,6 +27,7 @@ function Router() {
       <Route path="/post/:id" component={PostPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/create-post" component={CreatePostPage} />
+      <Route path="/create" component={CreatePostPage} />
       <Route path="/profile" component={ProfilePage} />
       <Route path="/profile/:id" component={ProfilePage} />
       <Route path="/list/:id" component={CategoryPage} />

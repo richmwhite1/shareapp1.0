@@ -130,12 +130,20 @@ export default function CreatePostPage() {
 
   // Auto-fetch thumbnails when URLs change
   useEffect(() => {
+    console.log('Auto-fetch effect triggered:', {
+      youtubeUrl: formData.youtubeUrl,
+      spotifyUrl: formData.spotifyUrl
+    });
+
     const fetchThumbnail = async () => {
       // Clear previous auto thumbnail
       setAutoThumbnailUrl(null);
       
       if (formData.youtubeUrl.trim()) {
+        console.log('Processing YouTube URL:', formData.youtubeUrl);
         const videoId = getYouTubeVideoId(formData.youtubeUrl);
+        console.log('Extracted video ID:', videoId);
+        
         if (videoId) {
           const thumbnailUrl = fetchYouTubeThumbnail(videoId);
           console.log('YouTube thumbnail URL:', thumbnailUrl);
@@ -143,9 +151,14 @@ export default function CreatePostPage() {
           setPrimaryPhotoPreview(thumbnailUrl);
           // Clear manual photo selection since we have auto thumbnail
           setPrimaryPhoto(null);
+        } else {
+          console.log('No valid YouTube video ID found');
         }
       } else if (formData.spotifyUrl.trim()) {
+        console.log('Processing Spotify URL:', formData.spotifyUrl);
         const trackId = getSpotifyTrackId(formData.spotifyUrl);
+        console.log('Extracted track ID:', trackId);
+        
         if (trackId) {
           try {
             const thumbnailUrl = await fetchSpotifyThumbnail(trackId);
@@ -161,6 +174,7 @@ export default function CreatePostPage() {
           }
         }
       } else {
+        console.log('No media URLs provided, clearing thumbnails');
         // No media URLs, clear auto thumbnail but preserve manual photo
         if (!primaryPhoto) {
           setPrimaryPhotoPreview(null);
