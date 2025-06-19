@@ -68,6 +68,19 @@ export default function InlineMediaPlayer({ youtubeUrl, spotifyUrl, postId, onPl
   const audioRef = useRef<HTMLAudioElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const audioManager = AudioManager.getInstance();
+  
+  // Expose play function to parent element
+  const playButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Create a ref callback to expose click function
+  const mediaPlayerRef = useRef<HTMLDivElement>(null);
+  
+  // Expose the play function to the parent
+  if (mediaPlayerRef.current) {
+    (mediaPlayerRef.current as any).triggerPlay = () => {
+      handlePlayPause(new MouseEvent('click') as any);
+    };
+  }
 
   useEffect(() => {
     const unsubscribe = audioManager.subscribe((activePostId) => {

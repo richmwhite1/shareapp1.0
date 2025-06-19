@@ -195,10 +195,18 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             className="relative w-full h-96 cursor-pointer group"
             onClick={(e) => {
               e.preventDefault();
-              // Trigger inline media player
-              const playButton = e.currentTarget.querySelector('[data-media-player]') as HTMLElement;
-              if (playButton) {
-                playButton.click();
+              e.stopPropagation();
+              
+              // Direct media handling
+              if (post.youtubeUrl) {
+                const videoId = post.youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1];
+                if (videoId) {
+                  window.open(post.youtubeUrl, '_blank');
+                } else {
+                  window.open(post.youtubeUrl, '_blank');
+                }
+              } else if (post.spotifyUrl) {
+                window.open(post.spotifyUrl, '_blank');
               }
             }}
           >
@@ -212,6 +220,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               <div className="bg-white/90 rounded-full p-4">
                 <Play className="w-8 h-8 text-black" />
               </div>
+            </div>
+            {/* Media type indicator */}
+            <div className="absolute top-3 left-3 bg-black/70 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+              <Play className="w-3 h-3" />
+              {post.youtubeUrl ? 'Video' : 'Music'}
             </div>
           </div>
         ) : (
@@ -238,18 +251,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         )}
 
-        {/* Inline Media Player Overlay */}
-        {(post.youtubeUrl || post.spotifyUrl) && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="pointer-events-auto">
-              <InlineMediaPlayer
-                youtubeUrl={post.youtubeUrl || undefined}
-                spotifyUrl={post.spotifyUrl || undefined}
-                postId={post.id}
-              />
-            </div>
-          </div>
-        )}
+
 
         {/* Interactive stats at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
