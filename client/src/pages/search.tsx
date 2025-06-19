@@ -223,36 +223,36 @@ export default function SearchPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Following Hashtags */}
           {followedHashtags && followedHashtags.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between text-base">
-                  <div className="flex items-center gap-2">
-                    <Hash className="h-4 w-4" />
+            <Card className="text-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1">
+                    <Hash className="h-3 w-3" />
                     Following
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsFollowingExpanded(!isFollowingExpanded)}
-                    className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                    className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
                   >
-                    {isFollowingExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {isFollowingExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
                 </CardTitle>
               </CardHeader>
               {isFollowingExpanded && (
                 <CardContent className="pt-0">
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     {followedHashtags.map((hashtag: any) => (
                       <div key={hashtag.id} className="flex items-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleHashtagClick(hashtag.name)}
-                          className="h-7 px-2 text-sm flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                          className="h-6 px-2 text-xs flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
                           disabled={selectedHashtags.includes(hashtag.name)}
                         >
-                          <Hash className="h-3 w-3" />
+                          <Hash className="h-2 w-2" />
                           {hashtag.name}
                           <span className="ml-1 text-xs opacity-70">{hashtag.count}</span>
                         </Button>
@@ -260,9 +260,9 @@ export default function SearchPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => unfollowHashtag(hashtag.id)}
-                          className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                         >
-                          <X className="h-3 w-3" />
+                          <X className="h-2 w-2" />
                         </Button>
                       </div>
                     ))}
@@ -273,26 +273,26 @@ export default function SearchPage() {
           )}
 
           {/* Trending Hashtags */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-base">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
+          <Card className="text-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
                   Trending
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsTrendingExpanded(!isTrendingExpanded)}
-                  className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                  className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
                 >
-                  {isTrendingExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {isTrendingExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 </Button>
               </CardTitle>
             </CardHeader>
             {isTrendingExpanded && (
               <CardContent className="pt-0">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1">
                   {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => {
                     const FollowButton = () => {
                       const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
@@ -312,10 +312,10 @@ export default function SearchPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleHashtagClick(hashtag.name)}
-                            className="h-7 px-2 text-sm flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                            className="h-6 px-2 text-xs flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
                             disabled={selectedHashtags.includes(hashtag.name)}
                           >
-                            <Hash className="h-3 w-3" />
+                            <Hash className="h-2 w-2" />
                             {hashtag.name}
                             <span className="ml-1 text-xs opacity-70">{hashtag.count}</span>
                           </Button>
@@ -323,7 +323,7 @@ export default function SearchPage() {
                             variant={isFollowing ? "default" : "outline"}
                             size="sm"
                             onClick={handleToggleFollow}
-                            className={`h-7 w-7 p-0 text-sm ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
+                            className={`h-6 w-6 p-0 text-xs ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
                           >
                             {isFollowing ? '✓' : '+'}
                           </Button>

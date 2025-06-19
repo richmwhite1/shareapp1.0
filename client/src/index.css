@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Enhanced Scrolling Performance */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Mobile touch scrolling improvements */
+body, html {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* More responsive scroll momentum for touch devices */
+.scroll-container, 
+.overflow-x-auto, 
+.overflow-y-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: auto;
+  scroll-snap-type: none;
+}
+
+/* Optimized scrolling for story bars and horizontal lists */
+.stories-scroll, 
+.horizontal-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding: 1rem;
+}
+
 /* Ensure full screen width with no margins/padding */
 html, body {
   margin: 0;

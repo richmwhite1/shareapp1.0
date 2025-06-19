@@ -50,7 +50,7 @@ export default function FriendsStoriesBar({
   };
 
   return (
-    <div className="flex items-center overflow-x-auto px-4 py-2 bg-black border-b border-gray-800 space-x-3 w-full">
+    <div className="flex items-center overflow-x-auto horizontal-scroll px-4 py-2 bg-black border-b border-gray-800 space-x-3 w-full">
       {/* Public Feed Button */}
       <div className="flex flex-col items-center space-y-1 flex-shrink-0">
         <div

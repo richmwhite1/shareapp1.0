@@ -67,7 +67,7 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
   if (isLoading) {
     return (
       <div className="bg-black border-b border-gray-700 p-4">
-        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+        <div className="flex space-x-4 overflow-x-auto scrollbar-hide stories-scroll">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex-shrink-0">
               <div className="flex flex-col items-center space-y-1">
@@ -90,7 +90,7 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
     <>
       {/* Stories Bar */}
       <div className="bg-black border-b border-gray-700 p-4">
-        <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
+        <div className="flex space-x-4 overflow-x-auto scrollbar-hide stories-scroll">
           {unviewedStories.map((story: Story) => (
             <div
               key={story.user.id}
