@@ -294,44 +294,44 @@ export default function SearchPage() {
               <CardContent className="pt-0">
                 <div className="flex flex-wrap gap-2">
                   {Array.isArray(trendingHashtags) && trendingHashtags.map((hashtag: any) => {
-                    const FollowButton = () => {
-                      const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
-                      
-                      const handleToggleFollow = async () => {
-                        if (isFollowing) {
-                          await unfollowHashtag(hashtag.id);
-                        } else {
-                          await followHashtag(hashtag.id);
-                        }
-                        refetch();
-                      };
-
-                      return (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleHashtagClick(hashtag.name)}
-                            className="h-7 px-2 text-sm flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
-                            disabled={selectedHashtags.includes(hashtag.name)}
-                          >
-                            <Hash className="h-3 w-3" />
-                            {hashtag.name}
-                            <span className="ml-1 text-xs opacity-70">{hashtag.count}</span>
-                          </Button>
-                          <Button
-                            variant={isFollowing ? "default" : "outline"}
-                            size="sm"
-                            onClick={handleToggleFollow}
-                            className={`h-7 w-7 p-0 text-sm ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
-                          >
-                            {isFollowing ? '✓' : '+'}
-                          </Button>
-                        </div>
-                      );
+                  const FollowButton = () => {
+                    const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
+                    
+                    const handleToggleFollow = async () => {
+                      if (isFollowing) {
+                        await unfollowHashtag(hashtag.id);
+                      } else {
+                        await followHashtag(hashtag.id);
+                      }
+                      refetch();
                     };
 
-                    return <FollowButton key={hashtag.id} />;
+                    return (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleHashtagClick(hashtag.name)}
+                          className="h-7 px-2 text-sm flex items-center gap-1 hover:bg-pinterest-red hover:text-white"
+                          disabled={selectedHashtags.includes(hashtag.name)}
+                        >
+                          <Hash className="h-3 w-3" />
+                          {hashtag.name}
+                          <span className="ml-1 text-xs opacity-70">{hashtag.count}</span>
+                        </Button>
+                        <Button
+                          variant={isFollowing ? "default" : "outline"}
+                          size="sm"
+                          onClick={handleToggleFollow}
+                          className={`h-7 w-7 p-0 text-sm ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
+                        >
+                          {isFollowing ? '✓' : '+'}
+                        </Button>
+                      </div>
+                    );
+                  };
+
+                  return <FollowButton key={hashtag.id} />;
                   })}
                 </div>
               </CardContent>
@@ -362,38 +362,28 @@ export default function SearchPage() {
                 </SelectContent>
               </Select>
             </div>
-
+            
             {isSearching ? (
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardContent className="p-4">
-                      <div className="h-48 bg-gray-200 rounded-md mb-2" />
-                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">Searching...</p>
               </div>
             ) : searchResults && searchResults.length > 0 ? (
-              <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {searchResults.map((post: any) => (
                   <PostCard key={post.id} post={post} />
                 ))}
               </div>
             ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <SearchIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-2">No posts found</p>
-                  <p className="text-sm text-gray-400">
-                    Try different hashtags or check your spelling
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">
+                  No posts found with selected hashtags
+                </p>
+              </div>
             )}
           </div>
         )}
+
+
       </div>
     </div>
   );

@@ -100,7 +100,7 @@ export function Stories({ onSelectUser, viewedUsers = new Set(), onMarkAsViewed,
               <div className="flex flex-col items-center space-y-1">
                 <div className="p-0.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
                   <AuricField profileId={story.user.id} intensity={0.3}>
-                    <Avatar className="w-14 h-14 border-2 border-black">
+                    <Avatar className="w-16 h-16 border-2 border-black">
                       <AvatarImage 
                         src={story.user.profilePictureUrl} 
                         alt={story.user.name}

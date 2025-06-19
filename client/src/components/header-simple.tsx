@@ -69,7 +69,7 @@ export default function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="text-yellow-400 hover:bg-gray-800 p-1">
-                      <Avatar className="w-8 h-8">
+                      <Avatar className="w-12 h-12">
                         <AvatarImage src={user?.profilePictureUrl || undefined} />
                         <AvatarFallback className="bg-gray-600 text-white">
                           {user?.name?.charAt(0).toUpperCase() || 'U'}
