@@ -210,86 +210,15 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async deleteUser(userId: number): Promise<void> {
-    // Simplified cascading deletion - delete core user-related data
-    
-    // Delete user interactions
-    await db.delete(postLikes).where(eq(postLikes.userId, userId));
-    await db.delete(postShares).where(eq(postShares.userId, userId));
-    await db.delete(postViews).where(eq(postViews.userId, userId));
-    await db.delete(savedPosts).where(eq(savedPosts.userId, userId));
-    await db.delete(reposts).where(eq(reposts.userId, userId));
-    await db.delete(postFlags).where(eq(postFlags.userId, userId));
-    await db.delete(postEnergyRatings).where(eq(postEnergyRatings.userId, userId));
-    await db.delete(profileEnergyRatings).where(
-      or(
-        eq(profileEnergyRatings.userId, userId),
-        eq(profileEnergyRatings.profileId, userId)
-      )
-    );
-
-    // Delete comments made by user
-    await db.delete(comments).where(eq(comments.userId, userId));
-
-    // Delete friendships and friend requests
-    await db.delete(friendships).where(
-      or(eq(friendships.userId, userId), eq(friendships.friendId, userId))
-    );
-    await db.delete(friendRequests).where(
-      or(eq(friendRequests.fromUserId, userId), eq(friendRequests.toUserId, userId))
-    );
-
-    // Delete notifications
-    await db.delete(notifications).where(
-      or(
-        eq(notifications.userId, userId),
-        eq(notifications.fromUserId, userId)
-      )
-    );
-
-    // Delete list access and access requests for this user
-    await db.delete(listAccess).where(eq(listAccess.userId, userId));
-    await db.delete(accessRequests).where(eq(accessRequests.userId, userId));
-
-    // Delete hashtag follows
-    await db.delete(hashtagFollows).where(eq(hashtagFollows.userId, userId));
-
-    // Delete reports made by this user
-    await db.delete(reports).where(eq(reports.userId, userId));
-
-    // Delete RSVPs
-    await db.delete(rsvps).where(eq(rsvps.userId, userId));
-
-    // Get user's posts first to clean up all related data
-    const userPosts = await db.select({ id: posts.id }).from(posts).where(eq(posts.userId, userId));
-    const postIds = userPosts.map(p => p.id);
-
-    // Delete all URL clicks first (both for user's posts and by user)
-    await db.delete(urlClicks).where(eq(urlClicks.userId, userId));
-    if (postIds.length > 0) {
-      await db.delete(urlClicks).where(inArray(urlClicks.postId, postIds));
-    }
-
-    // Delete all post-related data before deleting posts
-    if (postIds.length > 0) {
-      await db.delete(postViews).where(inArray(postViews.postId, postIds));
-      await db.delete(postLikes).where(inArray(postLikes.postId, postIds));
-      await db.delete(postShares).where(inArray(postShares.postId, postIds));
-      await db.delete(postHashtags).where(inArray(postHashtags.postId, postIds));
-      await db.delete(comments).where(inArray(comments.postId, postIds));
-      await db.delete(savedPosts).where(inArray(savedPosts.postId, postIds));
-      await db.delete(reposts).where(inArray(reposts.postId, postIds));
-      await db.delete(postFlags).where(inArray(postFlags.postId, postIds));
-      await db.delete(postEnergyRatings).where(inArray(postEnergyRatings.postId, postIds));
-    }
-
-    // Now safely delete posts
-    await db.delete(posts).where(eq(posts.userId, userId));
-
-    // Delete lists
-    await db.delete(lists).where(eq(lists.userId, userId));
-
-    // Finally, delete the user
-    await db.delete(users).where(eq(users.id, userId));
+    // Implement soft delete by marking user as deleted
+    const timestamp = Math.floor(Date.now() / 1000);
+    await db.update(users)
+      .set({ 
+        username: `deleted_user_${userId}_${timestamp}`,
+        password: 'DELETED',
+        name: 'Deleted User'
+      })
+      .where(eq(users.id, userId));
   }
 
   // ENTERPRISE LIST MANAGEMENT

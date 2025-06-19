@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   auraRating: text("aura_rating").default("4.00"), // User's average aura rating (1-7 scale)
   ratingCount: integer("rating_count").default(0), // Number of ratings received
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const lists = pgTable("lists", {
