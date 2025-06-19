@@ -1635,6 +1635,245 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Posts Analysis Tab */}
+          <TabsContent value="posts" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Posts Analysis</h3>
+                <p className="text-gray-400">Comprehensive post analytics with sorting and promotion capabilities</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-400">Sort by:</label>
+                  <Select value={postSortBy} onValueChange={(value: any) => setPostSortBy(value)}>
+                    <SelectTrigger className="w-32 bg-gray-800 border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectItem value="views">Views</SelectItem>
+                      <SelectItem value="shares">Shares</SelectItem>
+                      <SelectItem value="clicks">Clicks</SelectItem>
+                      <SelectItem value="aura">Aura</SelectItem>
+                      <SelectItem value="hashtags">Hashtags</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search posts..."
+                    value={postSearchTerm}
+                    onChange={(e) => setPostSearchTerm(e.target.value)}
+                    className="pl-10 w-64 bg-gray-800 border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {postAnalyticsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-gray-800 rounded-lg p-4 animate-pulse">
+                    <div className="h-48 bg-gray-700 rounded mb-3"></div>
+                    <div className="h-4 bg-gray-700 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {postAnalytics
+                  .sort((a, b) => {
+                    switch (postSortBy) {
+                      case 'views': return (b.viewCount || 0) - (a.viewCount || 0);
+                      case 'shares': return (b.shareCount || 0) - (a.shareCount || 0);
+                      case 'clicks': return (b.clickCount || 0) - (a.clickCount || 0);
+                      case 'aura': return (b.auraRating || 0) - (a.auraRating || 0);
+                      case 'hashtags': return (b.hashtagCount || 0) - (a.hashtagCount || 0);
+                      default: return 0;
+                    }
+                  })
+                  .map((post) => (
+                    <Card key={post.id} className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="relative mb-3">
+                          {post.primaryPhotoUrl && (
+                            <img 
+                              src={post.primaryPhotoUrl} 
+                              alt="Post" 
+                              className="w-full h-48 object-cover rounded-lg"
+                            />
+                          )}
+                          <div className="absolute top-2 right-2 bg-black/60 rounded-full px-2 py-1 text-xs text-white">
+                            ID: {post.id}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                              <User className="h-3 w-3 text-gray-300" />
+                            </div>
+                            <span className="text-sm text-gray-300">@{post.user?.username}</span>
+                          </div>
+                          
+                          <p className="text-sm text-gray-200 line-clamp-2">
+                            {post.primaryDescription || 'No description'}
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center space-x-1">
+                              <Eye className="h-3 w-3 text-blue-400" />
+                              <span className="text-gray-300">{post.viewCount || 0} views</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Share2 className="h-3 w-3 text-green-400" />
+                              <span className="text-gray-300">{post.shareCount || 0} shares</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <MousePointer className="h-3 w-3 text-purple-400" />
+                              <span className="text-gray-300">{post.clickCount || 0} clicks</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-3 w-3 text-yellow-400" />
+                              <span className="text-gray-300">{post.auraRating || 4.0} aura</span>
+                            </div>
+                          </div>
+                          
+                          {post.hashtags && post.hashtags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {post.hashtags.slice(0, 3).map((tag, index) => (
+                                <span key={index} className="text-xs bg-blue-600/20 text-blue-300 px-2 py-1 rounded">
+                                  #{tag.name}
+                                </span>
+                              ))}
+                              {post.hashtags.length > 3 && (
+                                <span className="text-xs text-gray-400">+{post.hashtags.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs text-gray-500">
+                              {new Date(post.createdAt).toLocaleDateString()}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedPost(post)}
+                              className="text-xs bg-purple-600/20 border-purple-600/30 text-purple-300 hover:bg-purple-600/30"
+                            >
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              Promote
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+
+            {/* Post Promotion Dialog */}
+            <Dialog open={!!selectedPost} onOpenChange={() => setSelectedPost(null)}>
+              <DialogContent className="bg-gray-900 border-gray-700 text-white">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center space-x-2">
+                    <TrendingUp className="h-5 w-5 text-purple-400" />
+                    <span>Promote Post</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-400">
+                    Promote this post to the top of a hashtag feed with guaranteed views
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {selectedPost && (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-gray-800 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">@{selectedPost.user?.username}</span>
+                      </div>
+                      <p className="text-sm text-gray-300 line-clamp-2">
+                        {selectedPost.primaryDescription || 'No description'}
+                      </p>
+                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-400">
+                        <span>{selectedPost.viewCount || 0} views</span>
+                        <span>{selectedPost.shareCount || 0} shares</span>
+                        <span>{selectedPost.auraRating || 4.0} aura</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                          Target Hashtag
+                        </label>
+                        <Input
+                          placeholder="Enter hashtag (without #)"
+                          value={promoteHashtag}
+                          onChange={(e) => setPromoteHashtag(e.target.value)}
+                          className="bg-gray-800 border-gray-700 text-white"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                          Guaranteed Views
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="Enter view count"
+                          value={promoteViews}
+                          onChange={(e) => setPromoteViews(e.target.value)}
+                          className="bg-gray-800 border-gray-700 text-white"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Post will stay at top until this view count is reached
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-end space-x-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setSelectedPost(null)}
+                        className="bg-gray-800 border-gray-700 text-gray-300"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (promoteHashtag && promoteViews) {
+                            promotePostMutation.mutate({
+                              postId: selectedPost.id,
+                              hashtag: promoteHashtag,
+                              views: parseInt(promoteViews)
+                            });
+                          }
+                        }}
+                        disabled={!promoteHashtag || !promoteViews || promotePostMutation.isPending}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        {promotePostMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Promoting...
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp className="h-4 w-4 mr-2" />
+                            Promote Post
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
