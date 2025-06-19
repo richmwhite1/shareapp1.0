@@ -2,7 +2,7 @@ import { users, type User, type InsertUser, type UserWithFriends, posts, type Po
   lists, type List, type ListWithPosts, type InsertList, listAccess, friendships, notifications, type Notification, type CreateNotificationData,
   hashtags, type Hashtag, postHashtags, comments, type Comment, type CommentWithUser, type InsertComment, 
   postLikes, postShares, postViews, savedPosts, reposts, friendRequests, accessRequests, postFlags, 
-  blacklist, reports, postTags, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows } from "@shared/schema";
+  blacklist, reports, postTags, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows, urlClicks } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg, gte, lt } from 'drizzle-orm';
 
@@ -259,7 +259,30 @@ export class EnterpriseStorage implements IStorage {
     // Delete RSVPs
     await db.delete(rsvps).where(eq(rsvps.userId, userId));
 
-    // Delete posts (this will cascade to related data)
+    // Get user's posts first to clean up all related data
+    const userPosts = await db.select({ id: posts.id }).from(posts).where(eq(posts.userId, userId));
+    const postIds = userPosts.map(p => p.id);
+
+    // Delete all URL clicks first (both for user's posts and by user)
+    await db.delete(urlClicks).where(eq(urlClicks.userId, userId));
+    if (postIds.length > 0) {
+      await db.delete(urlClicks).where(inArray(urlClicks.postId, postIds));
+    }
+
+    // Delete all post-related data before deleting posts
+    if (postIds.length > 0) {
+      await db.delete(postViews).where(inArray(postViews.postId, postIds));
+      await db.delete(postLikes).where(inArray(postLikes.postId, postIds));
+      await db.delete(postShares).where(inArray(postShares.postId, postIds));
+      await db.delete(postHashtags).where(inArray(postHashtags.postId, postIds));
+      await db.delete(comments).where(inArray(comments.postId, postIds));
+      await db.delete(savedPosts).where(inArray(savedPosts.postId, postIds));
+      await db.delete(reposts).where(inArray(reposts.postId, postIds));
+      await db.delete(postFlags).where(inArray(postFlags.postId, postIds));
+      await db.delete(postEnergyRatings).where(inArray(postEnergyRatings.postId, postIds));
+    }
+
+    // Now safely delete posts
     await db.delete(posts).where(eq(posts.userId, userId));
 
     // Delete lists
