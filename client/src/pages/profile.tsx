@@ -488,24 +488,24 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="px-6 py-4 bg-gray-900 mx-4 rounded-lg mt-4 relative z-10 mb-6">
+        {/* Stats - More discreet */}
+        <div className="px-4 py-2 bg-gray-900/50 mx-4 rounded mt-4 relative z-10 mb-4">
           <div className="flex justify-around text-center">
             <div>
-              <div className="text-xl font-bold text-white">{totalPosts}</div>
-              <div className="text-sm text-gray-400">Posts</div>
+              <div className="text-sm font-medium text-white">{totalPosts}</div>
+              <div className="text-xs text-gray-500">Posts</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-white">{lists?.length || 0}</div>
-              <div className="text-sm text-gray-400">Lists</div>
+              <div className="text-sm font-medium text-white">{lists?.length || 0}</div>
+              <div className="text-xs text-gray-500">Lists</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-white">{userFriends?.length || 0}</div>
-              <div className="text-sm text-gray-400">Friends</div>
+              <div className="text-sm font-medium text-white">{userFriends?.length || 0}</div>
+              <div className="text-xs text-gray-500">Friends</div>
             </div>
             <div>
-              <div className="text-xl font-bold text-white">{totalShares}</div>
-              <div className="text-sm text-gray-400">Shares</div>
+              <div className="text-sm font-medium text-white">{totalShares}</div>
+              <div className="text-xs text-gray-500">Shares</div>
             </div>
           </div>
         </div>
@@ -538,7 +538,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-4 gap-3" style={{ minHeight: '200px' }}>
+            <div className="grid grid-cols-3 gap-4" style={{ minHeight: '200px' }}>
               {(sortedLists || []).slice(0, 48).filter((list: any) => list && list.id && list.name && list.name.trim()).map((list: ListWithPosts) => {
                 // Get the most recent post image from this list
                 const recentPost = userPosts?.find(post => post.listId === list.id);
