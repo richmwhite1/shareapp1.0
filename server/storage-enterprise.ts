@@ -130,7 +130,7 @@ export interface IStorage {
   createRsvp(eventId: number, userId: number, status: string): Promise<void>;
   updateRsvp(eventId: number, userId: number, status: string): Promise<void>;
   getRsvpStats(eventId: number): Promise<{ going: number; maybe: number; notGoing: number }>;
-  getRsvpList(eventId: number): Promise<Array<{ user: User; status: string }>>;
+  getRsvpList(eventId: number, status?: string): Promise<Array<{ user: User; status: string }>>;
 
   // Notifications
   createNotification(notification: CreateNotificationData): Promise<Notification>;
@@ -1741,7 +1741,12 @@ export class EnterpriseStorage implements IStorage {
     return result;
   }
 
-  async getRsvpList(eventId: number): Promise<Array<{ user: User; status: string }>> {
+  async getRsvpList(eventId: number, status?: string): Promise<Array<{ user: User; status: string }>> {
+    let whereCondition = eq(rsvps.postId, eventId);
+    if (status) {
+      whereCondition = and(whereCondition, eq(rsvps.status, status));
+    }
+
     const result = await db
       .select({
         user: users,
@@ -1749,7 +1754,7 @@ export class EnterpriseStorage implements IStorage {
       })
       .from(rsvps)
       .innerJoin(users, eq(rsvps.userId, users.id))
-      .where(eq(rsvps.postId, eventId));
+      .where(whereCondition);
 
     return result.map(r => ({
       user: r.user,
@@ -1808,6 +1813,38 @@ export class EnterpriseStorage implements IStorage {
     // Mark tagged post as viewed - could be implemented with a separate table
     // For now, we'll use the post views system
     await this.recordPostView(postId, userId);
+  }
+
+  async getBlacklist(): Promise<any[]> {
+    const result = await db
+      .select({
+        blacklistEntry: blacklist,
+        user: {
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          profilePictureUrl: users.profilePictureUrl
+        }
+      })
+      .from(blacklist)
+      .leftJoin(users, eq(blacklist.userId, users.id))
+      .orderBy(desc(blacklist.createdAt));
+
+    return result.map(r => ({
+      ...r.blacklistEntry,
+      user: r.user
+    }));
+  }
+
+  async addToBlacklist(userId: number, reason: string): Promise<void> {
+    await db.insert(blacklist).values({
+      userId,
+      reason
+    }).onConflictDoNothing();
+  }
+
+  async removeFromBlacklist(userId: number): Promise<void> {
+    await db.delete(blacklist).where(eq(blacklist.userId, userId));
   }
 }
 
