@@ -14,7 +14,8 @@ import {
   createListAccessSchema, respondListAccessSchema, createAccessRequestSchema,
   type AdditionalPhotoData, users, posts, lists, comments, postLikes, postShares, friendships, friendRequests, 
   hashtags, postHashtags, hashtagFollows, notifications, reports, blacklist, rsvps, postViews, savedPosts, 
-  reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments, listAccess, accessRequests
+  reposts, postFlags, taggedPosts, postEnergyRatings, profileEnergyRatings, taskAssignments, listAccess, accessRequests,
+  moderationActions
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg } from 'drizzle-orm';
@@ -150,7 +151,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user is suspended by checking moderation actions
-      const { moderationActions } = await import('@shared/schema');
       const moderationHistory = await db.select()
         .from(moderationActions)
         .where(and(

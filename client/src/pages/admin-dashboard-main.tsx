@@ -87,6 +87,7 @@ interface User {
   name: string;
   email?: string;
   isActive: boolean;
+  isBanned: boolean;
   createdAt: string;
   lastLogin?: string;
   postCount: number;
@@ -708,8 +709,8 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="default">
-                              Active
+                            <Badge variant={user.isBanned ? "destructive" : "default"}>
+                              {user.isBanned ? "Suspended" : "Active"}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-slate-300">
