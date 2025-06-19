@@ -599,8 +599,14 @@ router.post('/users/:userId/unsuspend', adminAuth, async (req: Request, res: Res
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Unban/unsuspend user
-    await adminStorage.unbanUser(userId, admin.id, reason || 'Administrative unsuspension');
+    // Create unsuspend moderation action
+    await adminStorage.createModerationAction({
+      moderatorId: admin.id,
+      contentType: 'user',
+      contentId: userId,
+      action: 'unban',
+      reason: reason || 'Administrative unsuspension'
+    });
     
     await adminStorage.logAdminAction({
       adminId: admin.id,
@@ -627,6 +633,31 @@ router.get('/users', adminAuth, async (req: Request, res: Response) => {
     
     const users = await adminStorage.searchUsers(search as string, filters);
     
+    // Add ban status to each user
+    const usersWithStatus = await Promise.all(users.map(async (user) => {
+      const posts = await storage.getPostsByUserId ? await storage.getPostsByUserId(user.id) : [];
+      const lists = await storage.getListsByUserId ? await storage.getListsByUserId(user.id) : [];
+      
+      // Check if user is banned using suspend/ban actions
+      const moderationHistory = await adminStorage.getUserModerationHistory(user.id);
+      const latestSuspend = moderationHistory
+        .filter(action => action.action === 'ban' || action.action === 'suspend')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      const latestUnsuspend = moderationHistory
+        .filter(action => action.action === 'unban' || action.action === 'unsuspend')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      const isBanned = latestSuspend && (!latestUnsuspend || new Date(latestSuspend.createdAt) > new Date(latestUnsuspend.createdAt));
+      
+      return {
+        ...user,
+        postCount: posts.length,
+        listCount: lists.length,
+        isActive: !isBanned,
+        isBanned: !!isBanned
+      };
+    }));
+    
     await adminStorage.logAdminAction({
       adminId: admin.id,
       action: 'list_users',
@@ -634,7 +665,7 @@ router.get('/users', adminAuth, async (req: Request, res: Response) => {
       details: { page, limit, search, filter }
     });
     
-    res.json(users);
+    res.json(usersWithStatus);
   } catch (error) {
     console.error('Error listing users:', error);
     res.status(500).json({ error: 'Failed to list users' });
