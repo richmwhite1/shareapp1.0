@@ -719,12 +719,8 @@ END:VCALENDAR`;
               
               {/* Primary Photo Upload */}
               <div>
-                <Label htmlFor="primaryPhoto" className="text-foreground">Primary Photo *</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Upload your main image - this will be the featured photo for your post
-                </p>
                 <div 
-                  className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-pinterest-red transition-colors"
+                  className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-pinterest-red transition-colors"
                   onClick={() => fileRef.current?.click()}
                 >
                   {primaryPhotoPreview ? (
@@ -732,27 +728,26 @@ END:VCALENDAR`;
                       <img 
                         src={primaryPhotoPreview} 
                         alt="Primary preview" 
-                        className="max-w-full h-48 object-cover rounded-lg mx-auto"
+                        className="max-w-full h-32 sm:h-40 object-cover rounded-lg mx-auto"
                       />
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
-                        className="absolute top-2 right-2"
+                        className="absolute top-1 right-1"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPrimaryPhoto(null);
                           setPrimaryPhotoPreview(null);
                         }}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3 h-3" />
                       </Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <Image className="w-12 h-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground mb-2">Click to upload or drag and drop your primary photo</p>
-                      <p className="text-xs text-muted-foreground">All image formats supported - automatically optimized if needed</p>
+                      <Image className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Upload photo</p>
                     </div>
                   )}
                 </div>
@@ -767,30 +762,23 @@ END:VCALENDAR`;
 
               {/* Post Description */}
               <div>
-                <Label htmlFor="description" className="text-foreground">Description *</Label>
                 <Textarea
-                  id="description"
-                  placeholder="Describe your post... What makes it special?"
+                  placeholder="What's this about?"
                   value={formData.primaryDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
-                  className="mt-2 bg-input border-border text-foreground min-h-[100px]"
+                  className="bg-input border-border text-foreground min-h-[70px]"
                   required
                 />
               </div>
 
               {/* Primary Link */}
               <div>
-                <Label htmlFor="primaryLink" className="text-foreground">Link</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Share a website, article, or any link related to your post
-                </p>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="primaryLink"
                       type="url"
-                      placeholder="https://example.com"
+                      placeholder="Add a link"
                       value={formData.primaryLink}
                       onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
                       className="pl-10 bg-input border-border"
@@ -809,70 +797,56 @@ END:VCALENDAR`;
                 </div>
               </div>
 
-              {/* Spotify and YouTube URLs side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="spotifyUrl" className="text-foreground">Spotify URL (Optional)</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Share a Spotify track, album, or playlist
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
-                        <Download className="h-2 w-2 text-white" />
-                      </div>
-                      <Input
-                        id="spotifyUrl"
-                        type="url"
-                        placeholder="https://open.spotify.com/..."
-                        value={formData.spotifyUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                        className="pl-10 bg-input border-border"
-                      />
+              {/* Media URLs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                      <Download className="h-2 w-2 text-white" />
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchLinkMetadata(formData.spotifyUrl, 'spotify')}
-                      disabled={!formData.spotifyUrl.trim() || isLoading}
-                      className="px-3"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <Input
+                      type="url"
+                      placeholder="Spotify link"
+                      value={formData.spotifyUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                      className="pl-10 bg-input border-border"
+                    />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchLinkMetadata(formData.spotifyUrl, 'spotify')}
+                    disabled={!formData.spotifyUrl.trim() || isLoading}
+                    className="px-3"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
 
-                <div>
-                  <Label htmlFor="youtubeUrl" className="text-foreground">YouTube URL</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Share a YouTube video or music
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                        <Download className="h-2 w-2 text-white" />
-                      </div>
-                      <Input
-                        id="youtubeUrl"
-                        type="url"
-                        placeholder="https://youtube.com/watch?v=..."
-                        value={formData.youtubeUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                        className="pl-10 bg-input border-border"
-                      />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+                      <Download className="h-2 w-2 text-white" />
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fetchLinkMetadata(formData.youtubeUrl, 'youtube')}
-                      disabled={!formData.youtubeUrl.trim() || isLoading}
-                      className="px-3"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <Input
+                      type="url"
+                      placeholder="YouTube link"
+                      value={formData.youtubeUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                      className="pl-10 bg-input border-border"
+                    />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchLinkMetadata(formData.youtubeUrl, 'youtube')}
+                    disabled={!formData.youtubeUrl.trim() || isLoading}
+                    className="px-3"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
