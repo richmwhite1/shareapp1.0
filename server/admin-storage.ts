@@ -1,5 +1,9 @@
 import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue,
-         users, posts, lists, postFlags, reports, type User, type Post, type List } from "@shared/schema";
+         users, posts, lists, postFlags, reports, 
+         type User, type Post, type List, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession,
+         type AuditLog, type InsertAuditLog, type ModerationAction, type InsertModerationAction,
+         type SystemConfig, type InsertSystemConfig, type BulkOperation, type InsertBulkOperation,
+         type ContentReviewItem, type InsertContentReviewItem } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, count, gte, lt, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
