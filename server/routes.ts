@@ -289,12 +289,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const hashtagArray = parseHashtags(hashtags || '');
 
-      // Auto-fetch image from media URLs if no primary photo uploaded
-      if (!primaryPhotoUrl && (spotifyUrl || youtubeUrl)) {
+      // Handle thumbnail URL from frontend or auto-fetch from media URLs
+      const thumbnailUrl = req.body.thumbnailUrl;
+      if (!primaryPhotoUrl && (thumbnailUrl || spotifyUrl || youtubeUrl)) {
         try {
-          let imageUrl = '';
+          let imageUrl = thumbnailUrl || '';
           
-          if (youtubeUrl) {
+          if (!imageUrl && youtubeUrl) {
             // Extract YouTube video ID from various formats including Shorts
             const videoMatch = youtubeUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
             if (videoMatch) {

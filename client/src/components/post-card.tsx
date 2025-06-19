@@ -189,13 +189,41 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   if (!isDetailView) {
     return (
       <ViewTracker postId={post.id} viewType="feed" className="relative bg-black">
-        <Link href={`/post/${post.id}`}>
-          <img
-            src={post.primaryPhotoUrl}
-            alt={post.primaryDescription}
-            className="w-full h-96 object-cover cursor-pointer"
-          />
-        </Link>
+        {(post.youtubeUrl || post.spotifyUrl) ? (
+          // Media posts: Make entire image clickable for playback
+          <div 
+            className="relative w-full h-96 cursor-pointer group"
+            onClick={(e) => {
+              e.preventDefault();
+              // Trigger inline media player
+              const playButton = e.currentTarget.querySelector('[data-media-player]') as HTMLElement;
+              if (playButton) {
+                playButton.click();
+              }
+            }}
+          >
+            <img
+              src={post.primaryPhotoUrl}
+              alt={post.primaryDescription}
+              className="w-full h-96 object-cover"
+            />
+            {/* Media overlay indicator */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              <div className="bg-white/90 rounded-full p-4">
+                <Play className="w-8 h-8 text-black" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Regular posts: Navigate to post detail
+          <Link href={`/post/${post.id}`}>
+            <img
+              src={post.primaryPhotoUrl}
+              alt={post.primaryDescription}
+              className="w-full h-96 object-cover cursor-pointer"
+            />
+          </Link>
+        )}
         
         {/* Profile icon with aura circle - top left corner */}
         <div className="absolute top-3 left-3">

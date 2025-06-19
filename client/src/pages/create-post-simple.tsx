@@ -64,6 +64,7 @@ export default function CreatePostPage() {
   const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string; discountCode: string }[]>([]);
   const [primaryPhotoPreview, setPrimaryPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [autoThumbnailUrl, setAutoThumbnailUrl] = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
@@ -87,6 +88,69 @@ export default function CreatePostPage() {
       }));
     }
   }, [userPrivacy]);
+
+  // Media thumbnail functions
+  const getYouTubeVideoId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
+  const getSpotifyTrackId = (url: string) => {
+    const regExp = /spotify\.com\/track\/([a-zA-Z0-9]+)/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+  };
+
+  const fetchYouTubeThumbnail = (videoId: string) => {
+    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  };
+
+  const fetchSpotifyThumbnail = async (trackId: string) => {
+    try {
+      // Use oEmbed API to get Spotify track info
+      const response = await fetch(`https://open.spotify.com/oembed?url=https://open.spotify.com/track/${trackId}`);
+      const data = await response.json();
+      return data.thumbnail_url || null;
+    } catch (error) {
+      console.error('Failed to fetch Spotify thumbnail:', error);
+      return null;
+    }
+  };
+
+  // Auto-fetch thumbnails when URLs change
+  useEffect(() => {
+    const fetchThumbnail = async () => {
+      if (formData.youtubeUrl) {
+        const videoId = getYouTubeVideoId(formData.youtubeUrl);
+        if (videoId) {
+          const thumbnailUrl = fetchYouTubeThumbnail(videoId);
+          setAutoThumbnailUrl(thumbnailUrl);
+          setPrimaryPhotoPreview(thumbnailUrl);
+          // Clear manual photo selection since we have auto thumbnail
+          setPrimaryPhoto(null);
+        }
+      } else if (formData.spotifyUrl) {
+        const trackId = getSpotifyTrackId(formData.spotifyUrl);
+        if (trackId) {
+          const thumbnailUrl = await fetchSpotifyThumbnail(trackId);
+          if (thumbnailUrl) {
+            setAutoThumbnailUrl(thumbnailUrl);
+            setPrimaryPhotoPreview(thumbnailUrl);
+            // Clear manual photo selection since we have auto thumbnail
+            setPrimaryPhoto(null);
+          }
+        }
+      } else {
+        setAutoThumbnailUrl(null);
+        if (!primaryPhoto) {
+          setPrimaryPhotoPreview(null);
+        }
+      }
+    };
+
+    fetchThumbnail();
+  }, [formData.youtubeUrl, formData.spotifyUrl, primaryPhoto]);
 
   // Image processing functions
   const resizeImage = (file: File, maxSizeMB: number = 5): Promise<File> => {
@@ -619,9 +683,12 @@ END:VCALENDAR`;
         formDataToSend.append('allowRsvp', allowRsvp.toString());
       }
 
-      // Primary photo
+      // Primary photo or auto-generated thumbnail
       if (primaryPhoto) {
         formDataToSend.append('primaryPhoto', primaryPhoto);
+      } else if (autoThumbnailUrl) {
+        // Send thumbnail URL for server to download and process
+        formDataToSend.append('thumbnailUrl', autoThumbnailUrl);
       }
 
       // Additional photos
