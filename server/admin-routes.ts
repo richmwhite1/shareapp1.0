@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { adminStorage } from './admin-storage';
 import { storage } from './storage';
+import { db } from './db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
@@ -314,6 +317,54 @@ router.post('/logout', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// User metrics with point system
+router.get('/users/metrics', adminAuth, async (req, res) => {
+  try {
+    const { search, minCosmicScore, maxCosmicScore } = req.query;
+    const users = await adminStorage.getUsersWithMetrics(
+      search as string,
+      minCosmicScore ? parseInt(minCosmicScore as string) : undefined,
+      maxCosmicScore ? parseInt(maxCosmicScore as string) : undefined
+    );
+    res.json(users);
+  } catch (error) {
+    console.error('User metrics error:', error);
+    res.status(500).json({ error: 'Failed to fetch user metrics' });
+  }
+});
+
+// Individual user cosmic score
+router.get('/users/:id/cosmic-score', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const points = await adminStorage.calculateUserPoints(userId);
+    const cosmicScore = await adminStorage.calculateCosmicScore(userId);
+    
+    // Get user data directly from database
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    
+    if (user) {
+      const auraRating = parseFloat(user.auraRating || '4.0');
+      const amplifier = await adminStorage.getAuraAmplifier(auraRating);
+      
+      res.json({
+        userId,
+        username: user.username,
+        name: user.name,
+        totalPoints: points,
+        auraRating,
+        auraAmplifier: amplifier,
+        cosmicScore
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error('Cosmic score error:', error);
+    res.status(500).json({ error: 'Failed to calculate cosmic score' });
   }
 });
 
