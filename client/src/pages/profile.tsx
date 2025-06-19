@@ -585,29 +585,29 @@ export default function ProfilePage() {
                           />
                         ) : (
                           <div className="w-full h-full bg-pinterest-red/20 rounded-xl flex items-center justify-center">
-                            <Folder className="h-6 w-6 text-pinterest-red" />
+                            <Folder className="h-16 w-16 text-pinterest-red" />
                           </div>
                         )}
                         {/* Privacy Indicator */}
-                        <div className="absolute top-1 right-1">
+                        <div className="absolute top-2 right-2">
                           {list.privacyLevel === 'private' && (
-                            <div className="bg-red-500/90 text-white p-1 rounded-full">
-                              <Lock className="h-3 w-3" />
+                            <div className="bg-red-500/90 text-white p-1.5 rounded-full">
+                              <Lock className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'connections' && (
-                            <div className="bg-blue-500/90 text-white p-1 rounded-full">
-                              <Users className="h-3 w-3" />
+                            <div className="bg-blue-500/90 text-white p-1.5 rounded-full">
+                              <Users className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'public' && (
-                            <div className="bg-green-500/90 text-white p-1 rounded-full">
-                              <Globe className="h-3 w-3" />
+                            <div className="bg-green-500/90 text-white p-1.5 rounded-full">
+                              <Globe className="h-4 w-4" />
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="text-xs text-white font-medium truncate">{list.name}</div>
+                      <div className="text-sm text-white font-medium truncate mb-1">{list.name}</div>
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
                       {list.privacyLevel !== 'public' && (
                         <div className="mt-1">
@@ -636,29 +636,29 @@ export default function ProfilePage() {
                           />
                         ) : (
                           <div className="w-full h-full bg-pinterest-red/20 rounded-xl flex items-center justify-center">
-                            <Folder className="h-6 w-6 text-pinterest-red" />
+                            <Folder className="h-16 w-16 text-pinterest-red" />
                           </div>
                         )}
                         {/* Privacy Indicator */}
-                        <div className="absolute top-1 right-1">
+                        <div className="absolute top-2 right-2">
                           {list.privacyLevel === 'private' && (
-                            <div className="bg-red-500/90 text-white p-1 rounded-full">
-                              <Lock className="h-3 w-3" />
+                            <div className="bg-red-500/90 text-white p-1.5 rounded-full">
+                              <Lock className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'connections' && (
-                            <div className="bg-blue-500/90 text-white p-1 rounded-full">
-                              <Users className="h-3 w-3" />
+                            <div className="bg-blue-500/90 text-white p-1.5 rounded-full">
+                              <Users className="h-4 w-4" />
                             </div>
                           )}
                           {list.privacyLevel === 'public' && (
-                            <div className="bg-green-500/90 text-white p-1 rounded-full">
-                              <Globe className="h-3 w-3" />
+                            <div className="bg-green-500/90 text-white p-1.5 rounded-full">
+                              <Globe className="h-4 w-4" />
                             </div>
                           )}
                         </div>
                       </div>
-                      <div className="text-xs text-white font-medium truncate">{list.name}</div>
+                      <div className="text-sm text-white font-medium truncate mb-1">{list.name}</div>
                       <div className="text-xs text-gray-400">{list.posts?.length || 0} items</div>
                       {list.privacyLevel !== 'public' && (
                         <div className="mt-1">
@@ -691,7 +691,7 @@ export default function ProfilePage() {
                         </AvatarFallback>
                       </Avatar>
                     </AuricField>
-                    <div className="text-xs text-white font-medium truncate w-14">
+                    <div className="text-sm text-white font-medium truncate mb-1 w-14">
                       {friend.name || friend.username}
                     </div>
                   </div>
