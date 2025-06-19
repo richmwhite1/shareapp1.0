@@ -1,6 +1,6 @@
-const { db } = require('./server/db.ts');
-const { posts, users, hashtags } = require('./shared/schema.ts');
-const { eq } = require('drizzle-orm');
+import { db } from './server/db.js';
+import { posts, users, hashtags } from './shared/schema.js';
+import { eq } from 'drizzle-orm';
 
 async function debugHashtags() {
   try {
