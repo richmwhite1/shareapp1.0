@@ -783,111 +783,127 @@ export class AdminStorage implements IAdminStorage {
   }
 
   async getUsersWithMetrics(searchQuery?: string, minCosmicScore?: number, maxCosmicScore?: number): Promise<any[]> {
-    let query = db
-      .select({
-        id: users.id,
-        username: users.username,
-        name: users.name,
-        auraRating: users.auraRating,
-        createdAt: users.createdAt,
-      })
-      .from(users);
-    
-    if (searchQuery) {
-      query = query.where(or(
-        like(users.username, `%${searchQuery}%`),
-        like(users.name, `%${searchQuery}%`)
-      ));
+    try {
+      let query = db
+        .select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          auraRating: users.auraRating,
+          createdAt: users.createdAt,
+        })
+        .from(users);
+      
+      if (searchQuery) {
+        query = query.where(or(
+          like(users.username, `%${searchQuery}%`),
+          like(users.name, `%${searchQuery}%`)
+        ));
+      }
+      
+      const usersData = await query.limit(100);
+      console.log(`Found ${usersData.length} users for metrics calculation`);
+      
+      const usersWithMetrics = await Promise.all(
+        usersData.map(async (user) => {
+          try {
+            // Calculate basic metrics
+            const auraRating = parseFloat(user.auraRating || '4.0');
+            const amplifier = await this.getAuraAmplifier(auraRating);
+            
+            // Get actual engagement data
+            const [postCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(posts)
+              .where(eq(posts.userId, user.id));
+            
+            const [likeCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(postLikes)
+              .where(eq(postLikes.userId, user.id));
+            
+            const [shareCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(postShares)
+              .where(eq(postShares.userId, user.id));
+            
+            const [commentCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(comments)
+              .where(eq(comments.userId, user.id));
+            
+            const [tagCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(postTags)
+              .where(eq(postTags.userId, user.id));
+            
+            const [friendCountResult] = await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(friendships)
+              .where(eq(friendships.userId, user.id));
+            
+            // Calculate point system metrics
+            const posts = postCountResult?.count || 0;
+            const likes = likeCountResult?.count || 0;
+            const shares = shareCountResult?.count || 0;
+            const comments = commentCountResult?.count || 0;
+            const tags = tagCountResult?.count || 0;
+            const friends = friendCountResult?.count || 0;
+            
+            // Estimated metrics based on real data
+            const reposts = Math.floor(shares * 0.3);
+            const saves = Math.floor(likes * 0.2);
+            const referrals = Math.floor(friends * 0.05);
+            
+            // Point calculations
+            const postPoints = posts * 5;
+            const engagementPoints = likes + shares + reposts + tags + saves + comments;
+            const referralPoints = referrals * 10;
+            const totalPoints = postPoints + engagementPoints + referralPoints;
+            const cosmicScore = Math.round(totalPoints * amplifier);
+            
+            // Apply cosmic score filters
+            if (minCosmicScore && cosmicScore < minCosmicScore) return null;
+            if (maxCosmicScore && cosmicScore > maxCosmicScore) return null;
+            
+            return {
+              id: user.id,
+              username: user.username,
+              name: user.name,
+              auraRating,
+              totalPoints,
+              auraAmplifier: amplifier,
+              cosmicScore,
+              postPoints,
+              engagementPoints,
+              referralPoints,
+              postCount: posts,
+              likeCount: likes,
+              shareCount: shares,
+              repostCount: reposts,
+              tagCount: tags,
+              saveCount: saves,
+              referralCount: referrals,
+              createdAt: user.createdAt,
+            };
+          } catch (error) {
+            console.error(`Error calculating metrics for user ${user.id}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      const validUsers = usersWithMetrics
+        .filter(user => user !== null)
+        .sort((a, b) => b.cosmicScore - a.cosmicScore);
+      
+      console.log(`Returning ${validUsers.length} users with calculated metrics`);
+      return validUsers;
+      
+    } catch (error) {
+      console.error('Error in getUsersWithMetrics:', error);
+      return [];
     }
-    
-    const usersData = await query.limit(100);
-    
-    const usersWithMetrics = await Promise.all(
-      usersData.map(async (user) => {
-        // Get comprehensive metrics
-        const points = await this.calculateUserPoints(user.id);
-        const auraRating = parseFloat(user.auraRating || '4.0');
-        const amplifier = await this.getAuraAmplifier(auraRating);
-        const cosmicScore = Math.round(points * amplifier);
-        
-        // Skip users that don't meet cosmic score criteria
-        if (minCosmicScore && cosmicScore < minCosmicScore) return null;
-        if (maxCosmicScore && cosmicScore > maxCosmicScore) return null;
-        
-        // Get detailed engagement metrics using existing tables
-        const [postLikesResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(postLikes)
-          .where(eq(postLikes.userId, user.id));
-        
-        const [postSharesResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(postShares)
-          .where(eq(postShares.userId, user.id));
-        
-        const [postTagsResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(postTags)
-          .where(eq(postTags.userId, user.id));
-        
-        const [postsResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(posts)
-          .where(eq(posts.userId, user.id));
-        
-        const [commentsResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(comments)
-          .where(eq(comments.userId, user.id));
-        
-        const [friendsResult] = await db
-          .select({ count: sql<number>`count(*)` })
-          .from(friendships)
-          .where(eq(friendships.userId, user.id));
-        
-        // Calculate point breakdowns
-        const likeCount = postLikesResult?.count || 0;
-        const shareCount = postSharesResult?.count || 0;
-        const tagCount = postTagsResult?.count || 0;
-        const postCount = postsResult?.count || 0;
-        const commentCount = commentsResult?.count || 0;
-        const friendCount = friendsResult?.count || 0;
-        
-        // For demonstration, using comments and friends as additional engagement
-        const repostCount = Math.floor(shareCount * 0.3); // Estimate reposts as 30% of shares
-        const saveCount = Math.floor(likeCount * 0.2); // Estimate saves as 20% of likes
-        const referralCount = Math.floor(friendCount * 0.1); // Estimate referrals as 10% of friends
-        
-        const engagementPoints = likeCount + shareCount + repostCount + tagCount + saveCount + commentCount;
-        const postPoints = postCount * 5;
-        const referralPoints = referralCount * 10;
-        
-        return {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          auraRating,
-          totalPoints: points,
-          auraAmplifier: amplifier,
-          cosmicScore,
-          postPoints,
-          engagementPoints,
-          referralPoints,
-          postCount,
-          likeCount,
-          shareCount,
-          repostCount,
-          tagCount,
-          saveCount,
-          referralCount,
-          createdAt: user.createdAt,
-        };
-      })
-    );
-    
-    return usersWithMetrics
-      .filter(user => user !== null)
-      .sort((a, b) => b.cosmicScore - a.cosmicScore);
   }
 }
 
