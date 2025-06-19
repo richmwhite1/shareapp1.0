@@ -91,9 +91,19 @@ export default function CreatePostPage() {
 
   // Media thumbnail functions
   const getYouTubeVideoId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : null;
+    // Handle various YouTube URL formats including shorts
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^#&?\/\s]{11})/,
+      /youtube\.com\/watch\?.*v=([^#&?\/\s]{11})/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    return null;
   };
 
   const getSpotifyTrackId = (url: string) => {
@@ -121,36 +131,47 @@ export default function CreatePostPage() {
   // Auto-fetch thumbnails when URLs change
   useEffect(() => {
     const fetchThumbnail = async () => {
-      if (formData.youtubeUrl) {
+      // Clear previous auto thumbnail
+      setAutoThumbnailUrl(null);
+      
+      if (formData.youtubeUrl.trim()) {
         const videoId = getYouTubeVideoId(formData.youtubeUrl);
         if (videoId) {
           const thumbnailUrl = fetchYouTubeThumbnail(videoId);
+          console.log('YouTube thumbnail URL:', thumbnailUrl);
           setAutoThumbnailUrl(thumbnailUrl);
           setPrimaryPhotoPreview(thumbnailUrl);
           // Clear manual photo selection since we have auto thumbnail
           setPrimaryPhoto(null);
         }
-      } else if (formData.spotifyUrl) {
+      } else if (formData.spotifyUrl.trim()) {
         const trackId = getSpotifyTrackId(formData.spotifyUrl);
         if (trackId) {
-          const thumbnailUrl = await fetchSpotifyThumbnail(trackId);
-          if (thumbnailUrl) {
-            setAutoThumbnailUrl(thumbnailUrl);
-            setPrimaryPhotoPreview(thumbnailUrl);
-            // Clear manual photo selection since we have auto thumbnail
-            setPrimaryPhoto(null);
+          try {
+            const thumbnailUrl = await fetchSpotifyThumbnail(trackId);
+            if (thumbnailUrl) {
+              console.log('Spotify thumbnail URL:', thumbnailUrl);
+              setAutoThumbnailUrl(thumbnailUrl);
+              setPrimaryPhotoPreview(thumbnailUrl);
+              // Clear manual photo selection since we have auto thumbnail
+              setPrimaryPhoto(null);
+            }
+          } catch (error) {
+            console.error('Failed to fetch Spotify thumbnail:', error);
           }
         }
       } else {
-        setAutoThumbnailUrl(null);
+        // No media URLs, clear auto thumbnail but preserve manual photo
         if (!primaryPhoto) {
           setPrimaryPhotoPreview(null);
         }
       }
     };
 
-    fetchThumbnail();
-  }, [formData.youtubeUrl, formData.spotifyUrl, primaryPhoto]);
+    // Debounce the fetch to avoid excessive API calls
+    const timeoutId = setTimeout(fetchThumbnail, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.youtubeUrl, formData.spotifyUrl]);
 
   // Image processing functions
   const resizeImage = (file: File, maxSizeMB: number = 5): Promise<File> => {
@@ -864,54 +885,30 @@ END:VCALENDAR`;
 
               {/* Media URLs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
-                    </div>
-                    <Input
-                      type="url"
-                      placeholder="Spotify link"
-                      value={formData.spotifyUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
+                <div className="relative flex-1">
+                  <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                    <Download className="h-2 w-2 text-white" />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchLinkMetadata(formData.spotifyUrl, 'spotify')}
-                    disabled={!formData.spotifyUrl.trim() || isLoading}
-                    className="px-3"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                  <Input
+                    type="url"
+                    placeholder="Spotify link"
+                    value={formData.spotifyUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                    className="pl-10 bg-input border-border"
+                  />
                 </div>
 
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
-                    </div>
-                    <Input
-                      type="url"
-                      placeholder="YouTube link"
-                      value={formData.youtubeUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
+                <div className="relative flex-1">
+                  <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+                    <Download className="h-2 w-2 text-white" />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchLinkMetadata(formData.youtubeUrl, 'youtube')}
-                    disabled={!formData.youtubeUrl.trim() || isLoading}
-                    className="px-3"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                  <Input
+                    type="url"
+                    placeholder="YouTube link"
+                    value={formData.youtubeUrl}
+                    onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                    className="pl-10 bg-input border-border"
+                  />
                 </div>
               </div>
 
