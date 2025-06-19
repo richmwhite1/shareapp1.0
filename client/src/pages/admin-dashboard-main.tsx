@@ -642,13 +642,13 @@ export default function AdminDashboard() {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input
                         placeholder="Search users by username or name..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
                         className="pl-10 bg-slate-800 border-slate-700 text-white"
                       />
                     </div>
                   </div>
-                  <Select value={userFilter} onValueChange={setUserFilter}>
+                  <Select value={userManagementFilter} onValueChange={setUserManagementFilter}>
                     <SelectTrigger className="w-48 bg-slate-800 border-slate-700">
                       <SelectValue />
                     </SelectTrigger>
@@ -741,26 +741,32 @@ export default function AdminDashboard() {
                                   <div className="flex space-x-2">
                                     {user.isActive ? (
                                       <Button 
-                                        variant="destructive" 
-                                        onClick={() => banUserMutation.mutate({ 
-                                          userId: user.id, 
-                                          reason: "Admin action" 
-                                        })}
-                                        disabled={banUserMutation.isPending}
+                                        variant="outline" 
+                                        onClick={() => setConfirmSuspendUser(user)}
+                                        className="text-yellow-400 border-yellow-400 hover:bg-yellow-400 hover:text-black"
                                       >
                                         <Ban className="h-4 w-4 mr-2" />
-                                        Ban User
+                                        Suspend User
                                       </Button>
                                     ) : (
                                       <Button 
-                                        variant="default"
-                                        onClick={() => unbanUserMutation.mutate(user.id)}
-                                        disabled={unbanUserMutation.isPending}
+                                        variant="outline"
+                                        onClick={() => suspendUserMutation.mutate(user.id)}
+                                        disabled={suspendUserMutation.isPending}
+                                        className="text-green-400 border-green-400 hover:bg-green-400 hover:text-black"
                                       >
                                         <CheckCircle className="h-4 w-4 mr-2" />
-                                        Unban User
+                                        Unsuspend User
                                       </Button>
                                     )}
+                                    <Button 
+                                      variant="destructive"
+                                      onClick={() => setConfirmDeleteUser(user)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete User
+                                    </Button>
                                   </div>
                                 </div>
                               </DialogContent>
@@ -1925,6 +1931,54 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={!!confirmDeleteUser} onOpenChange={() => setConfirmDeleteUser(null)}>
+        <AlertDialogContent className="bg-slate-900 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Are you sure you want to delete user "{confirmDeleteUser?.name}" (@{confirmDeleteUser?.username})? 
+              This action cannot be undone and will permanently remove all their content, posts, and lists.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => confirmDeleteUser && deleteUserMutation.mutate(confirmDeleteUser.id)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteUserMutation.isPending ? 'Deleting...' : 'Delete User'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Suspend User Confirmation Dialog */}
+      <AlertDialog open={!!confirmSuspendUser} onOpenChange={() => setConfirmSuspendUser(null)}>
+        <AlertDialogContent className="bg-slate-900 border-slate-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Suspend User</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Are you sure you want to suspend user "{confirmSuspendUser?.name}" (@{confirmSuspendUser?.username})? 
+              This will prevent them from accessing the platform until they are unsuspended.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => confirmSuspendUser && suspendUserMutation.mutate(confirmSuspendUser.id)}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              {suspendUserMutation.isPending ? 'Suspending...' : 'Suspend User'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
