@@ -1,5 +1,5 @@
 import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue,
-         users, posts, lists, postFlags, reports, 
+         users, posts, lists, postFlags, reports, postLikes, postShares, postTags, comments, friendships,
          type User, type Post, type List, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession,
          type AuditLog, type InsertAuditLog, type ModerationAction, type InsertModerationAction,
          type SystemConfig, type InsertSystemConfig, type BulkOperation, type InsertBulkOperation,
@@ -722,6 +722,109 @@ export class AdminStorage implements IAdminStorage {
     // This is a placeholder for the actual import logic
     
     return operationId;
+  }
+
+  // Point System Implementation
+  async calculateUserPoints(userId: number): Promise<number> {
+    // 1 point: likes, shares, reposts, tags, saves
+    const [likesGiven] = await db.select({ count: count() })
+      .from(postLikes)
+      .where(eq(postLikes.userId, userId));
+    
+    const [sharesGiven] = await db.select({ count: count() })
+      .from(postShares)
+      .where(eq(postShares.userId, userId));
+    
+    const [tagsGiven] = await db.select({ count: count() })
+      .from(postTags)
+      .where(eq(postTags.userId, userId));
+    
+    // 5 points: creating a post
+    const [postsCreated] = await db.select({ count: count() })
+      .from(posts)
+      .where(eq(posts.userId, userId));
+    
+    // 10 points: referred users (simplified - would need referral tracking)
+    const [referrals] = await db.select({ count: count() })
+      .from(friendships)
+      .where(eq(friendships.userId, userId));
+    
+    const onePointActions = (likesGiven.count || 0) + (sharesGiven.count || 0) + (tagsGiven.count || 0);
+    const fivePointActions = (postsCreated.count || 0) * 5;
+    const tenPointActions = Math.floor((referrals.count || 0) / 5) * 10; // Estimate 1 referral per 5 friends
+    
+    return onePointActions + fivePointActions + tenPointActions;
+  }
+
+  async getAuraAmplifier(auraRating: number): Promise<number> {
+    const rating = Math.round(auraRating);
+    const amplifiers: { [key: number]: number } = {
+      7: 1.5,
+      6: 1.4,
+      5: 1.2,
+      4: 1.0,
+      3: 0.8,
+      2: 0.6,
+      1: 0.5
+    };
+    return amplifiers[rating] || 1.0;
+  }
+
+  async calculateCosmicScore(userId: number): Promise<number> {
+    const points = await this.calculateUserPoints(userId);
+    const [user] = await db.select({ auraRating: users.auraRating })
+      .from(users)
+      .where(eq(users.id, userId));
+    
+    const auraRating = parseFloat(user?.auraRating || '4.0');
+    const amplifier = await this.getAuraAmplifier(auraRating);
+    
+    return Math.round(points * amplifier);
+  }
+
+  async getUsersWithMetrics(searchQuery?: string, minCosmicScore?: number, maxCosmicScore?: number): Promise<any[]> {
+    let query = db
+      .select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        auraRating: users.auraRating,
+        createdAt: users.createdAt,
+      })
+      .from(users);
+    
+    if (searchQuery) {
+      query = query.where(or(
+        like(users.username, `%${searchQuery}%`),
+        like(users.name, `%${searchQuery}%`)
+      ));
+    }
+    
+    const usersData = await query.limit(100);
+    
+    const usersWithMetrics = await Promise.all(
+      usersData.map(async (user) => {
+        const points = await this.calculateUserPoints(user.id);
+        const auraRating = parseFloat(user.auraRating || '4.0');
+        const amplifier = await this.getAuraAmplifier(auraRating);
+        const cosmicScore = Math.round(points * amplifier);
+        
+        // Skip users that don't meet cosmic score criteria
+        if (minCosmicScore && cosmicScore < minCosmicScore) return null;
+        if (maxCosmicScore && cosmicScore > maxCosmicScore) return null;
+        
+        return {
+          ...user,
+          totalPoints: points,
+          auraAmplifier: amplifier,
+          cosmicScore,
+        };
+      })
+    );
+    
+    return usersWithMetrics
+      .filter(user => user !== null)
+      .sort((a, b) => b.cosmicScore - a.cosmicScore);
   }
 }
 
