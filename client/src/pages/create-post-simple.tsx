@@ -711,10 +711,7 @@ END:VCALENDAR`;
     <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto p-3 pt-14 pb-20">
         <Card className="bg-card border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-foreground">Create Post</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-4 pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Primary Photo Upload */}
@@ -883,36 +880,51 @@ END:VCALENDAR`;
               {/* Privacy Settings & Category - More Discreet */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div>
-                    <Label htmlFor="privacy" className="text-sm">Privacy</Label>
-                    <Select
-                      value={formData.privacy}
-                      onValueChange={(value) => handlePrivacyChange(value as 'public' | 'friends' | 'private')}
-                    >
-                      <SelectTrigger className="w-32 h-8 text-sm bg-input border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover border-border">
-                        <SelectItem value="public">
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-3 w-3" />
-                            Public
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="friends">
-                          <div className="flex items-center gap-2">
-                            <Users className="h-3 w-3" />
-                            Connections
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="private">
-                          <div className="flex items-center gap-2">
-                            <Lock className="h-3 w-3" />
-                            Private
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <Label htmlFor="privacy" className="text-sm">Privacy</Label>
+                      <Select
+                        value={formData.privacy}
+                        onValueChange={(value) => handlePrivacyChange(value as 'public' | 'friends' | 'private')}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-sm bg-input border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border">
+                          <SelectItem value="public">
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-3 w-3" />
+                              Public
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="friends">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-3 w-3" />
+                              Connections
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="private">
+                            <div className="flex items-center gap-2">
+                              <Lock className="h-3 w-3" />
+                              Private
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="mt-5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEvent(!isEvent)}
+                        className={`h-8 text-sm ${isEvent ? 'bg-purple-50 border-purple-300 text-purple-700' : ''}`}
+                      >
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {isEvent ? 'Event' : 'Event'}
+                      </Button>
+                    </div>
                   </div>
 
                   <div>
@@ -1057,17 +1069,6 @@ END:VCALENDAR`;
                     </Button>
                   )}
                 </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEvent(!isEvent)}
-                  className={`flex items-center space-x-2 text-xs ${isEvent ? 'bg-purple-50 border-purple-300 text-purple-700' : ''}`}
-                >
-                  <Calendar className="h-3 w-3" />
-                  <span>{isEvent ? 'Event Mode' : 'Make Event'}</span>
-                </Button>
               </div>
               
               {formData.privacy === 'private' && taggedUsers.length > 0 && (
