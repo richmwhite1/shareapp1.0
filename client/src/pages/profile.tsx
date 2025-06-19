@@ -129,7 +129,7 @@ export default function Profile() {
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-800">
-          <h1 className="text-xl font-bold">{userData.name || userData.username}</h1>
+          <h1 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h1>
           {isOwnProfile && (
             <Button
               variant="ghost"
@@ -145,19 +145,19 @@ export default function Profile() {
         <div className="px-6 py-6">
           <div className="flex items-center space-x-4 mb-4">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={userData.profilePictureUrl || ""} />
+              <AvatarImage src={(userData as any)?.profilePictureUrl || ""} />
               <AvatarFallback className="bg-gray-800 text-white text-lg">
-                {userData.name?.charAt(0) || userData.username?.charAt(0)}
+                {(userData as any)?.name?.charAt(0) || (userData as any)?.username?.charAt(0)}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1">
-              <h2 className="text-xl font-bold">{userData.name || userData.username}</h2>
-              {userData.name && (
-                <p className="text-gray-400">@{userData.username}</p>
+              <h2 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h2>
+              {(userData as any)?.name && (
+                <p className="text-gray-400">@{(userData as any)?.username}</p>
               )}
-              {userData.bio && (
-                <p className="text-sm text-gray-300 mt-1">{userData.bio}</p>
+              {(userData as any)?.bio && (
+                <p className="text-sm text-gray-300 mt-1">{(userData as any)?.bio}</p>
               )}
             </div>
           </div>
@@ -189,15 +189,15 @@ export default function Profile() {
               <div className="text-xs text-gray-400">Posts</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-white">{lists?.length || 0}</div>
+              <div className="text-lg font-bold text-white">{Array.isArray(lists) ? lists.length : 0}</div>
               <div className="text-xs text-gray-400">Lists</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-white">{userFriends?.length || 0}</div>
+              <div className="text-lg font-bold text-white">{Array.isArray(userFriends) ? userFriends.length : 0}</div>
               <div className="text-xs text-gray-400">Friends</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-white">{totalShares}</div>
+              <div className="text-lg font-bold text-white">{totalShares || 0}</div>
               <div className="text-xs text-gray-400">Shares</div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function Profile() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            {(lists || []).map((list: any) => {
+            {Array.isArray(lists) ? lists.map((list: any) => {
               const recentPost = list.posts?.[0];
               const hasImage = recentPost?.primaryPhotoUrl || recentPost?.thumbnailUrl;
               
@@ -265,12 +265,12 @@ export default function Profile() {
                   </div>
                 </Link>
               );
-            })}
+            }) : null}
           </div>
         </div>
 
         {/* Friends Section */}
-        {userFriends && userFriends.length > 0 && (
+        {Array.isArray(userFriends) && userFriends.length > 0 && (
           <div className="px-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Friends</h3>
             <div className="flex space-x-3 overflow-x-auto pb-2">
