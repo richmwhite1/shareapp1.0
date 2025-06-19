@@ -164,7 +164,12 @@ export default function Profile() {
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="px-6 py-4 flex items-center justify-between border-b border-gray-800">
-          <h1 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h1>
+            {(userData as any)?.name && (
+              <span className="text-gray-400 text-sm">@{(userData as any)?.username}</span>
+            )}
+          </div>
           {isOwnProfile && (
             <Button
               variant="ghost"
@@ -195,33 +200,25 @@ export default function Profile() {
               </div>
             </div>
             
-            <div className="text-center mt-4">
-              <h2 className="text-xl font-bold">{(userData as any)?.name || (userData as any)?.username}</h2>
-              {(userData as any)?.name && (
-                <p className="text-gray-400">@{(userData as any)?.username}</p>
-              )}
-              {(userData as any)?.bio && (
-                <p className="text-sm text-gray-300 mt-1">{(userData as any)?.bio}</p>
-              )}
-            </div>
+            {(userData as any)?.bio && (
+              <div className="text-center mt-4">
+                <p className="text-sm text-gray-300">{(userData as any)?.bio}</p>
+              </div>
+            )}
           </div>
 
-          {/* Simple Privacy Toggle - Only for own profile */}
+          {/* Discreet Privacy Toggle - Only for own profile */}
           {isOwnProfile && (
-            <div className="flex items-center justify-between py-3 px-4 bg-gray-900 rounded-lg mb-4">
-              <div className="flex items-center space-x-2">
-                {defaultPrivacy === 'public' ? (
-                  <Globe className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Lock className="h-4 w-4 text-red-500" />
-                )}
-                <span className="text-sm font-medium">
-                  {defaultPrivacy === 'public' ? 'Public Profile' : 'Private Profile'}
-                </span>
-              </div>
+            <div className="flex items-center justify-center gap-2 mb-4 opacity-60">
+              {defaultPrivacy === 'public' ? (
+                <Globe className="h-3 w-3 text-gray-400" />
+              ) : (
+                <Lock className="h-3 w-3 text-gray-400" />
+              )}
               <Switch
                 checked={defaultPrivacy === 'public'}
                 onCheckedChange={handlePrivacyToggle}
+                className="scale-75"
               />
             </div>
           )}
