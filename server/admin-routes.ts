@@ -649,6 +649,16 @@ router.get('/users', adminAuth, async (req: Request, res: Response) => {
       
       const isBanned = latestSuspend && (!latestUnsuspend || new Date(latestSuspend.createdAt) > new Date(latestUnsuspend.createdAt));
       
+      // Debug logging for user status
+      if (user.id === 11) {
+        console.log(`User ${user.username} status check:`, {
+          moderationHistory: moderationHistory.length,
+          latestSuspend: latestSuspend?.action,
+          latestUnsuspend: latestUnsuspend?.action,
+          isBanned
+        });
+      }
+      
       return {
         ...user,
         postCount: posts.length,
