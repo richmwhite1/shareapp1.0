@@ -31,7 +31,12 @@ import {
   Star,
   Award,
   Zap,
-  Crown
+  Crown,
+  ExternalLink,
+  Link,
+  RefreshCw,
+  Copy,
+  BarChart3
 } from "lucide-react";
 
 interface AdminMetrics {
@@ -100,6 +105,22 @@ interface UserMetrics {
   saveCount: number;
   referralCount: number;
   createdAt: string;
+}
+
+interface UrlAnalytics {
+  url: string;
+  clickCount: number;
+  postCount: number;
+  postIds: number[];
+  mapping?: {
+    id: number;
+    originalUrl: string;
+    currentUrl: string;
+    discountCode?: string;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 interface ContentReviewItem {
