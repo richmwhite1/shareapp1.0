@@ -406,4 +406,42 @@ router.get('/users/:id/cosmic-score', adminAuth, async (req, res) => {
   }
 });
 
+// URL Analytics endpoints
+router.get('/url-analytics', adminAuth, async (req, res) => {
+  try {
+    const urlAnalytics = await adminStorage.getUrlAnalytics();
+    res.json(urlAnalytics);
+  } catch (error) {
+    console.error('Error fetching URL analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch URL analytics' });
+  }
+});
+
+router.post('/url-mapping', adminAuth, async (req, res) => {
+  try {
+    const { originalUrl, newUrl, discountCode } = req.body;
+    const adminId = req.admin?.id;
+
+    if (!originalUrl || !newUrl) {
+      return res.status(400).json({ error: 'Original URL and new URL are required' });
+    }
+
+    await adminStorage.updateUrlMapping(originalUrl, newUrl, discountCode, adminId);
+    res.json({ success: true, message: 'URL mapping updated successfully' });
+  } catch (error) {
+    console.error('Error updating URL mapping:', error);
+    res.status(500).json({ error: 'Failed to update URL mapping' });
+  }
+});
+
+router.get('/url-mappings', adminAuth, async (req, res) => {
+  try {
+    const mappings = await adminStorage.getUrlMappings();
+    res.json(mappings);
+  } catch (error) {
+    console.error('Error fetching URL mappings:', error);
+    res.status(500).json({ error: 'Failed to fetch URL mappings' });
+  }
+});
+
 export default router;

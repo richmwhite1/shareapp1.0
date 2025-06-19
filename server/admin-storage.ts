@@ -1,9 +1,10 @@
 import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue,
          users, posts as postsTable, lists, postFlags, reports, postLikes, postShares, postTags, comments as commentsTable, friendships,
+         urlClicks, urlMappings,
          type User, type Post, type List, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession,
          type AuditLog, type InsertAuditLog, type ModerationAction, type InsertModerationAction,
          type SystemConfig, type InsertSystemConfig, type BulkOperation, type InsertBulkOperation,
-         type ContentReviewItem, type InsertContentReviewItem } from "@shared/schema";
+         type ContentReviewItem, type InsertContentReviewItem, type UrlClick, type UrlMapping, type InsertUrlMapping } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, count, gte, lt, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
@@ -78,6 +79,13 @@ export interface IAdminStorage {
   exportUserData(filters?: any): Promise<any[]>;
   exportContentData(filters?: any): Promise<any[]>;
   importUsers(userData: any[], adminId: number): Promise<string>;
+  
+  // URL Management
+  getUrlAnalytics(): Promise<any[]>;
+  updateUrlMapping(originalUrl: string, newUrl: string, discountCode?: string, adminId?: number): Promise<void>;
+  createUrlMapping(originalUrl: string, currentUrl: string, discountCode?: string): Promise<UrlMapping>;
+  getUrlMappings(): Promise<UrlMapping[]>;
+  trackUrlClick(url: string, userId?: number, postId?: number, ipAddress?: string): Promise<void>;
 }
 
 export class AdminStorage implements IAdminStorage {
@@ -780,6 +788,201 @@ export class AdminStorage implements IAdminStorage {
     const amplifier = await this.getAuraAmplifier(auraRating);
     
     return Math.round(points * amplifier);
+  }
+
+  // URL Management Methods
+  async getUrlAnalytics(): Promise<any[]> {
+    try {
+      // Get URLs from posts (including links in additionalPhotoData)
+      const postsWithUrls = await db
+        .select({
+          id: postsTable.id,
+          userId: postsTable.userId,
+          primaryPhotoUrl: postsTable.primaryPhotoUrl,
+          primaryLink: postsTable.primaryLink,
+          additionalPhotoData: postsTable.additionalPhotoData,
+        })
+        .from(postsTable)
+        .where(or(
+          sql`${postsTable.primaryLink} IS NOT NULL AND ${postsTable.primaryLink} != ''`,
+          sql`${postsTable.additionalPhotoData} IS NOT NULL`
+        ));
+
+      // Extract and count all URLs
+      const urlCounts: Record<string, { url: string; clickCount: number; postCount: number; postIds: number[] }> = {};
+
+      for (const post of postsWithUrls) {
+        // Count primary links
+        if (post.primaryLink) {
+          if (!urlCounts[post.primaryLink]) {
+            urlCounts[post.primaryLink] = { url: post.primaryLink, clickCount: 0, postCount: 0, postIds: [] };
+          }
+          urlCounts[post.primaryLink].postCount++;
+          urlCounts[post.primaryLink].postIds.push(post.id);
+        }
+
+        // Count additional photo URLs
+        if (post.additionalPhotoData) {
+          const additionalData = Array.isArray(post.additionalPhotoData) 
+            ? post.additionalPhotoData 
+            : [post.additionalPhotoData];
+          
+          for (const data of additionalData) {
+            if (data && typeof data === 'object' && 'link' in data && data.link) {
+              if (!urlCounts[data.link]) {
+                urlCounts[data.link] = { url: data.link, clickCount: 0, postCount: 0, postIds: [] };
+              }
+              urlCounts[data.link].postCount++;
+              if (!urlCounts[data.link].postIds.includes(post.id)) {
+                urlCounts[data.link].postIds.push(post.id);
+              }
+            }
+          }
+        }
+      }
+
+      // Get click counts from url_clicks table
+      const clickCounts = await db
+        .select({
+          url: urlClicks.url,
+          clickCount: sql<number>`count(*)::int`,
+        })
+        .from(urlClicks)
+        .groupBy(urlClicks.url);
+
+      // Merge click data with URL data
+      for (const clickData of clickCounts) {
+        if (urlCounts[clickData.url]) {
+          urlCounts[clickData.url].clickCount = clickData.clickCount || 0;
+        }
+      }
+
+      // Get URL mappings
+      const mappings = await db.select().from(urlMappings);
+      const mappingsByUrl: Record<string, UrlMapping> = {};
+      for (const mapping of mappings) {
+        mappingsByUrl[mapping.originalUrl] = mapping;
+      }
+
+      // Convert to array and add mapping data
+      const urlAnalytics = Object.values(urlCounts).map(urlData => ({
+        ...urlData,
+        mapping: mappingsByUrl[urlData.url] || null,
+      }));
+
+      // Sort by total usage (clicks + posts)
+      urlAnalytics.sort((a, b) => 
+        (b.clickCount + b.postCount * 2) - (a.clickCount + a.postCount * 2)
+      );
+
+      console.log(`Returning ${urlAnalytics.length} URL analytics`);
+      return urlAnalytics;
+    } catch (error) {
+      console.error('Error in getUrlAnalytics:', error);
+      return [];
+    }
+  }
+
+  async updateUrlMapping(originalUrl: string, newUrl: string, discountCode?: string, adminId?: number): Promise<void> {
+    try {
+      // Update or create mapping
+      await db.insert(urlMappings).values({
+        originalUrl,
+        currentUrl: newUrl,
+        discountCode: discountCode || null,
+      }).onConflictDoUpdate({
+        target: urlMappings.originalUrl,
+        set: {
+          currentUrl: newUrl,
+          discountCode: discountCode || null,
+          updatedAt: new Date(),
+        }
+      });
+
+      // Update all posts with this URL
+      const postsToUpdate = await db
+        .select()
+        .from(postsTable)
+        .where(eq(postsTable.primaryLink, originalUrl));
+
+      for (const post of postsToUpdate) {
+        await db.update(postsTable)
+          .set({ primaryLink: newUrl })
+          .where(eq(postsTable.id, post.id));
+      }
+
+      // Update additional photo data URLs
+      const postsWithAdditionalData = await db
+        .select()
+        .from(postsTable)
+        .where(sql`${postsTable.additionalPhotoData} IS NOT NULL`);
+
+      for (const post of postsWithAdditionalData) {
+        if (post.additionalPhotoData) {
+          let additionalData = Array.isArray(post.additionalPhotoData) 
+            ? post.additionalPhotoData 
+            : [post.additionalPhotoData];
+          
+          let updated = false;
+          additionalData = additionalData.map((data: any) => {
+            if (data && typeof data === 'object' && data.link === originalUrl) {
+              updated = true;
+              return {
+                ...data,
+                link: newUrl,
+                discountCode: discountCode || data.discountCode || '',
+              };
+            }
+            return data;
+          });
+
+          if (updated) {
+            await db.update(postsTable)
+              .set({ additionalPhotoData: additionalData })
+              .where(eq(postsTable.id, post.id));
+          }
+        }
+      }
+
+      // Log the action
+      if (adminId) {
+        await this.logAdminAction({
+          adminId,
+          action: 'url_mapping_updated',
+          target: 'url',
+          details: { originalUrl, newUrl, discountCode },
+        });
+      }
+
+      console.log(`Updated URL mapping: ${originalUrl} -> ${newUrl}`);
+    } catch (error) {
+      console.error('Error updating URL mapping:', error);
+      throw error;
+    }
+  }
+
+  async createUrlMapping(originalUrl: string, currentUrl: string, discountCode?: string): Promise<UrlMapping> {
+    const [mapping] = await db.insert(urlMappings).values({
+      originalUrl,
+      currentUrl,
+      discountCode: discountCode || null,
+    }).returning();
+    return mapping;
+  }
+
+  async getUrlMappings(): Promise<UrlMapping[]> {
+    return await db.select().from(urlMappings).orderBy(urlMappings.createdAt);
+  }
+
+  async trackUrlClick(url: string, userId?: number, postId?: number, ipAddress?: string): Promise<void> {
+    await db.insert(urlClicks).values({
+      url,
+      userId: userId || null,
+      postId: postId || null,
+      ipAddress: ipAddress || null,
+      userAgent: null,
+      referrer: null,
+    });
   }
 
   async getUsersWithMetrics(searchQuery?: string, minCosmicScore?: number, maxCosmicScore?: number): Promise<any[]> {

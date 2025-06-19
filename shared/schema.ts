@@ -693,3 +693,30 @@ export type BulkOperation = typeof bulkOperations.$inferSelect;
 export type InsertBulkOperation = typeof bulkOperations.$inferInsert;
 export type ContentReviewItem = typeof contentReviewQueue.$inferSelect;
 export type InsertContentReviewItem = typeof contentReviewQueue.$inferInsert;
+
+// URL tracking and management
+export const urlClicks = pgTable("url_clicks", {
+  id: serial("id").primaryKey(),
+  url: text("url").notNull(),
+  userId: integer("user_id").references(() => users.id),
+  postId: integer("post_id").references(() => posts.id),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  clickedAt: timestamp("clicked_at").notNull().defaultNow(),
+});
+
+export const urlMappings = pgTable("url_mappings", {
+  id: serial("id").primaryKey(),
+  originalUrl: text("original_url").notNull().unique(),
+  currentUrl: text("current_url").notNull(),
+  discountCode: text("discount_code"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type UrlClick = typeof urlClicks.$inferSelect;
+export type InsertUrlClick = typeof urlClicks.$inferInsert;
+export type UrlMapping = typeof urlMappings.$inferSelect;
+export type InsertUrlMapping = typeof urlMappings.$inferInsert;
