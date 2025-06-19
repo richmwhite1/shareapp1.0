@@ -1800,27 +1800,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Energy Rating Routes (Placeholder responses for now)
+  // Energy Rating Routes
   
   // Get energy rating stats for a post
   app.get('/api/posts/:id/energy/stats', async (req, res) => {
-    // Return mock data for chakra energy ratings
-    res.json({
-      average: 4, // Default to heart chakra
-      count: 0
-    });
+    try {
+      const postId = parseInt(req.params.id);
+      const stats = await storage.getPostEnergyStats(postId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Get post energy stats error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // Get user's energy rating for a post
-  app.get('/api/posts/:id/energy/user', authenticateToken, async (req, res) => {
-    // Return null for now (no user rating)
-    res.json(null);
+  app.get('/api/posts/:id/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.user.userId;
+      const rating = await storage.getUserPostEnergyRating(postId, userId);
+      res.json(rating);
+    } catch (error) {
+      console.error('Get user post energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // Submit energy rating for a post
-  app.post('/api/posts/:id/energy', authenticateToken, async (req, res) => {
-    // Accept the rating but don't store it yet
-    res.json({ success: true });
+  app.post('/api/posts/:id/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const postId = parseInt(req.params.id);
+      const userId = req.user.userId;
+      const { rating } = req.body;
+      
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
+      }
+      
+      await storage.submitPostEnergyRating(postId, userId, rating);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Submit post energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get energy rating stats for a profile
+  app.get('/api/profiles/:id/energy/stats', async (req, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+      const stats = await storage.getProfileEnergyStats(profileId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Get profile energy stats error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get user's energy rating for a profile
+  app.get('/api/profiles/:id/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+      const userId = req.user.userId;
+      const rating = await storage.getUserProfileEnergyRating(profileId, userId);
+      res.json(rating);
+    } catch (error) {
+      console.error('Get user profile energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Submit energy rating for a profile
+  app.post('/api/profiles/:id/energy', authenticateToken, async (req: any, res) => {
+    try {
+      const profileId = parseInt(req.params.id);
+      const userId = req.user.userId;
+      const { rating } = req.body;
+      
+      if (!rating || rating < 1 || rating > 7) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 7' });
+      }
+      
+      await storage.submitProfileEnergyRating(profileId, userId, rating);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Submit profile energy rating error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   });
 
   // Get all users endpoint

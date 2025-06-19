@@ -144,6 +144,14 @@ export interface IStorage {
   addToBlacklist(userId: number, blockedUserId: number): Promise<void>;
   getSharedWithMePosts(userId: number): Promise<PostWithUser[]>;
   markTaggedPostViewed(postId: number, userId: number): Promise<void>;
+
+  // Energy Rating System
+  getPostEnergyStats(postId: number): Promise<{ average: number; count: number }>;
+  getUserPostEnergyRating(postId: number, userId: number): Promise<number | null>;
+  submitPostEnergyRating(postId: number, userId: number, rating: number): Promise<void>;
+  getProfileEnergyStats(profileId: number): Promise<{ average: number; count: number }>;
+  getUserProfileEnergyRating(profileId: number, userId: number): Promise<number | null>;
+  submitProfileEnergyRating(profileId: number, userId: number, rating: number): Promise<void>;
 }
 
 export class EnterpriseStorage implements IStorage {
@@ -1845,6 +1853,100 @@ export class EnterpriseStorage implements IStorage {
 
   async removeFromBlacklist(userId: number): Promise<void> {
     await db.delete(blacklist).where(eq(blacklist.userId, userId));
+  }
+
+  // ENERGY RATING SYSTEM IMPLEMENTATION
+  
+  async getPostEnergyStats(postId: number): Promise<{ average: number; count: number }> {
+    const result = await db
+      .select({
+        average: avg(postEnergyRatings.rating),
+        count: count(postEnergyRatings.id)
+      })
+      .from(postEnergyRatings)
+      .where(eq(postEnergyRatings.postId, postId));
+
+    const stats = result[0];
+    return {
+      average: stats.average ? Number(stats.average) : 4,
+      count: stats.count || 0
+    };
+  }
+
+  async getUserPostEnergyRating(postId: number, userId: number): Promise<number | null> {
+    const [rating] = await db
+      .select({ rating: postEnergyRatings.rating })
+      .from(postEnergyRatings)
+      .where(and(
+        eq(postEnergyRatings.postId, postId),
+        eq(postEnergyRatings.userId, userId)
+      ));
+
+    return rating?.rating || null;
+  }
+
+  async submitPostEnergyRating(postId: number, userId: number, rating: number): Promise<void> {
+    await db
+      .insert(postEnergyRatings)
+      .values({
+        postId,
+        userId,
+        rating,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [postEnergyRatings.postId, postEnergyRatings.userId],
+        set: {
+          rating,
+          updatedAt: new Date()
+        }
+      });
+  }
+
+  async getProfileEnergyStats(profileId: number): Promise<{ average: number; count: number }> {
+    const result = await db
+      .select({
+        average: avg(profileEnergyRatings.rating),
+        count: count(profileEnergyRatings.id)
+      })
+      .from(profileEnergyRatings)
+      .where(eq(profileEnergyRatings.profileId, profileId));
+
+    const stats = result[0];
+    return {
+      average: stats.average ? Number(stats.average) : 4,
+      count: stats.count || 0
+    };
+  }
+
+  async getUserProfileEnergyRating(profileId: number, userId: number): Promise<number | null> {
+    const [rating] = await db
+      .select({ rating: profileEnergyRatings.rating })
+      .from(profileEnergyRatings)
+      .where(and(
+        eq(profileEnergyRatings.profileId, profileId),
+        eq(profileEnergyRatings.userId, userId)
+      ));
+
+    return rating?.rating || null;
+  }
+
+  async submitProfileEnergyRating(profileId: number, userId: number, rating: number): Promise<void> {
+    await db
+      .insert(profileEnergyRatings)
+      .values({
+        profileId,
+        userId,
+        rating,
+        updatedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [profileEnergyRatings.profileId, profileEnergyRatings.userId],
+        set: {
+          rating,
+          updatedAt: new Date()
+        }
+      });
   }
 }
 
