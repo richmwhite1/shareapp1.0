@@ -673,8 +673,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else if (list.privacyLevel === 'private') {
               // Private lists visible only if user has accepted access
-              const hasAccess = await storage.hasListAccess(viewerId, list.id);
-              if (hasAccess) {
+              const accessResult = await storage.hasListAccess(viewerId, list.id);
+              if (accessResult.hasAccess) {
                 visibleLists.push(list);
               }
             }
@@ -1593,6 +1593,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/friends/:userId', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const friends = await storage.getFriends(userId);
+      res.json(friends);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Profile page specific endpoint
+  app.get('/api/friends/user/:userId', authenticateToken, async (req: any, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const friends = await storage.getFriends(userId);

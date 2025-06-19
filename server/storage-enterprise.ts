@@ -1836,37 +1836,7 @@ export class EnterpriseStorage implements IStorage {
     await this.recordPostView(postId, userId);
   }
 
-  async getBlacklist(): Promise<any[]> {
-    const result = await db
-      .select({
-        blacklistEntry: blacklist,
-        user: {
-          id: users.id,
-          username: users.username,
-          name: users.name,
-          profilePictureUrl: users.profilePictureUrl
-        }
-      })
-      .from(blacklist)
-      .leftJoin(users, eq(blacklist.userId, users.id))
-      .orderBy(desc(blacklist.createdAt));
 
-    return result.map(r => ({
-      ...r.blacklistEntry,
-      user: r.user
-    }));
-  }
-
-  async addToBlacklist(userId: number, reason: string): Promise<void> {
-    await db.insert(blacklist).values({
-      userId,
-      reason
-    }).onConflictDoNothing();
-  }
-
-  async removeFromBlacklist(userId: number): Promise<void> {
-    await db.delete(blacklist).where(eq(blacklist.userId, userId));
-  }
 
   // ENERGY RATING SYSTEM IMPLEMENTATION
   
