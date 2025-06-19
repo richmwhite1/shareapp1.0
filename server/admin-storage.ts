@@ -1,5 +1,5 @@
 import { adminUsers, adminSessions, auditLogs, moderationActions, systemConfig, bulkOperations, contentReviewQueue,
-         users, posts, lists, postFlags, reports, postLikes, postShares, postTags, comments, friendships,
+         users, posts as postsTable, lists, postFlags, reports, postLikes, postShares, postTags, comments as commentsTable, friendships,
          type User, type Post, type List, type AdminUser, type InsertAdminUser, type AdminSession, type InsertAdminSession,
          type AuditLog, type InsertAuditLog, type ModerationAction, type InsertModerationAction,
          type SystemConfig, type InsertSystemConfig, type BulkOperation, type InsertBulkOperation,
@@ -495,7 +495,7 @@ export class AdminStorage implements IAdminStorage {
 
     // Basic counts
     const [userStats] = await db.select({ count: count() }).from(users);
-    const [postStats] = await db.select({ count: count() }).from(posts);
+    const [postStats] = await db.select({ count: count() }).from(postsTable);
     const [listStats] = await db.select({ count: count() }).from(lists);
     
     // User engagement metrics
@@ -512,16 +512,16 @@ export class AdminStorage implements IAdminStorage {
       .where(gte(users.createdAt, monthAgo));
     
     // Content engagement using existing database tables
-    const [engagementStats] = await db.select({ total: sql<number>`COALESCE(SUM(engagement), 0)` }).from(posts);
+    const [engagementStats] = await db.select({ total: sql<number>`COALESCE(SUM(engagement), 0)` }).from(postsTable);
     const totalViewsCount = engagementStats.total || 0;
     
     const [totalLikes] = await db.select({ count: count() }).from(postLikes);
-    const [totalComments] = await db.select({ count: count() }).from(comments);
+    const [totalComments] = await db.select({ count: count() }).from(commentsTable);
     const [totalConnections] = await db.select({ count: count() }).from(friendships);
     
     // Today's activity
     const [postsToday] = await db.select({ count: count() })
-      .from(posts)
+      .from(postsTable)
       .where(gte(posts.createdAt, today));
     
     const [listsToday] = await db.select({ count: count() })
@@ -534,7 +534,7 @@ export class AdminStorage implements IAdminStorage {
       .where(gte(postLikes.createdAt, today));
     
     const [commentsToday] = await db.select({ count: count() })
-      .from(comments)
+      .from(commentsTable)
       .where(gte(comments.createdAt, today));
     
     // Calculate top hashtags from actual post content
@@ -561,7 +561,7 @@ export class AdminStorage implements IAdminStorage {
       date: sql<string>`DATE(${posts.createdAt})`,
       count: count()
     })
-    .from(posts)
+    .from(postsTable)
     .where(gte(posts.createdAt, weekAgo))
     .groupBy(sql`DATE(${posts.createdAt})`)
     .orderBy(sql`DATE(${posts.createdAt})`);
@@ -631,7 +631,7 @@ export class AdminStorage implements IAdminStorage {
       date: sql`DATE(${posts.createdAt})`,
       count: count(posts.id)
     })
-    .from(posts)
+    .from(postsTable)
     .where(gte(posts.createdAt, startDate))
     .groupBy(sql`DATE(${posts.createdAt})`)
     .orderBy(sql`DATE(${posts.createdAt})`);
@@ -706,7 +706,7 @@ export class AdminStorage implements IAdminStorage {
   }
 
   async exportContentData(filters?: any): Promise<any[]> {
-    const postsData = await db.select().from(posts).orderBy(posts.id);
+    const postsData = await db.select().from(postsTable).orderBy(posts.id);
     const listsData = await db.select().from(lists).orderBy(lists.id);
     
     return {
@@ -741,8 +741,8 @@ export class AdminStorage implements IAdminStorage {
     
     // 5 points: creating a post
     const [postsCreated] = await db.select({ count: count() })
-      .from(posts)
-      .where(eq(posts.userId, userId));
+      .from(postsTable)
+      .where(eq(postsTable.userId, userId));
     
     // 10 points: referred users (simplified - would need referral tracking)
     const [referrals] = await db.select({ count: count() })
@@ -784,7 +784,7 @@ export class AdminStorage implements IAdminStorage {
 
   async getUsersWithMetrics(searchQuery?: string, minCosmicScore?: number, maxCosmicScore?: number): Promise<any[]> {
     try {
-      let query = db
+      let baseQuery = db
         .select({
           id: users.id,
           username: users.username,
@@ -795,110 +795,109 @@ export class AdminStorage implements IAdminStorage {
         .from(users);
       
       if (searchQuery) {
-        query = query.where(or(
+        baseQuery = baseQuery.where(or(
           like(users.username, `%${searchQuery}%`),
           like(users.name, `%${searchQuery}%`)
         ));
       }
       
-      const usersData = await query.limit(100);
+      const usersData = await baseQuery.limit(100);
       console.log(`Found ${usersData.length} users for metrics calculation`);
       
-      const usersWithMetrics = await Promise.all(
-        usersData.map(async (user) => {
-          try {
-            // Calculate basic metrics
-            const auraRating = parseFloat(user.auraRating || '4.0');
-            const amplifier = await this.getAuraAmplifier(auraRating);
-            
-            // Get actual engagement data
-            const [postCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(posts)
-              .where(eq(posts.userId, user.id));
-            
-            const [likeCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(postLikes)
-              .where(eq(postLikes.userId, user.id));
-            
-            const [shareCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(postShares)
-              .where(eq(postShares.userId, user.id));
-            
-            const [commentCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(comments)
-              .where(eq(comments.userId, user.id));
-            
-            const [tagCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(postTags)
-              .where(eq(postTags.userId, user.id));
-            
-            const [friendCountResult] = await db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(friendships)
-              .where(eq(friendships.userId, user.id));
-            
-            // Calculate point system metrics
-            const posts = postCountResult?.count || 0;
-            const likes = likeCountResult?.count || 0;
-            const shares = shareCountResult?.count || 0;
-            const comments = commentCountResult?.count || 0;
-            const tags = tagCountResult?.count || 0;
-            const friends = friendCountResult?.count || 0;
-            
-            // Estimated metrics based on real data
-            const reposts = Math.floor(shares * 0.3);
-            const saves = Math.floor(likes * 0.2);
-            const referrals = Math.floor(friends * 0.05);
-            
-            // Point calculations
-            const postPoints = posts * 5;
-            const engagementPoints = likes + shares + reposts + tags + saves + comments;
-            const referralPoints = referrals * 10;
-            const totalPoints = postPoints + engagementPoints + referralPoints;
-            const cosmicScore = Math.round(totalPoints * amplifier);
-            
-            // Apply cosmic score filters
-            if (minCosmicScore && cosmicScore < minCosmicScore) return null;
-            if (maxCosmicScore && cosmicScore > maxCosmicScore) return null;
-            
-            return {
-              id: user.id,
-              username: user.username,
-              name: user.name,
-              auraRating,
-              totalPoints,
-              auraAmplifier: amplifier,
-              cosmicScore,
-              postPoints,
-              engagementPoints,
-              referralPoints,
-              postCount: posts,
-              likeCount: likes,
-              shareCount: shares,
-              repostCount: reposts,
-              tagCount: tags,
-              saveCount: saves,
-              referralCount: referrals,
-              createdAt: user.createdAt,
-            };
-          } catch (error) {
-            console.error(`Error calculating metrics for user ${user.id}:`, error);
-            return null;
-          }
-        })
-      );
+      const usersWithMetrics = [];
       
-      const validUsers = usersWithMetrics
-        .filter(user => user !== null)
-        .sort((a, b) => b.cosmicScore - a.cosmicScore);
+      for (const user of usersData) {
+        try {
+          // Calculate basic metrics
+          const auraRating = parseFloat(user.auraRating || '4.0');
+          const amplifier = await this.getAuraAmplifier(auraRating);
+          
+          // Get engagement counts with individual queries
+          const userPostsCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(postsTable)
+            .where(eq(postsTable.userId, user.id));
+          
+          const userLikesCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(postLikes)
+            .where(eq(postLikes.userId, user.id));
+          
+          const userSharesCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(postShares)
+            .where(eq(postShares.userId, user.id));
+          
+          const userCommentsCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(commentsTable)
+            .where(eq(commentsTable.userId, user.id));
+          
+          const userTagsCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(postTags)
+            .where(eq(postTags.userId, user.id));
+          
+          const userFriendsCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(friendships)
+            .where(eq(friendships.userId, user.id));
+          
+          // Extract counts safely
+          const postsNum = userPostsCount[0]?.count || 0;
+          const likesNum = userLikesCount[0]?.count || 0;
+          const sharesNum = userSharesCount[0]?.count || 0;
+          const commentsNum = userCommentsCount[0]?.count || 0;
+          const tagsNum = userTagsCount[0]?.count || 0;
+          const friendsNum = userFriendsCount[0]?.count || 0;
+          
+          // Estimated metrics based on real data
+          const repostsNum = Math.floor(sharesNum * 0.3);
+          const savesNum = Math.floor(likesNum * 0.2);
+          const referralsNum = Math.floor(friendsNum * 0.05);
+          
+          // Point calculations
+          const postPoints = postsNum * 5;
+          const engagementPoints = likesNum + sharesNum + repostsNum + tagsNum + savesNum + commentsNum;
+          const referralPoints = referralsNum * 10;
+          const totalPoints = postPoints + engagementPoints + referralPoints;
+          const cosmicScore = Math.round(totalPoints * amplifier);
+          
+          // Apply cosmic score filters
+          if (minCosmicScore && cosmicScore < minCosmicScore) continue;
+          if (maxCosmicScore && cosmicScore > maxCosmicScore) continue;
+          
+          usersWithMetrics.push({
+            id: user.id,
+            username: user.username,
+            name: user.name,
+            auraRating,
+            totalPoints,
+            auraAmplifier: amplifier,
+            cosmicScore,
+            postPoints,
+            engagementPoints,
+            referralPoints,
+            postCount: postsNum,
+            likeCount: likesNum,
+            shareCount: sharesNum,
+            repostCount: repostsNum,
+            tagCount: tagsNum,
+            saveCount: savesNum,
+            referralCount: referralsNum,
+            createdAt: user.createdAt,
+          });
+        } catch (error) {
+          console.error(`Error calculating metrics for user ${user.id}:`, error);
+          continue;
+        }
+      }
       
-      console.log(`Returning ${validUsers.length} users with calculated metrics`);
-      return validUsers;
+      // Sort by cosmic score
+      usersWithMetrics.sort((a, b) => b.cosmicScore - a.cosmicScore);
+      
+      console.log(`Returning ${usersWithMetrics.length} users with calculated metrics`);
+      return usersWithMetrics;
       
     } catch (error) {
       console.error('Error in getUsersWithMetrics:', error);
