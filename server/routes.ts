@@ -2740,6 +2740,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user profile route
+  app.delete('/api/user/delete', authenticateToken, async (req: any, res) => {
+    try {
+      await storage.deleteUser(req.user.userId);
+      res.json({ success: true, message: 'Profile deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Mount admin routes
   app.use('/api/admin', adminRoutes);
 
