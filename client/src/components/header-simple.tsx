@@ -31,7 +31,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           {/* Love Logo - Acts as Home Button */}
           <Link href="/">
-            <h1 className="text-2xl font-bold cursor-pointer" style={{color: '#ba9971'}}>
+            <h1 className="text-3xl font-bold cursor-pointer" style={{color: '#ba9971'}}>
               Share
             </h1>
           </Link>
