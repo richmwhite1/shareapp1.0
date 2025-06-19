@@ -178,14 +178,14 @@ export default function SearchPage() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-2 max-w-4xl">
         {/* Compact Search Input */}
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <div className="relative mb-3">
-              <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        <Card className="mb-2">
+          <CardContent className="p-2">
+            <div className="relative mb-2">
+              <Hash className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Type hashtags and press Enter or Space"
-                className="pl-10 h-10 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
+                placeholder="Add hashtags"
+                className="pl-7 h-7 text-sm focus:ring-1 focus:ring-pinterest-red focus:border-transparent"
                 value={hashtagInput}
                 onChange={(e) => setHashtagInput(e.target.value)}
                 onKeyDown={handleHashtagKeyDown}
@@ -195,22 +195,22 @@ export default function SearchPage() {
             
             {/* Selected Tags */}
             {selectedHashtags.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-md">
+              <div className="flex flex-wrap gap-1 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
                 {selectedHashtags.map((tag, index) => (
                   <Badge
                     key={index}
-                    className="flex items-center gap-1 h-6 px-2 text-sm bg-pinterest-red text-white hover:bg-red-700"
+                    className="flex items-center gap-1 h-5 px-1 text-xs bg-pinterest-red text-white hover:bg-red-700"
                   >
-                    <Hash className="h-3 w-3" />
+                    <Hash className="h-2 w-2" />
                     {tag}
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => removeHashtag(tag)}
-                      className="h-4 w-4 p-0 ml-1 hover:bg-red-700 text-white"
+                      className="h-3 w-3 p-0 ml-1 hover:bg-red-700 text-white"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2 w-2" />
                     </Button>
                   </Badge>
                 ))}
@@ -220,12 +220,12 @@ export default function SearchPage() {
         </Card>
 
         {/* Following & Trending Hashtags */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
           {/* Following Hashtags */}
           {followedHashtags && followedHashtags.length > 0 && (
             <Card className="text-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-sm">
+              <CardHeader className="pb-1 pt-2">
+                <CardTitle className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1">
                     <Hash className="h-3 w-3" />
                     Following
@@ -234,7 +234,7 @@ export default function SearchPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsFollowingExpanded(!isFollowingExpanded)}
-                    className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
+                    className="h-4 w-4 p-0 text-gray-500 hover:text-gray-700"
                   >
                     {isFollowingExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
@@ -274,8 +274,8 @@ export default function SearchPage() {
 
           {/* Trending Hashtags */}
           <Card className="text-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between text-sm">
+            <CardHeader className="pb-1 pt-2">
+              <CardTitle className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
                   Trending
@@ -284,7 +284,7 @@ export default function SearchPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsTrendingExpanded(!isTrendingExpanded)}
-                  className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
+                  className="h-4 w-4 p-0 text-gray-500 hover:text-gray-700"
                 >
                   {isTrendingExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 </Button>
