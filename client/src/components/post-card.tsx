@@ -262,21 +262,21 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
   return (
     <div className="bg-black overflow-hidden transition-all duration-300 relative">
       {/* Post Header */}
-      <div className="p-6 bg-black">
-        <div className="flex items-center justify-between">
+      <div className="p-4 sm:p-6 bg-black">
+        <div className="flex items-start justify-between gap-3">
           <Link href={`/profile/${post.user.id}`}>
-            <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity">
+            <div className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity flex-1 min-w-0">
               <ProfileIconWithAura 
                 userId={post.user.id} 
                 userName={post.user.name} 
                 profilePicture={post.user.profilePictureUrl}
                 size="md"
               />
-              <div>
-                <h3 className="font-semibold text-white hover:text-yellow-400 transition-colors text-base">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-white hover:text-yellow-400 transition-colors text-base truncate">
                   {post.user.name}
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-sm truncate">
                   Posted {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                 </p>
               </div>
@@ -284,12 +284,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </Link>
           
           {/* Action Icons - Top Right in Header */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             {/* Share */}
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0 flex-shrink-0"
               onClick={() => handleShare()}
             >
               <Share2 className="h-4 w-4" />
@@ -299,7 +299,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0 flex-shrink-0"
               onClick={() => handleTagFriends()}
             >
               <Users className="h-4 w-4" />
@@ -309,7 +309,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0 flex-shrink-0"
               onClick={() => handleRepost()}
             >
               <Repeat2 className="h-4 w-4" />
@@ -319,7 +319,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-white h-8 w-8 p-0"
+              className="text-gray-400 hover:text-white h-8 w-8 p-0 flex-shrink-0"
               onClick={() => handleSave()}
             >
               <Bookmark className="h-4 w-4" />
