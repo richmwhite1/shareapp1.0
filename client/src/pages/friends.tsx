@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, UserPlus, Users, Check, X, Bell, Clock, UserMinus } from "lucide-react";
+import { Link } from "wouter";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,8 +229,12 @@ export default function ConnectionsPage() {
     <div className="min-h-screen bg-black">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="find" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="connections" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="connections" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Connections ({connections.length})
+              </TabsTrigger>
               <TabsTrigger value="find" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 Find People
@@ -239,6 +244,74 @@ export default function ConnectionsPage() {
                 Requests ({connectionRequests.length})
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="connections" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Connections</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {connections.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">
+                        You don't have any connections yet.
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        Use the "Find People" tab to connect with others!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {connections.map((connection) => (
+                        <div
+                          key={connection.id}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Link href={`/profile/${connection.id}`}>
+                              <AuricField profileId={connection.id} intensity={0.2}>
+                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                  <AvatarImage 
+                                    src={connection.profilePictureUrl || undefined} 
+                                    alt={connection.name}
+                                  />
+                                  <AvatarFallback>
+                                    {connection.name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </AuricField>
+                            </Link>
+                            <div>
+                              <Link href={`/profile/${connection.id}`} className="cursor-pointer hover:opacity-80 transition-opacity">
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {connection.name}
+                                </p>
+                              </Link>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                @{connection.username}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              onClick={() => handleUnfollow(connection.id)}
+                              disabled={unfollowMutation.isPending}
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                              Unfollow
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="find" className="space-y-6">
               <Card>
@@ -282,21 +355,25 @@ export default function ConnectionsPage() {
                               className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
                               <div className="flex items-center space-x-3">
-                                <AuricField profileId={searchUser.id} intensity={0.2}>
-                                  <Avatar>
-                                    <AvatarImage 
-                                      src={searchUser.profilePictureUrl || undefined} 
-                                      alt={searchUser.name}
-                                    />
-                                    <AvatarFallback>
-                                      {searchUser.name.charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                </AuricField>
+                                <Link href={`/profile/${searchUser.id}`}>
+                                  <AuricField profileId={searchUser.id} intensity={0.2}>
+                                    <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                      <AvatarImage 
+                                        src={searchUser.profilePictureUrl || undefined} 
+                                        alt={searchUser.name}
+                                      />
+                                      <AvatarFallback>
+                                        {searchUser.name.charAt(0).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </AuricField>
+                                </Link>
                                 <div>
-                                  <p className="font-medium text-gray-900 dark:text-white">
-                                    {searchUser.name}
-                                  </p>
+                                  <Link href={`/profile/${searchUser.id}`} className="cursor-pointer hover:opacity-80 transition-opacity">
+                                    <p className="font-medium text-gray-900 dark:text-white">
+                                      {searchUser.name}
+                                    </p>
+                                  </Link>
                                   <p className="text-sm text-gray-600 dark:text-gray-400">
                                     @{searchUser.username}
                                   </p>
@@ -407,21 +484,25 @@ export default function ConnectionsPage() {
                           className="flex items-center justify-between p-4 border rounded-lg"
                         >
                           <div className="flex items-center space-x-3">
-                            <AuricField profileId={request.fromUser.id} intensity={0.2}>
-                              <Avatar>
-                                <AvatarImage 
-                                  src={request.fromUser.profilePictureUrl || undefined} 
-                                  alt={request.fromUser.name}
-                                />
-                                <AvatarFallback>
-                                  {request.fromUser.name.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            </AuricField>
+                            <Link href={`/profile/${request.fromUser.id}`}>
+                              <AuricField profileId={request.fromUser.id} intensity={0.2}>
+                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                  <AvatarImage 
+                                    src={request.fromUser.profilePictureUrl || undefined} 
+                                    alt={request.fromUser.name}
+                                  />
+                                  <AvatarFallback>
+                                    {request.fromUser.name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </AuricField>
+                            </Link>
                             <div>
-                              <p className="font-medium text-gray-900 dark:text-white">
-                                {request.fromUser.name}
-                              </p>
+                              <Link href={`/profile/${request.fromUser.id}`} className="cursor-pointer hover:opacity-80 transition-opacity">
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {request.fromUser.name}
+                                </p>
+                              </Link>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 @{request.fromUser.username}
                               </p>
