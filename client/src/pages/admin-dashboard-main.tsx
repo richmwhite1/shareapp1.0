@@ -166,6 +166,13 @@ export default function AdminDashboard() {
   const [promoteHashtag, setPromoteHashtag] = useState("");
   const [promoteViews, setPromoteViews] = useState("");
   
+  // User management state
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [userManagementFilter, setUserManagementFilter] = useState("all");
+  const [selectedUserForAction, setSelectedUserForAction] = useState<User | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null);
+  const [confirmSuspendUser, setConfirmSuspendUser] = useState<User | null>(null);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -364,6 +371,45 @@ export default function AdminDashboard() {
     },
     onError: () => {
       toast({ title: "Failed to promote post", variant: "destructive" });
+    },
+  });
+
+  // User management mutations
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return fetchWithAuth(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "User deleted successfully" });
+      setConfirmDeleteUser(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to delete user", variant: "destructive" });
+    },
+  });
+
+  const suspendUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return fetchWithAuth(`/api/admin/users/${userId}/suspend`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "User suspended successfully" });
+      setConfirmSuspendUser(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to suspend user", variant: "destructive" });
+    },
+  });
+
+  const searchUsersMutation = useMutation({
+    mutationFn: async (searchTerm: string) => {
+      return fetchWithAuth(`/api/admin/users/search?q=${encodeURIComponent(searchTerm)}`);
     },
   });
 

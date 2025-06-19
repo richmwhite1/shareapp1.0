@@ -491,4 +491,154 @@ router.post('/posts/:postId/promote', adminAuth, async (req: Request, res: Respo
   }
 });
 
+// User Management Routes
+router.get('/users/search', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const { q: searchTerm } = req.query;
+    const admin = req.admin;
+    
+    if (!searchTerm || typeof searchTerm !== 'string') {
+      return res.status(400).json({ error: 'Search term required' });
+    }
+
+    const searchResults = await adminStorage.searchUsers(searchTerm);
+    
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'search_users',
+      target: 'users',
+      details: { searchTerm }
+    });
+    
+    res.json(searchResults);
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ error: 'Failed to search users' });
+  }
+});
+
+router.delete('/users/:userId', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const admin = req.admin;
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    // Get user details before deletion for logging
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Delete user using the storage method
+    await storage.deleteUser(userId);
+    
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'delete_user',
+      target: `user:${userId}`,
+      details: { username: user.username, name: user.name }
+    });
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+router.post('/users/:userId/suspend', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const admin = req.admin;
+    const { reason, duration } = req.body;
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    // Get user details before suspension
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Suspend user (ban with duration)
+    const suspensionEndDate = duration ? new Date(Date.now() + duration * 24 * 60 * 60 * 1000) : undefined;
+    await adminStorage.banUser(userId, admin.id, reason || 'Administrative suspension', suspensionEndDate);
+    
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'suspend_user',
+      target: `user:${userId}`,
+      details: { username: user.username, reason, duration: duration || 'indefinite' }
+    });
+    
+    res.json({ message: 'User suspended successfully' });
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    res.status(500).json({ error: 'Failed to suspend user' });
+  }
+});
+
+router.post('/users/:userId/unsuspend', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const admin = req.admin;
+    const { reason } = req.body;
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    // Get user details before unsuspension
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Unban/unsuspend user
+    await adminStorage.unbanUser(userId, admin.id, reason || 'Administrative unsuspension');
+    
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'unsuspend_user',
+      target: `user:${userId}`,
+      details: { username: user.username, reason }
+    });
+    
+    res.json({ message: 'User unsuspended successfully' });
+  } catch (error) {
+    console.error('Error unsuspending user:', error);
+    res.status(500).json({ error: 'Failed to unsuspend user' });
+  }
+});
+
+router.get('/users', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const admin = req.admin;
+    const { page = 1, limit = 50, search = '', filter = 'all' } = req.query;
+    
+    const filters: any = {};
+    if (filter === 'active') filters.isActive = true;
+    if (filter === 'banned') filters.isBanned = true;
+    
+    const users = await adminStorage.searchUsers(search as string, filters);
+    
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'list_users',
+      target: 'users',
+      details: { page, limit, search, filter }
+    });
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error listing users:', error);
+    res.status(500).json({ error: 'Failed to list users' });
+  }
+});
+
 export default router;
