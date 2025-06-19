@@ -36,10 +36,33 @@ interface AdminMetrics {
   totalLists: number;
   activeUsers24h: number;
   flaggedContent: number;
-  pendingReports: number;
+  pendingReviews: number;
   systemHealth: string;
-  userGrowth: number;
-  contentGrowth: number;
+  totalConnections: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  avgPostsPerUser: number;
+  avgListsPerUser: number;
+  topHashtags: Array<{name: string, count: number}>;
+  recentActivity: Array<{type: string, count: number, date: string}>;
+  userEngagement: {
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+    avgSessionDuration: number;
+  };
+  contentMetrics: {
+    postsToday: number;
+    listsToday: number;
+    viewsToday: number;
+    likesToday: number;
+  };
+  performanceMetrics: {
+    averageLoadTime: number;
+    errorRate: number;
+    uptime: number;
+  };
 }
 
 interface User {
