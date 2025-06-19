@@ -274,6 +274,7 @@ export default function AdminDashboard() {
       if (userManagementFilter !== 'all') params.append('filter', userManagementFilter);
       return fetchWithAuth(`/api/admin/users?${params.toString()}`);
     },
+    enabled: true, // Always fetch users for admin dashboard
   });
 
   // User actions
