@@ -709,13 +709,13 @@ END:VCALENDAR`;
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto p-4 pt-16 pb-20">
+      <div className="max-w-2xl mx-auto p-3 pt-14 pb-20">
         <Card className="bg-card border-border">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl text-foreground">Create New Post</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-foreground">Create Post</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Primary Photo Upload */}
               <div>
@@ -851,42 +851,33 @@ END:VCALENDAR`;
               </div>
 
               {/* Hashtags */}
-              <div>
-                <Label htmlFor="hashtags" className="text-foreground">Hashtags (Optional)</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Type hashtags individually (with or without #) and press Enter/Space to add them
-                </p>
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Type hashtag and press Enter"
-                      value={hashtagInput}
-                      onChange={(e) => handleHashtagInputChange(e.target.value)}
-                      onKeyDown={handleHashtagKeyDown}
-                      className="pl-10 bg-input border-border"
-                    />
-                  </div>
-                  {hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {hashtags.map((tag, index) => (
-                        <div key={index} className="flex items-center bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm">
-                          <span>#{tag}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeHashtag(tag)}
-                            className="ml-2 text-muted-foreground hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Add hashtags (press Enter)"
+                    value={hashtagInput}
+                    onChange={(e) => handleHashtagInputChange(e.target.value)}
+                    onKeyDown={handleHashtagKeyDown}
+                    className="pl-10 bg-input border-border"
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Type hashtags individually (with or without #) and press Enter/Space to add them
-                </p>
+                {hashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {hashtags.map((tag, index) => (
+                      <div key={index} className="flex items-center bg-accent text-accent-foreground px-3 py-1 rounded-full text-sm">
+                        <span>#{tag}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeHashtag(tag)}
+                          className="ml-2 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Privacy Settings & Category - More Discreet */}
@@ -1291,13 +1282,8 @@ END:VCALENDAR`;
 
               {/* Discount Code */}
               <div>
-                <Label htmlFor="discountCode" className="text-foreground">Discount Code (Optional)</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Users can click to copy this code when viewing your post
-                </p>
                 <Input
-                  id="discountCode"
-                  placeholder="Enter discount code (e.g., SAVE20)"
+                  placeholder="Discount code (optional)"
                   value={formData.discountCode}
                   onChange={(e) => setFormData(prev => ({ ...prev, discountCode: e.target.value }))}
                   className="bg-input border-border"
