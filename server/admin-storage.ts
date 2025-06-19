@@ -486,28 +486,28 @@ export class AdminStorage implements IAdminStorage {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
     return await db.select({
-      date: sql`DATE(created_at)`,
+      date: sql`DATE(${users.createdAt})`,
       count: count()
     })
     .from(users)
     .where(gte(users.createdAt, startDate))
-    .groupBy(sql`DATE(created_at)`)
-    .orderBy(sql`DATE(created_at)`);
+    .groupBy(sql`DATE(${users.createdAt})`)
+    .orderBy(sql`DATE(${users.createdAt})`);
   }
 
   async getContentStats(days: number): Promise<any[]> {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
-    return await db.select({
-      date: sql`DATE(created_at)`,
-      posts: count(posts.id),
-      lists: count(lists.id)
+    const postStats = await db.select({
+      date: sql`DATE(${posts.createdAt})`,
+      count: count(posts.id)
     })
     .from(posts)
-    .leftJoin(lists, sql`DATE(${posts.createdAt}) = DATE(${lists.createdAt})`)
     .where(gte(posts.createdAt, startDate))
-    .groupBy(sql`DATE(created_at)`)
-    .orderBy(sql`DATE(created_at)`);
+    .groupBy(sql`DATE(${posts.createdAt})`)
+    .orderBy(sql`DATE(${posts.createdAt})`);
+
+    return postStats;
   }
 
   async getModerationStats(days: number): Promise<any[]> {
