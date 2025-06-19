@@ -38,7 +38,10 @@ import {
   Copy,
   BarChart3,
   Download,
-  ArrowUpDown
+  ArrowUpDown,
+  Share2,
+  MousePointer,
+  User
 } from "lucide-react";
 
 interface AdminMetrics {
