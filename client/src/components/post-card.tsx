@@ -198,7 +198,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               spotifyUrl={post.spotifyUrl || undefined}
               postId={post.id}
               thumbnailUrl={post.primaryPhotoUrl}
-              onPostClick={() => window.location.href = `/post/${post.id}`}
+              onPostClick={() => setLocation(`/post/${post.id}`)}
             />
           </div>
         ) : (
