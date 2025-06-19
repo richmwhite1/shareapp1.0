@@ -1763,9 +1763,9 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async getRsvpList(eventId: number, status?: string): Promise<Array<{ user: User; status: string }>> {
-    let whereCondition = eq(rsvps.postId, eventId);
+    const conditions = [eq(rsvps.postId, eventId)];
     if (status) {
-      whereCondition = and(whereCondition, eq(rsvps.status, status));
+      conditions.push(eq(rsvps.status, status));
     }
 
     const result = await db
@@ -1775,7 +1775,7 @@ export class EnterpriseStorage implements IStorage {
       })
       .from(rsvps)
       .innerJoin(users, eq(rsvps.userId, users.id))
-      .where(whereCondition);
+      .where(and(...conditions));
 
     return result.map(r => ({
       user: r.user,

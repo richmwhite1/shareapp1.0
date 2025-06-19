@@ -2445,7 +2445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Admin access required' });
       }
 
-      const blacklist = await storage.getBlacklist();
+      const blacklist = await storage.getBlacklist(req.user.userId);
       res.json(blacklist);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
@@ -2459,8 +2459,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Admin access required' });
       }
 
-      const { type, value } = req.body;
-      await storage.addToBlacklist(type, value);
+      const { userId, blockedUserId } = req.body;
+      await storage.addToBlacklist(userId, blockedUserId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
@@ -2475,7 +2475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userId = parseInt(req.params.userId);
-      await storage.flagUser(userId);
+      await storage.flagUser(userId, req.user.userId, 'Admin flag');
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
