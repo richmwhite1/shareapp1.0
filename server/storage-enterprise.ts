@@ -854,14 +854,10 @@ export class EnterpriseStorage implements IStorage {
           hasAccess = accessResult.hasAccess;
         }
 
-        // If no list access, check if tagged in post
+        // If no list access, check if tagged in post (simplified for now)
         if (!hasAccess) {
-          const taggedUsers = await db
-            .select({ userId: taggedPosts.toUserId })
-            .from(taggedPosts)
-            .where(eq(taggedPosts.postId, post.id));
-          
-          hasAccess = taggedUsers.some(tag => tag.userId === viewerId);
+          // Note: Tagged posts feature will be implemented when schema is available
+          hasAccess = false;
         }
 
         if (hasAccess) {
@@ -1792,8 +1788,7 @@ export class EnterpriseStorage implements IStorage {
           username: users.username,
           name: users.name,
           profilePictureUrl: users.profilePictureUrl,
-          bio: users.bio,
-          lastActive: users.lastActive,
+
           defaultPrivacy: users.defaultPrivacy
         }
       })
