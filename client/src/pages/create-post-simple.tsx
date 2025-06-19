@@ -780,7 +780,7 @@ END:VCALENDAR`;
 
               {/* Primary Link */}
               <div>
-                <Label htmlFor="primaryLink" className="text-foreground">Link (Optional)</Label>
+                <Label htmlFor="primaryLink" className="text-foreground">Link</Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Share a website, article, or any link related to your post
                 </p>
@@ -844,7 +844,7 @@ END:VCALENDAR`;
                 </div>
 
                 <div>
-                  <Label htmlFor="youtubeUrl" className="text-foreground">YouTube URL (Optional)</Label>
+                  <Label htmlFor="youtubeUrl" className="text-foreground">YouTube URL</Label>
                   <p className="text-xs text-muted-foreground mb-2">
                     Share a YouTube video or music
                   </p>

@@ -137,42 +137,44 @@ export default function Home() {
         {isAuthenticated && <ListInvitationNotifications />}
 
         {/* Content */}
-        {isLoading ? (
-          <div className="space-y-0">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-gray-800 border-0 overflow-hidden">
-                <div className="p-4">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Skeleton className="w-10 h-10 rounded-full bg-gray-700" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-32 bg-gray-700" />
-                      <Skeleton className="h-3 w-24 bg-gray-700" />
+        <div className="w-full max-w-full px-2 sm:px-4">
+          {isLoading ? (
+            <div className="space-y-0">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-gray-800 border-0 overflow-hidden w-full">
+                  <div className="p-4">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <Skeleton className="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0" />
+                      <div className="space-y-2 min-w-0">
+                        <Skeleton className="h-4 w-32 bg-gray-700" />
+                        <Skeleton className="h-3 w-24 bg-gray-700" />
+                      </div>
                     </div>
+                    <Skeleton className="w-full h-80 mb-0 bg-gray-700" />
                   </div>
-                  <Skeleton className="w-full h-80 mb-0 bg-gray-700" />
-                </div>
               </div>
             ))}
           </div>
         ) : posts && posts.length > 0 ? (
-          <div className="space-y-0">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
-        ) : (
-          <Card className="bg-gray-800 border-gray-700">
-            <CardContent className="p-8 text-center">
-              <h2 className="text-xl font-semibold text-white mb-2">
-                {feedType === 'friend' ? 'No recent posts from this friend' : 'No posts yet'}
-              </h2>
-              <p className="text-gray-400 mb-4">
-                {feedType === 'friend' ? 'Your friend hasn\'t posted anything in the last 3 days.' :
-                 'Be the first to share something amazing!'}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            <div className="space-y-0">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-8 text-center">
+                <h2 className="text-xl font-semibold text-white mb-2">
+                  {feedType === 'friend' ? 'No recent posts from this friend' : 'No posts yet'}
+                </h2>
+                <p className="text-gray-400 mb-4">
+                  {feedType === 'friend' ? 'Your friend hasn\'t posted anything in the last 3 days.' :
+                   'Be the first to share something amazing!'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </main>
     </div>
   );

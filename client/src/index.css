@@ -8,12 +8,58 @@ html, body {
   padding: 0;
   width: 100%;
   overflow-x: hidden;
+  min-width: 0;
 }
 
 #root {
   width: 100%;
   margin: 0;
   padding: 0;
+  min-width: 0;
+}
+
+/* Mobile responsiveness fixes */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent horizontal overflow on mobile */
+.container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Mobile-specific container sizing */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  /* Fix grid layouts on mobile */
+  .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Ensure cards don't overflow */
+  .card {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Fix text overflow */
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Fix button layouts on mobile */
+  .flex {
+    flex-wrap: wrap;
+  }
 }
 
 :root {
