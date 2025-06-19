@@ -217,9 +217,9 @@ export default function AdminDashboard() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Users data
-  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ['/api/admin/users', userFilter, searchTerm],
+  // Users data for legacy compatibility
+  const { data: legacyUsers = [], isLoading: legacyUsersLoading } = useQuery<User[]>({
+    queryKey: ['/api/admin/users-legacy', userFilter, searchTerm],
     queryFn: () => fetchWithAuth(`/api/admin/users?filter=${userFilter}&search=${encodeURIComponent(searchTerm)}`),
     enabled: !!searchTerm || userFilter !== 'all',
   });
@@ -265,6 +265,17 @@ export default function AdminDashboard() {
     },
   });
 
+  // Users data for management
+  const { data: managedUsers = [], isLoading: managedUsersLoading } = useQuery<User[]>({
+    queryKey: ['/api/admin/users', userSearchTerm, userManagementFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (userSearchTerm) params.append('search', userSearchTerm);
+      if (userManagementFilter !== 'all') params.append('filter', userManagementFilter);
+      return fetchWithAuth(`/api/admin/users?${params.toString()}`);
+    },
+  });
+
   // User actions
   const banUserMutation = useMutation({
     mutationFn: async ({ userId, reason }: { userId: number; reason: string }) => {
@@ -277,7 +288,6 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics'] });
       toast({ title: "User banned successfully" });
-      setSelectedUser(null);
     },
     onError: () => {
       toast({ title: "Failed to ban user", variant: "destructive" });
@@ -663,12 +673,12 @@ export default function AdminDashboard() {
                   </Select>
                 </div>
 
-                {usersLoading ? (
+                {managedUsersLoading ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
                     <p className="text-slate-400">Loading users...</p>
                   </div>
-                ) : users.length > 0 ? (
+                ) : managedUsers.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow className="border-slate-800">
@@ -680,7 +690,7 @@ export default function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => (
+                      {managedUsers.map((user) => (
                         <TableRow key={user.id} className="border-slate-800">
                           <TableCell>
                             <div>
