@@ -110,80 +110,76 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-            Notifications
-          </h1>
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-lg mx-auto">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <h1 className="text-xl font-bold">Notifications</h1>
+        </div>
 
+        <div className="px-6 py-4">
           {isLoading ? (
             <div className="text-center py-8">
-              <p className="text-gray-600 dark:text-gray-400">Loading notifications...</p>
+              <p className="text-gray-400">Loading notifications...</p>
             </div>
           ) : notifications.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  No notifications yet. When people interact with your posts or send friend requests, they'll appear here.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="text-center py-8">
+              <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">
+                No notifications yet. When people interact with your posts or send friend requests, they'll appear here.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {notifications.map((notification) => (
-                <Card
+                <div
                   key={notification.id}
-                  className={`${
+                  className={`p-4 rounded-lg border ${
                     !notification.viewed
-                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                      : ''
+                      ? 'bg-gray-900 border-gray-700'
+                      : 'bg-gray-800 border-gray-700'
                   }`}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0">
-                        {notification.fromUser ? (
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage 
-                              src={notification.fromUser.profilePictureUrl || undefined}
-                              alt={notification.fromUser.name}
-                            />
-                            <AvatarFallback>
-                              {notification.fromUser.name.charAt(0).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                        ) : (
-                          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                            {getNotificationIcon(notification.type)}
-                          </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      {notification.fromUser ? (
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage 
+                            src={notification.fromUser.profilePictureUrl || undefined}
+                            alt={notification.fromUser.name}
+                          />
+                          <AvatarFallback className="bg-gray-700 text-white">
+                            {notification.fromUser.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="h-10 w-10 bg-gray-700 rounded-full flex items-center justify-center">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white">
+                        {getNotificationMessage(notification)}
+                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-gray-400 flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                        </p>
+                        {!notification.viewed && (
+                          <Button
+                            onClick={() => handleMarkAsViewed(notification.id)}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs border-gray-600 text-gray-300 hover:bg-gray-700"
+                          >
+                            Mark as read
+                          </Button>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {getNotificationMessage(notification)}
-                        </p>
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                          </p>
-                          {!notification.viewed && (
-                            <Button
-                              onClick={() => handleMarkAsViewed(notification.id)}
-                              variant="outline"
-                              size="sm"
-                              className="text-xs"
-                            >
-                              Mark as read
-                            </Button>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}
