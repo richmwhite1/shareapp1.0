@@ -2,7 +2,7 @@ import { users, type User, type InsertUser, type UserWithFriends, posts, type Po
   lists, type List, type ListWithPosts, type InsertList, listAccess, friendships, notifications, type Notification, type CreateNotificationData,
   hashtags, type Hashtag, postHashtags, comments, type Comment, type CommentWithUser, type InsertComment, 
   postLikes, postShares, postViews, savedPosts, reposts, friendRequests, accessRequests, postFlags, 
-  blacklist, reports, taggedPosts, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows } from "@shared/schema";
+  blacklist, reports, postTags, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg, gte, lt } from 'drizzle-orm';
 
@@ -210,28 +210,8 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async deleteUser(userId: number): Promise<void> {
-    // Cascading deletion - delete all user-related data
+    // Simplified cascading deletion - delete core user-related data
     
-    // Delete from many-to-many relationship tables first
-    await db.delete(postHashtags).where(
-      exists(
-        db.select().from(posts).where(
-          and(eq(posts.userId, userId), eq(postHashtags.postId, posts.id))
-        )
-      )
-    );
-
-    await db.delete(taggedPosts).where(
-      or(
-        eq(taggedPosts.userId, userId),
-        exists(
-          db.select().from(posts).where(
-            and(eq(posts.userId, userId), eq(taggedPosts.postId, posts.id))
-          )
-        )
-      )
-    );
-
     // Delete user interactions
     await db.delete(postLikes).where(eq(postLikes.userId, userId));
     await db.delete(postShares).where(eq(postShares.userId, userId));
@@ -247,21 +227,12 @@ export class EnterpriseStorage implements IStorage {
       )
     );
 
-    // Delete comments (both made by user and on user's posts)
-    await db.delete(comments).where(
-      or(
-        eq(comments.userId, userId),
-        exists(
-          db.select().from(posts).where(
-            and(eq(posts.userId, userId), eq(comments.postId, posts.id))
-          )
-        )
-      )
-    );
+    // Delete comments made by user
+    await db.delete(comments).where(eq(comments.userId, userId));
 
     // Delete friendships and friend requests
     await db.delete(friendships).where(
-      or(eq(friendships.userId1, userId), eq(friendships.userId2, userId))
+      or(eq(friendships.userId, userId), eq(friendships.friendId, userId))
     );
     await db.delete(friendRequests).where(
       or(eq(friendRequests.fromUserId, userId), eq(friendRequests.toUserId, userId))
@@ -275,44 +246,15 @@ export class EnterpriseStorage implements IStorage {
       )
     );
 
-    // Delete list access and access requests
-    await db.delete(listAccess).where(
-      or(
-        eq(listAccess.userId, userId),
-        eq(listAccess.invitedBy, userId),
-        exists(
-          db.select().from(lists).where(
-            and(eq(lists.userId, userId), eq(listAccess.listId, lists.id))
-          )
-        )
-      )
-    );
-    await db.delete(accessRequests).where(
-      or(
-        eq(accessRequests.userId, userId),
-        exists(
-          db.select().from(lists).where(
-            and(eq(lists.userId, userId), eq(accessRequests.listId, lists.id))
-          )
-        )
-      )
-    );
+    // Delete list access and access requests for this user
+    await db.delete(listAccess).where(eq(listAccess.userId, userId));
+    await db.delete(accessRequests).where(eq(accessRequests.userId, userId));
 
     // Delete hashtag follows
     await db.delete(hashtagFollows).where(eq(hashtagFollows.userId, userId));
 
-    // Delete reports (both made by user and about user's content)
-    await db.delete(reports).where(
-      or(
-        eq(reports.reportedBy, userId),
-        eq(reports.reportedUserId, userId)
-      )
-    );
-
-    // Delete blacklist entries
-    await db.delete(blacklist).where(
-      or(eq(blacklist.userId, userId), eq(blacklist.blockedUserId, userId))
-    );
+    // Delete reports made by this user
+    await db.delete(reports).where(eq(reports.userId, userId));
 
     // Delete RSVPs
     await db.delete(rsvps).where(eq(rsvps.userId, userId));
