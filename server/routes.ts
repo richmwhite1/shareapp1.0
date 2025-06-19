@@ -2444,9 +2444,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/posts/:id/save', authenticateToken, async (req: any, res) => {
     try {
       const postId = parseInt(req.params.id);
-      const { listId, categoryId } = req.body;
-      await storage.savePost(postId, req.user.userId);
-      res.json({ success: true });
+      const { listId } = req.body;
+      
+      if (!listId) {
+        return res.status(400).json({ message: 'List ID is required' });
+      }
+      
+      // Create a new post in the specified list by copying the original post
+      const originalPost = await storage.getPost(postId);
+      if (!originalPost) {
+        return res.status(404).json({ message: 'Original post not found' });
+      }
+      
+      const newPost = await storage.createPost({
+        userId: req.user.userId,
+        listId: parseInt(listId),
+        primaryPhotoUrl: originalPost.primaryPhotoUrl,
+        primaryLink: originalPost.primaryLink,
+        primaryDescription: originalPost.primaryDescription,
+        discountCode: originalPost.discountCode,
+        spotifyUrl: originalPost.spotifyUrl,
+        youtubeUrl: originalPost.youtubeUrl,
+        privacy: 'public'
+      });
+      
+      res.json({ success: true, newPostId: newPost.id });
     } catch (error) {
       console.error('Save post error:', error);
       res.status(500).json({ message: 'Internal server error' });

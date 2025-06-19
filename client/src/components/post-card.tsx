@@ -24,6 +24,7 @@ import FeedShareButton from "@/components/feed-share-button";
 import EventTaskList from "@/components/event-task-list";
 import TagFriendsContent from "@/components/tag-friends-content";
 import SavePostContent from "@/components/save-post-content";
+import MediaPlayer from "@/components/media-player";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -208,6 +209,20 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         )}
 
+        {/* Video Play Button Overlay */}
+        {(post.youtubeUrl || post.spotifyUrl) && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Link href={`/post/${post.id}`}>
+              <Button
+                className="w-16 h-16 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm"
+                size="lg"
+              >
+                <Play className="h-6 w-6 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Interactive stats at bottom */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4">
           <div className="flex items-center justify-between text-white">
@@ -227,6 +242,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               {post.discountCode && (
                 <div className="bg-pinterest-red text-white px-2 py-1 rounded text-xs font-bold">
                   ${post.discountCode}
+                </div>
+              )}
+              {(post.youtubeUrl || post.spotifyUrl) && (
+                <div className="bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                  <Play className="w-3 h-3" />
+                  {post.youtubeUrl ? 'Video' : 'Music'}
                 </div>
               )}
               <PostActionsMenu postId={post.id} postTitle={post.primaryDescription} />
@@ -411,9 +432,15 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           )}
         </div>
 
-
-
-
+        {/* Media Player Section */}
+        {(post.youtubeUrl || post.spotifyUrl) && (
+          <div className="mt-6">
+            <MediaPlayer 
+              youtubeUrl={post.youtubeUrl || undefined} 
+              spotifyUrl={post.spotifyUrl || undefined} 
+            />
+          </div>
+        )}
       </div>
 
       {/* RSVP Component - Only show for events */}
