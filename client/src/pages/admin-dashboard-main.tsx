@@ -36,7 +36,9 @@ import {
   Link,
   RefreshCw,
   Copy,
-  BarChart3
+  BarChart3,
+  Download,
+  ArrowUpDown
 } from "lucide-react";
 
 interface AdminMetrics {
@@ -152,6 +154,7 @@ export default function AdminDashboard() {
   const [selectedUrl, setSelectedUrl] = useState<UrlAnalytics | null>(null);
   const [hotSwapUrl, setHotSwapUrl] = useState("");
   const [discountCode, setDiscountCode] = useState("");
+  const [urlSortBy, setUrlSortBy] = useState<'popularity' | 'clicks' | 'posts' | 'domain'>('popularity');
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -321,6 +324,68 @@ export default function AdminDashboard() {
     onError: () => {
       toast({ title: "Failed to apply bulk discount codes", variant: "destructive" });
     },
+  });
+
+  // CSV export functionality
+  const exportToCSV = () => {
+    if (urlAnalytics.length === 0) {
+      toast({ title: "No data to export", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const csvData = sortedUrlAnalytics.map(url => ({
+        URL: url.url,
+        'Click Count': url.clickCount,
+        'Post Count': url.postCount,
+        'Popularity Score': url.clickCount + (url.postCount * 2),
+        'Post IDs': url.postIds.join(';'),
+        'Domain': new URL(url.url).hostname,
+        'Is Mapped': url.mapping ? 'Yes' : 'No',
+        'Current URL': url.mapping?.currentUrl || '',
+        'Discount Code': url.mapping?.discountCode || '',
+        'Export Date': new Date().toISOString().split('T')[0]
+      }));
+
+      const csvContent = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).map(val => `"${val}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `url_analytics_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({ title: "CSV exported successfully" });
+    } catch (error) {
+      toast({ title: "Failed to export CSV", variant: "destructive" });
+    }
+  };
+
+  // Sort URLs by different criteria
+  const sortedUrlAnalytics = [...urlAnalytics].sort((a, b) => {
+    switch (urlSortBy) {
+      case 'popularity':
+        const popularityA = a.clickCount + (a.postCount * 2);
+        const popularityB = b.clickCount + (b.postCount * 2);
+        return popularityB - popularityA;
+      case 'clicks':
+        return b.clickCount - a.clickCount;
+      case 'posts':
+        return b.postCount - a.postCount;
+      case 'domain':
+        const domainA = new URL(a.url).hostname;
+        const domainB = new URL(b.url).hostname;
+        return domainA.localeCompare(domainB);
+      default:
+        return 0;
+    }
   });
 
   const handleLogout = () => {
@@ -977,6 +1042,29 @@ export default function AdminDashboard() {
                       />
                     </div>
                   </div>
+                  
+                  <Select value={urlSortBy} onValueChange={(value: 'popularity' | 'clicks' | 'posts' | 'domain') => setUrlSortBy(value)}>
+                    <SelectTrigger className="w-48 bg-slate-800 border-slate-700">
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="popularity">Sort by Popularity</SelectItem>
+                      <SelectItem value="clicks">Sort by Clicks</SelectItem>
+                      <SelectItem value="posts">Sort by Posts</SelectItem>
+                      <SelectItem value="domain">Sort by Domain</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    onClick={exportToCSV}
+                    disabled={urlAnalytics.length === 0}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  
                   <Button 
                     onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/url-analytics'] })}
                     className="bg-purple-600 hover:bg-purple-700"
@@ -991,9 +1079,9 @@ export default function AdminDashboard() {
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
                     <p className="text-slate-400">Loading URL analytics...</p>
                   </div>
-                ) : urlAnalytics.length > 0 ? (
+                ) : sortedUrlAnalytics.length > 0 ? (
                   <div className="space-y-4">
-                    {urlAnalytics.filter(url => 
+                    {sortedUrlAnalytics.filter(url => 
                       !urlSearchTerm || url.url.toLowerCase().includes(urlSearchTerm.toLowerCase())
                     ).map((urlData) => (
                       <Card key={urlData.url} className="bg-slate-800 border-slate-700">
@@ -1021,6 +1109,10 @@ export default function AdminDashboard() {
                                 <div className="flex items-center space-x-1">
                                   <FileText className="h-4 w-4 text-blue-400" />
                                   <span className="text-slate-300">{urlData.postCount} posts</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Star className="h-4 w-4 text-yellow-400" />
+                                  <span className="text-slate-300">Score: {urlData.clickCount + (urlData.postCount * 2)}</span>
                                 </div>
                                 {urlData.mapping && (
                                   <div className="flex items-center space-x-1">
