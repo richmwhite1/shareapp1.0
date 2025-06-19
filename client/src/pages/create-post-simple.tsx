@@ -1292,10 +1292,6 @@ END:VCALENDAR`;
 
               {/* Additional Photos */}
               <div>
-                <Label className="text-foreground">Additional Photos (Optional)</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Add up to 4 additional photos. Each can have its own link and description.
-                </p>
                 
                 {additionalPhotos.map((photo, index) => (
                   <div key={index} className="border border-border rounded-lg p-4 mb-4 space-y-3">
