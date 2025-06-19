@@ -274,14 +274,7 @@ export default function AdminDashboard() {
       if (userSearchTerm) params.append('search', userSearchTerm);
       if (userManagementFilter !== 'all') params.append('filter', userManagementFilter);
       
-      const users = await fetchWithAuth(`/api/admin/users?${params.toString()}`);
-      
-      // Calculate user status on frontend for now
-      return users.map((user: any) => ({
-        ...user,
-        isActive: true, // Default to active since most users are active
-        isBanned: false
-      }));
+      return fetchWithAuth(`/api/admin/users?${params.toString()}`);
     },
     enabled: true, // Always fetch users for admin dashboard
   });
@@ -417,15 +410,35 @@ export default function AdminDashboard() {
     mutationFn: async (userId: number) => {
       return fetchWithAuth(`/api/admin/users/${userId}/suspend`, {
         method: 'POST',
+        body: JSON.stringify({ reason: 'Administrative suspension' }),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics'] });
       toast({ title: "User suspended successfully" });
       setConfirmSuspendUser(null);
     },
     onError: () => {
       toast({ title: "Failed to suspend user", variant: "destructive" });
+    },
+  });
+
+  const unsuspendUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      return fetchWithAuth(`/api/admin/users/${userId}/unsuspend`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Administrative unsuspension' }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/metrics'] });
+      toast({ title: "User unsuspended successfully" });
+      setConfirmSuspendUser(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to unsuspend user", variant: "destructive" });
     },
   });
 
@@ -747,8 +760,8 @@ export default function AdminDashboard() {
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium text-slate-300">Status</p>
-                                      <Badge variant={user.isActive ? "default" : "destructive"}>
-                                        {user.isActive ? "Active" : "Banned"}
+                                      <Badge variant={user.isBanned ? "destructive" : "default"}>
+                                        {user.isBanned ? "Suspended" : "Active"}
                                       </Badge>
                                     </div>
                                     <div>
@@ -761,7 +774,7 @@ export default function AdminDashboard() {
                                     </div>
                                   </div>
                                   <div className="flex space-x-2">
-                                    {user.isActive ? (
+                                    {!user.isBanned ? (
                                       <Button 
                                         variant="outline" 
                                         onClick={() => setConfirmSuspendUser(user)}
@@ -773,8 +786,8 @@ export default function AdminDashboard() {
                                     ) : (
                                       <Button 
                                         variant="outline"
-                                        onClick={() => suspendUserMutation.mutate(user.id)}
-                                        disabled={suspendUserMutation.isPending}
+                                        onClick={() => unsuspendUserMutation.mutate(user.id)}
+                                        disabled={unsuspendUserMutation.isPending}
                                         className="text-green-400 border-green-400 hover:bg-green-400 hover:text-black"
                                       >
                                         <CheckCircle className="h-4 w-4 mr-2" />
