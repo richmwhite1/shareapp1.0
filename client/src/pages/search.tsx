@@ -175,222 +175,132 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-4 max-w-4xl">
-        {/* Compact Hashtag Input */}
-        <Card className="mb-4">
-          <CardContent className="p-4 space-y-3">
-            <div className="relative">
-              <Hash className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Type hashtags and press Enter or Space"
-                className="pl-10 h-9 text-sm focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                value={hashtagInput}
-                onChange={(e) => setHashtagInput(e.target.value)}
-                onKeyDown={handleHashtagKeyDown}
-                disabled={selectedHashtags.length >= 10}
-              />
-            </div>
-            
-            {/* Selected Hashtags */}
-            {selectedHashtags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
-                {selectedHashtags.map((tag, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="flex items-center gap-1 h-6 px-2 text-xs bg-pinterest-red text-white hover:bg-red-700"
-                  >
-                    <Hash className="h-2.5 w-2.5" />
-                    {tag}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeHashtag(tag)}
-                      className="h-3 w-3 p-0 ml-1 hover:bg-red-700 text-white"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Compact Following & Trending Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          {/* Following Hashtags */}
-          {followedHashtags && followedHashtags.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <Hash className="h-3.5 w-3.5" />
-                  Following ({followedHashtags.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 pb-3">
-                <div className="flex flex-wrap gap-1">
-                  {followedHashtags.slice(0, 5).map((hashtag: any) => (
-                    <div key={hashtag.id} className="flex items-center gap-0.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleHashtagClick(hashtag.name)}
-                        className="h-6 px-1.5 py-0 text-xs flex items-center gap-0.5 hover:bg-pinterest-red hover:text-white"
-                        disabled={selectedHashtags.includes(hashtag.name)}
-                      >
-                        <Hash className="h-2 w-2" />
-                        {hashtag.name}
-                        <span className="ml-0.5 text-xs opacity-70">{hashtag.count}</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => unfollowHashtag(hashtag.id)}
-                        className="h-6 w-6 p-0 text-xs text-red-500 hover:text-red-700"
-                      >
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </div>
-                  ))}
-                  {followedHashtags.length > 5 && (
-                    <span className="text-xs text-gray-500 px-1">+{followedHashtags.length - 5} more</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Trending Hashtags */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  Trending
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="h-5 w-5 p-0 text-gray-500 hover:text-gray-700"
+      <div className="container mx-auto px-4 py-2 max-w-4xl">
+        {/* Ultra Compact Search */}
+        <div className="mb-3">
+          <div className="relative mb-2">
+            <Hash className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search hashtags..."
+              className="pl-7 h-7 text-sm"
+              value={hashtagInput}
+              onChange={(e) => setHashtagInput(e.target.value)}
+              onKeyDown={handleHashtagKeyDown}
+              disabled={selectedHashtags.length >= 10}
+            />
+          </div>
+          
+          {/* Selected Tags - Horizontal Row */}
+          {selectedHashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {selectedHashtags.map((tag, index) => (
+                <Badge
+                  key={index}
+                  className="flex items-center gap-0.5 h-5 px-1.5 text-xs bg-pinterest-red text-white"
                 >
-                  {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 pb-3">
-              <div className="flex flex-wrap gap-1">
-                {Array.isArray(trendingHashtags) && trendingHashtags
-                  .slice(0, isExpanded ? 20 : 4)
-                  .map((hashtag: any) => {
-                  const FollowButton = () => {
-                    const { data: isFollowing, refetch } = useIsFollowingHashtag(hashtag.id);
-                    
-                    const handleToggleFollow = async () => {
-                      if (isFollowing) {
-                        await unfollowHashtag(hashtag.id);
-                      } else {
-                        await followHashtag(hashtag.id);
-                      }
-                      refetch();
-                    };
-
-                    return (
-                      <div className="flex items-center gap-0.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleHashtagClick(hashtag.name)}
-                          className="h-6 px-1.5 py-0 text-xs flex items-center gap-0.5 hover:bg-pinterest-red hover:text-white"
-                          disabled={selectedHashtags.includes(hashtag.name)}
-                        >
-                          <Hash className="h-2 w-2" />
-                          {hashtag.name}
-                          <span className="ml-0.5 text-xs opacity-70">{hashtag.count}</span>
-                        </Button>
-                        <Button
-                          variant={isFollowing ? "default" : "outline"}
-                          size="sm"
-                          onClick={handleToggleFollow}
-                          className={`h-6 w-6 p-0 text-xs ${isFollowing ? 'bg-pinterest-red hover:bg-red-700 text-white' : 'hover:bg-pinterest-red hover:text-white'}`}
-                        >
-                          {isFollowing ? '✓' : '+'}
-                        </Button>
-                      </div>
-                    );
-                  };
-
-                  return <FollowButton key={hashtag.id} />;
-                })}
-                {!isExpanded && Array.isArray(trendingHashtags) && trendingHashtags.length > 4 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsExpanded(true)}
-                    className="h-6 px-1.5 py-0 text-xs text-gray-500 hover:text-gray-700"
-                  >
-                    +{trendingHashtags.length - 4} more
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  #{tag}
+                  <X 
+                    className="h-2 w-2 cursor-pointer hover:opacity-70" 
+                    onClick={() => removeHashtag(tag)}
+                  />
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Search Results */}
-        {selectedHashtags.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <SearchIcon className="h-5 w-5" />
-                  Search Results
-                  {searchResults && (
-                    <Badge variant="secondary">
-                      {searchResults.length} posts found
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <SortAsc className="h-4 w-4 text-gray-500" />
-                  <Select value={sortBy} onValueChange={(value: "popular" | "recent") => setSortBy(value)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="popular">Most Popular</SelectItem>
-                      <SelectItem value="recent">Most Recent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isSearching ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Searching posts...</p>
-                </div>
-              ) : searchResults && searchResults.length > 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {searchResults.map((post: any) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
-                    No posts found containing ALL selected hashtags.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Posts must contain every hashtag you've selected to appear in results.
-                  </p>
-                </div>
+        {/* Minimal Hashtag Suggestions - Single Row */}
+        <div className="flex items-center gap-2 mb-3 p-2 bg-gray-50 dark:bg-gray-900 rounded-md text-xs overflow-x-auto">
+          {/* Following */}
+          {followedHashtags && followedHashtags.length > 0 && (
+            <>
+              <span className="text-gray-500 whitespace-nowrap">Following:</span>
+              {followedHashtags.slice(0, 3).map((hashtag: any) => (
+                <Button
+                  key={hashtag.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleHashtagClick(hashtag.name)}
+                  className="h-5 px-1.5 text-xs text-blue-600 hover:bg-blue-100 whitespace-nowrap"
+                  disabled={selectedHashtags.includes(hashtag.name)}
+                >
+                  #{hashtag.name}
+                </Button>
+              ))}
+              {followedHashtags.length > 3 && (
+                <span className="text-gray-400">+{followedHashtags.length - 3}</span>
               )}
-            </CardContent>
-          </Card>
+            </>
+          )}
+          
+          {/* Separator */}
+          {followedHashtags && followedHashtags.length > 0 && trendingHashtags && trendingHashtags.length > 0 && (
+            <span className="text-gray-300">|</span>
+          )}
+          
+          {/* Trending */}
+          {Array.isArray(trendingHashtags) && trendingHashtags.length > 0 && (
+            <>
+              <span className="text-gray-500 whitespace-nowrap">Trending:</span>
+              {trendingHashtags.slice(0, 4).map((hashtag: any) => (
+                <Button
+                  key={hashtag.id}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleHashtagClick(hashtag.name)}
+                  className="h-5 px-1.5 text-xs text-orange-600 hover:bg-orange-100 whitespace-nowrap"
+                  disabled={selectedHashtags.includes(hashtag.name)}
+                >
+                  #{hashtag.name}
+                </Button>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Compact Search Results */}
+        {selectedHashtags.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <SearchIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Results</span>
+                {searchResults && (
+                  <Badge variant="secondary" className="h-5 text-xs">
+                    {searchResults.length}
+                  </Badge>
+                )}
+              </div>
+              <Select value={sortBy} onValueChange={(value: "popular" | "recent") => setSortBy(value)}>
+                <SelectTrigger className="w-24 h-6 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="popular">Popular</SelectItem>
+                  <SelectItem value="recent">Recent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {isSearching ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">Searching...</p>
+              </div>
+            ) : searchResults && searchResults.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {searchResults.map((post: any) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">
+                  No posts found with selected hashtags
+                </p>
+              </div>
+            )}
+          </div>
         )}
 
 
