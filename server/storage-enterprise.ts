@@ -1589,11 +1589,24 @@ export class EnterpriseStorage implements IStorage {
     if (!request) return;
 
     if (action === 'accept') {
-      // Create bidirectional friendship
-      await db.insert(friendships).values([
-        { userId: request.fromUserId, friendId: request.toUserId },
-        { userId: request.toUserId, friendId: request.fromUserId }
-      ]).onConflictDoNothing();
+      // Check if friendship already exists to prevent duplicates
+      const existingFriendship = await db.select()
+        .from(friendships)
+        .where(
+          or(
+            and(eq(friendships.userId, request.fromUserId), eq(friendships.friendId, request.toUserId)),
+            and(eq(friendships.userId, request.toUserId), eq(friendships.friendId, request.fromUserId))
+          )
+        )
+        .limit(1);
+
+      if (existingFriendship.length === 0) {
+        // Create bidirectional friendship
+        await db.insert(friendships).values([
+          { userId: request.fromUserId, friendId: request.toUserId, status: 'accepted' },
+          { userId: request.toUserId, friendId: request.fromUserId, status: 'accepted' }
+        ]);
+      }
 
       // Create notification for acceptance
       await this.createNotification({

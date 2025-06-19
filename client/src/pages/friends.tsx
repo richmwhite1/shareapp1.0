@@ -284,11 +284,11 @@ export default function ConnectionsPage() {
                             </Link>
                             <div>
                               <Link href={`/profile/${connection.id}`} className="cursor-pointer hover:opacity-80 transition-opacity">
-                                <p className="font-medium text-gray-900 dark:text-white">
+                                <p className="font-medium text-gray-100 dark:text-gray-100">
                                   {connection.name}
                                 </p>
                               </Link>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="text-sm text-gray-300 dark:text-gray-300">
                                 @{connection.username}
                               </p>
                             </div>
@@ -370,11 +370,11 @@ export default function ConnectionsPage() {
                                 </Link>
                                 <div>
                                   <Link href={`/profile/${searchUser.id}`} className="cursor-pointer hover:opacity-80 transition-opacity">
-                                    <p className="font-medium text-gray-900 dark:text-white">
+                                    <p className="font-medium text-gray-100 dark:text-gray-100">
                                       {searchUser.name}
                                     </p>
                                   </Link>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  <p className="text-sm text-gray-300 dark:text-gray-300">
                                     @{searchUser.username}
                                   </p>
                                   {isConnected && (
