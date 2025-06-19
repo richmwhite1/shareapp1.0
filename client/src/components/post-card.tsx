@@ -25,6 +25,7 @@ import EventTaskList from "@/components/event-task-list";
 import TagFriendsContent from "@/components/tag-friends-content";
 import SavePostContent from "@/components/save-post-content";
 import MediaPlayer from "@/components/media-player";
+import InlineMediaPlayer from "@/components/inline-media-player";
 
 interface PostCardProps {
   post: PostWithUser;
@@ -209,17 +210,16 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           </div>
         )}
 
-        {/* Video Play Button Overlay */}
+        {/* Inline Media Player Overlay */}
         {(post.youtubeUrl || post.spotifyUrl) && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Link href={`/post/${post.id}`}>
-              <Button
-                className="w-16 h-16 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm"
-                size="lg"
-              >
-                <Play className="h-6 w-6 ml-1" />
-              </Button>
-            </Link>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-auto">
+              <InlineMediaPlayer
+                youtubeUrl={post.youtubeUrl || undefined}
+                spotifyUrl={post.spotifyUrl || undefined}
+                postId={post.id}
+              />
+            </div>
           </div>
         )}
 
