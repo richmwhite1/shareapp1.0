@@ -31,13 +31,35 @@ export default function Profile() {
   // Fetch user's posts
   const { data: posts } = useQuery({
     queryKey: ['/api/posts/user', profileUserId],
-    enabled: !!profileUserId
+    enabled: !!profileUserId,
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const response = await fetch(`/api/posts/user/${profileUserId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) return [];
+      return response.json();
+    }
   });
 
   // Fetch user's lists
   const { data: lists } = useQuery({
     queryKey: ['/api/lists/user', profileUserId],
-    enabled: !!profileUserId
+    enabled: !!profileUserId,
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const response = await fetch(`/api/lists/user/${profileUserId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) return [];
+      return response.json();
+    }
   });
 
   // Fetch total shares count
@@ -49,7 +71,18 @@ export default function Profile() {
   // Fetch user's friends
   const { data: userFriends } = useQuery({
     queryKey: ['/api/friends/user', profileUserId],
-    enabled: !!profileUserId
+    enabled: !!profileUserId,
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return [];
+      
+      const response = await fetch(`/api/friends/user/${profileUserId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) return [];
+      return response.json();
+    }
   });
 
   // Fetch current user's default privacy (only for own profile)

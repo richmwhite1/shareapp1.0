@@ -603,6 +603,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/lists/user', authenticateToken, async (req: any, res) => {
+    try {
+      const lists = await storage.getListsByUserId(req.user.userId);
+      res.json(lists);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.post('/api/lists', authenticateToken, async (req: any, res) => {
     try {
       const listData = createListSchema.parse(req.body);
@@ -1607,6 +1616,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.userId);
       const friends = await storage.getFriends(userId);
+      res.json(friends);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/friends/user', authenticateToken, async (req: any, res) => {
+    try {
+      const friends = await storage.getFriends(req.user.userId);
       res.json(friends);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
