@@ -444,4 +444,51 @@ router.get('/url-mappings', adminAuth, async (req, res) => {
   }
 });
 
+// Post Analytics endpoint
+router.get('/post-analytics', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const { search, sortBy } = req.query;
+    const posts = await adminStorage.getPostAnalytics();
+    
+    let filteredPosts = posts;
+    if (search && typeof search === 'string') {
+      filteredPosts = posts.filter(post => 
+        post.primaryDescription?.toLowerCase().includes(search.toLowerCase()) ||
+        post.user?.username.toLowerCase().includes(search.toLowerCase()) ||
+        post.hashtags?.some(tag => tag.name.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
+    
+    console.log(`Returning ${filteredPosts.length} post analytics`);
+    res.json(filteredPosts);
+  } catch (error) {
+    console.error('Error fetching post analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch post analytics' });
+  }
+});
+
+// Promote post endpoint
+router.post('/posts/:postId/promote', adminAuth, async (req: Request, res: Response) => {
+  try {
+    const { postId } = req.params;
+    const { hashtag, views } = req.body;
+    const admin = req.admin;
+    
+    await adminStorage.promotePost(parseInt(postId), hashtag, parseInt(views), admin.id);
+    
+    // Log the action
+    await adminStorage.logAdminAction({
+      adminId: admin.id,
+      action: 'promote_post',
+      target: `post:${postId}`,
+      metadata: { hashtag, views }
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error promoting post:', error);
+    res.status(500).json({ error: 'Failed to promote post' });
+  }
+});
+
 export default router;

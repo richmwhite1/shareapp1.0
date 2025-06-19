@@ -156,6 +156,13 @@ export default function AdminDashboard() {
   const [discountCode, setDiscountCode] = useState("");
   const [urlSortBy, setUrlSortBy] = useState<'popularity' | 'clicks' | 'posts' | 'domain'>('popularity');
   
+  // Post analysis state
+  const [postSearchTerm, setPostSearchTerm] = useState("");
+  const [postSortBy, setPostSortBy] = useState<'views' | 'shares' | 'clicks' | 'aura' | 'hashtags'>('views');
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [promoteHashtag, setPromoteHashtag] = useState("");
+  const [promoteViews, setPromoteViews] = useState("");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -232,6 +239,17 @@ export default function AdminDashboard() {
       const params = new URLSearchParams();
       if (urlSearchTerm) params.append('search', urlSearchTerm);
       return fetchWithAuth(`/api/admin/url-analytics?${params.toString()}`);
+    },
+  });
+
+  // Post analytics data
+  const { data: postAnalytics = [], isLoading: postAnalyticsLoading } = useQuery<any[]>({
+    queryKey: ['/api/admin/post-analytics', postSearchTerm, postSortBy],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (postSearchTerm) params.append('search', postSearchTerm);
+      if (postSortBy) params.append('sortBy', postSortBy);
+      return fetchWithAuth(`/api/admin/post-analytics?${params.toString()}`);
     },
   });
 
@@ -323,6 +341,26 @@ export default function AdminDashboard() {
     },
     onError: () => {
       toast({ title: "Failed to apply bulk discount codes", variant: "destructive" });
+    },
+  });
+
+  // Post promotion mutation
+  const promotePostMutation = useMutation({
+    mutationFn: async ({ postId, hashtag, views }: { postId: number; hashtag: string; views: number }) => {
+      return fetchWithAuth(`/api/admin/posts/${postId}/promote`, {
+        method: 'POST',
+        body: JSON.stringify({ hashtag, views }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/post-analytics'] });
+      toast({ title: "Post promoted successfully" });
+      setPromoteHashtag('');
+      setPromoteViews('');
+      setSelectedPost(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to promote post", variant: "destructive" });
     },
   });
 
@@ -528,6 +566,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="urls" className="data-[state=active]:bg-purple-600">
               <ExternalLink className="h-4 w-4 mr-2" />
               URLs
+            </TabsTrigger>
+            <TabsTrigger value="posts" className="data-[state=active]:bg-purple-600">
+              <FileText className="h-4 w-4 mr-2" />
+              Posts
             </TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-purple-600">
               <Settings className="h-4 w-4 mr-2" />

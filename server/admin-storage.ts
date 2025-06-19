@@ -1107,6 +1107,103 @@ export class AdminStorage implements IAdminStorage {
       return [];
     }
   }
+
+  async getPostAnalytics(): Promise<any[]> {
+    try {
+      const postsWithStats = await db
+        .select({
+          id: posts.id,
+          userId: posts.userId,
+          primaryDescription: posts.primaryDescription,
+          primaryPhotoUrl: posts.primaryPhotoUrl,
+          primaryLink: posts.primaryLink,
+          createdAt: posts.createdAt,
+          user: {
+            id: users.id,
+            username: users.username,
+            name: users.name,
+            profilePictureUrl: users.profilePictureUrl
+          }
+        })
+        .from(posts)
+        .leftJoin(users, eq(posts.userId, users.id))
+        .orderBy(desc(posts.createdAt));
+
+      // Get stats for each post
+      const postsWithFullStats = await Promise.all(postsWithStats.map(async (post) => {
+        // Get view count
+        const [viewResult] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(postViews)
+          .where(eq(postViews.postId, post.id));
+        
+        // Get share count
+        const [shareResult] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(postShares)
+          .where(eq(postShares.postId, post.id));
+
+        // Get click count from URL clicks
+        const [clickResult] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(urlClicks)
+          .where(eq(urlClicks.postId, post.id));
+
+        // Get average aura rating
+        const [auraResult] = await db
+          .select({ average: sql<number>`COALESCE(avg(rating)::numeric, 4)` })
+          .from(postEnergyRatings)
+          .where(eq(postEnergyRatings.postId, post.id));
+
+        // Get hashtags
+        const postHashtagsData = await db
+          .select({
+            hashtag: {
+              id: hashtags.id,
+              name: hashtags.name,
+              count: hashtags.count
+            }
+          })
+          .from(postHashtags)
+          .leftJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+          .where(eq(postHashtags.postId, post.id));
+
+        return {
+          ...post,
+          viewCount: viewResult?.count || 0,
+          shareCount: shareResult?.count || 0,
+          clickCount: clickResult?.count || 0,
+          auraRating: Math.round(auraResult?.average || 4),
+          hashtags: postHashtagsData.map(h => h.hashtag).filter(Boolean),
+          hashtagCount: postHashtagsData.length
+        };
+      }));
+
+      return postsWithFullStats;
+    } catch (error) {
+      console.error('Error fetching post analytics:', error);
+      throw error;
+    }
+  }
+
+  async promotePost(postId: number, hashtag: string, views: number, adminId: number): Promise<void> {
+    try {
+      // For now, we'll use a simple approach and add the promotion data to the database
+      // In a real implementation, you'd want a post_promotions table
+      await this.logAdminAction({
+        adminId,
+        action: 'promote_post',
+        target: `post:${postId}`,
+        details: { hashtag, views, type: 'hashtag_promotion' },
+        metadata: { hashtag, promotionViews: views, isActive: true }
+      });
+      
+      console.log(`Post ${postId} promoted for hashtag "${hashtag}" with ${views} views`);
+    } catch (error) {
+      console.error('Error promoting post:', error);
+      throw error;
+    }
+  }
 }
 
 export const adminStorage = new AdminStorage();
