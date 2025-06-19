@@ -219,6 +219,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user profile
+  app.delete('/api/users/:id', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Ensure user can only delete their own profile
+      if (req.user.userId !== userId) {
+        return res.status(403).json({ message: 'Cannot delete another user\'s profile' });
+      }
+
+      // Check if user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Delete user and all associated data
+      await storage.deleteUser(userId);
+      
+      res.json({ message: 'Profile and all associated data deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user profile:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Post routes
   app.post('/api/posts', authenticateToken, upload.fields([
     { name: 'primaryPhoto', maxCount: 1 },
