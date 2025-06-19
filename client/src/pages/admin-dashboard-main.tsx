@@ -146,6 +146,13 @@ export default function AdminDashboard() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [minCosmicScore, setMinCosmicScore] = useState("");
   const [maxCosmicScore, setMaxCosmicScore] = useState("");
+  
+  // URL management state
+  const [urlSearchTerm, setUrlSearchTerm] = useState("");
+  const [selectedUrl, setSelectedUrl] = useState<UrlAnalytics | null>(null);
+  const [hotSwapUrl, setHotSwapUrl] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -212,6 +219,16 @@ export default function AdminDashboard() {
       if (minCosmicScore) params.append('minCosmicScore', minCosmicScore);
       if (maxCosmicScore) params.append('maxCosmicScore', maxCosmicScore);
       return fetchWithAuth(`/api/admin/user-metrics?${params.toString()}`);
+    },
+  });
+
+  // URL analytics data
+  const { data: urlAnalytics = [], isLoading: urlAnalyticsLoading } = useQuery<UrlAnalytics[]>({
+    queryKey: ['/api/admin/url-analytics', urlSearchTerm],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (urlSearchTerm) params.append('search', urlSearchTerm);
+      return fetchWithAuth(`/api/admin/url-analytics?${params.toString()}`);
     },
   });
 
