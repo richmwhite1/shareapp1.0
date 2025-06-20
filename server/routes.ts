@@ -318,13 +318,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { primaryLink, primaryDescription, discountCode, listId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers, isEvent, eventDate, reminders, isRecurring, recurringType, taskList } = validatedData;
       
-      // Parse hashtags from the hashtags string
+      // Parse hashtags from JSON array or hashtag string
       const parseHashtags = (input: string): string[] => {
         if (!input) return [];
+        
+        // First, try to parse as JSON array (from frontend)
+        try {
+          const parsed = JSON.parse(input);
+          if (Array.isArray(parsed)) {
+            return parsed
+              .map(tag => String(tag).replace(/^#/, '').toLowerCase().trim())
+              .filter(tag => tag.length > 0)
+              .slice(0, 10);
+          }
+        } catch (error) {
+          // If JSON parsing fails, fall back to regex parsing for hashtag strings
+        }
+        
+        // Fallback: parse as hashtag string with # symbols
         const tags = input
           .match(/#[a-zA-Z0-9_]+/g)
           ?.map((tag) => tag.substring(1).toLowerCase())
           .slice(0, 10) || [];
+        
         // Remove duplicates manually
         const uniqueTags: string[] = [];
         for (const tag of tags) {
