@@ -1142,7 +1142,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Post not found' });
       }
 
-      res.json(post);
+      // Add hashtags to the post
+      const hashtags = await storage.getHashtagsByPostId(postId);
+      const postWithHashtags = { ...post, hashtags };
+
+      res.json(postWithHashtags);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }

@@ -658,12 +658,19 @@ export class EnterpriseStorage implements IStorage {
 
     // Handle hashtags
     if (postData.hashtags && postData.hashtags.length > 0) {
+      console.log('Processing hashtags:', postData.hashtags);
       for (const hashtagName of postData.hashtags) {
-        const hashtag = await this.getOrCreateHashtag(hashtagName);
-        await db.insert(postHashtags).values({
-          postId: post.id,
-          hashtagId: hashtag.id
-        }).onConflictDoNothing();
+        try {
+          const hashtag = await this.getOrCreateHashtag(hashtagName);
+          console.log('Created/found hashtag:', hashtag);
+          await db.insert(postHashtags).values({
+            postId: post.id,
+            hashtagId: hashtag.id
+          }).onConflictDoNothing();
+          console.log('Linked hashtag to post:', { postId: post.id, hashtagId: hashtag.id });
+        } catch (error) {
+          console.error('Error processing hashtag:', hashtagName, error);
+        }
       }
     }
 
