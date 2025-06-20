@@ -38,8 +38,9 @@ export default function Profile() {
     }
   });
 
+  // Use the parameter ID if provided, otherwise use current user's ID
   const profileUserId = paramUserId ? parseInt(paramUserId) : currentUser?.id;
-  const isOwnProfile = profileUserId === currentUser?.id;
+  const isOwnProfile = !paramUserId || (profileUserId === currentUser?.id);
 
   // Fetch user data
   const { data: userData, isLoading: userLoading, error: userError } = useQuery({

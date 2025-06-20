@@ -74,7 +74,7 @@ export default function ConnectionsPage() {
       });
       setFilteredUsers(filtered);
     }
-  }, [allUsersData, user?.id, connections]);
+  }, [allUsersData, user?.id, connections.length]);
 
   // Handle search filtering
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function ConnectionsPage() {
       });
       setFilteredUsers(filtered);
     }
-  }, [searchTerm, allUsers, user?.id, connections]);
+  }, [searchTerm, allUsers.length, user?.id, connections.length]);
 
   // Send follow request mutation
   const sendRequestMutation = useMutation({
