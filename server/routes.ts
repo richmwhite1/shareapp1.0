@@ -2448,10 +2448,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Search for posts with ALL of the hashtags (AND logic)
       const allPosts = await storage.getPostsByMultipleHashtags(hashtagNames);
 
-      // Sort by creation date (most recent first)
-      allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Add hashtags to each post
+      const postsWithHashtags = await Promise.all(
+        allPosts.map(async (post) => {
+          const hashtags = await storage.getHashtagsByPostId(post.id);
+          return { ...post, hashtags };
+        })
+      );
 
-      res.json(allPosts);
+      // Sort by creation date (most recent first)
+      postsWithHashtags.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      res.json(postsWithHashtags);
     } catch (error) {
       console.error('Hashtag search error:', error);
       res.status(500).json({ message: 'Internal server error' });
