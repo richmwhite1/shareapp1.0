@@ -38,9 +38,14 @@ export default function Profile() {
     }
   });
 
-  // Determine which user profile to show
-  const profileUserId = paramUserId ? parseInt(paramUserId) : currentUser?.id;
-  const isOwnProfile = paramUserId ? (parseInt(paramUserId) === currentUser?.id) : true;
+  // Debug logging
+  console.log('Profile page params:', { paramUserId, currentUser: currentUser?.id });
+
+  // Determine which user profile to show - FIXED: Only use paramUserId if it exists
+  const profileUserId = paramUserId ? parseInt(paramUserId) : (currentUser?.id || null);
+  const isOwnProfile = !paramUserId || (profileUserId === currentUser?.id);
+
+  console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: currentUser?.id });
 
   // Fetch user data
   const { data: userData, isLoading: userLoading, error: userError } = useQuery({
