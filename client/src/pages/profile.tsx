@@ -304,7 +304,16 @@ export default function Profile() {
                               body: formData
                             });
                             if (response.ok) {
+                              // Invalidate multiple query keys to ensure profile picture updates everywhere
                               queryClient.invalidateQueries({ queryKey: [`/api/users/${profileUserId}`] });
+                              queryClient.invalidateQueries({ queryKey: ['/api/auth/verify'] });
+                              queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+                              
+                              // Force a page refresh to ensure the image loads with new URL
+                              setTimeout(() => {
+                                window.location.reload();
+                              }, 500);
+                              
                               toast({ title: "Profile picture updated successfully" });
                             } else {
                               toast({ title: "Failed to upload image", variant: "destructive" });
