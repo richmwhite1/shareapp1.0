@@ -232,10 +232,10 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           <div className="flex items-center justify-between text-white">
             <div className="flex items-center space-x-4 text-sm">
               <FeedLikeButton postId={post.id} />
-              <div className="flex items-center space-x-1">
+              <Link href={`/post/${post.id}`} className="flex items-center space-x-1 hover:text-yellow-400 transition-colors cursor-pointer">
                 <MessageCircle className="w-4 h-4" />
                 <span>{stats?.commentCount || 0}</span>
-              </div>
+              </Link>
               <FeedShareButton postId={post.id} shareCount={stats?.shareCount || 0} />
               <div className="flex items-center space-x-1">
                 <Eye className="w-4 h-4" />
