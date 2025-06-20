@@ -283,12 +283,12 @@ export default function ConnectionsPage() {
                           <div className="flex items-center space-x-3">
                             <Link href={`/profile/${connection.id}`}>
                               <AuricField profileId={connection.id} intensity={0.2}>
-                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity w-16 h-16">
                                   <AvatarImage 
                                     src={connection.profilePictureUrl || undefined} 
                                     alt={connection.name}
                                   />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="text-lg">
                                     {connection.name.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
@@ -498,12 +498,12 @@ export default function ConnectionsPage() {
                           <div className="flex items-center space-x-3">
                             <Link href={`/profile/${request.fromUser.id}`}>
                               <AuricField profileId={request.fromUser.id} intensity={0.2}>
-                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                <Avatar className="cursor-pointer hover:opacity-80 transition-opacity w-16 h-16">
                                   <AvatarImage 
                                     src={request.fromUser.profilePictureUrl || undefined} 
                                     alt={request.fromUser.name}
                                   />
-                                  <AvatarFallback>
+                                  <AvatarFallback className="text-lg">
                                     {request.fromUser.name.charAt(0).toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
