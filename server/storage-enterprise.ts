@@ -194,9 +194,13 @@ export class EnterpriseStorage implements IStorage {
       .select()
       .from(users)
       .where(
-        or(
-          like(users.username, `%${query}%`),
-          like(users.name, `%${query}%`)
+        and(
+          or(
+            like(users.username, `%${query}%`),
+            like(users.name, `%${query}%`)
+          ),
+          not(like(users.username, 'deleted_user_%')),
+          not(eq(users.name, 'Deleted User'))
         )
       )
       .limit(20);

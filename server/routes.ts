@@ -1989,13 +1989,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const query = req.query.q;
       if (!query || typeof query !== 'string') {
-        // Return all users if no query
+        // Return all non-deleted users if no query
         const allUsers = await db.select({
           id: users.id,
           username: users.username,
           name: users.name,
           profilePictureUrl: users.profilePictureUrl
-        }).from(users);
+        }).from(users)
+        .where(
+          and(
+            not(like(users.username, 'deleted_user_%')),
+            not(eq(users.name, 'Deleted User'))
+          )
+        );
         return res.json(allUsers);
       }
       
