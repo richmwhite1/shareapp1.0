@@ -27,102 +27,7 @@ import SavePostContent from "@/components/save-post-content";
 import MediaPlayer from "@/components/media-player";
 import InlineMediaPlayer from "@/components/inline-media-player";
 
-// Hashtag component with follow functionality
-function HashtagWithFollow({ hashtag }: { hashtag: { id: number; name: string } }) {
-  const [, setLocation] = useLocation();
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  // Check if user is following this hashtag
-  const { data: isFollowing = false } = useQuery({
-    queryKey: ['/api/hashtags/following', hashtag.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const response = await fetch(`/api/hashtags/${hashtag.id}/following`);
-      if (!response.ok) return false;
-      const data = await response.json();
-      return data.isFollowing || false;
-    }
-  });
-
-  // Follow/unfollow mutation
-  const followMutation = useMutation({
-    mutationFn: async (action: 'follow' | 'unfollow') => {
-      const response = await fetch(`/api/hashtags/${hashtag.id}/${action}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-      if (!response.ok) throw new Error(`Failed to ${action} hashtag`);
-      return response.json();
-    },
-    onSuccess: (_, action) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/hashtags/following', hashtag.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/hashtags/followed'] });
-      toast({
-        title: "Success",
-        description: `${action === 'follow' ? 'Following' : 'Unfollowed'} #${hashtag.name}`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  });
-
-  const handleFollowClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to follow hashtags",
-        variant: "destructive"
-      });
-      return;
-    }
-    followMutation.mutate(isFollowing ? 'unfollow' : 'follow');
-  };
-
-  const handleHashtagClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setLocation(`/search?hashtag=${hashtag.name}`);
-  };
-
-  return (
-    <div className="inline-flex items-center gap-1 bg-pinterest-red/10 hover:bg-pinterest-red/20 border border-pinterest-red/30 rounded-full text-sm transition-colors">
-      <button
-        onClick={handleHashtagClick}
-        className="inline-flex items-center gap-1 px-2 py-1 text-pinterest-red hover:text-pinterest-red/80 transition-colors"
-      >
-        <Hash className="h-3 w-3" />
-        <span>{hashtag.name}</span>
-      </button>
-      <button
-        onClick={handleFollowClick}
-        disabled={followMutation.isPending}
-        className={`h-6 w-6 rounded-full flex items-center justify-center transition-colors ${
-          isFollowing 
-            ? 'bg-pinterest-red text-white hover:bg-red-700' 
-            : 'bg-gray-200 text-gray-600 hover:bg-pinterest-red hover:text-white'
-        } ${followMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
-      >
-        {followMutation.isPending ? (
-          <div className="h-2 w-2 rounded-full bg-current animate-pulse" />
-        ) : isFollowing ? (
-          <Check className="h-3 w-3" />
-        ) : (
-          <Plus className="h-3 w-3" />
-        )}
-      </button>
-    </div>
-  );
-}
 
 interface PostCardProps {
   post: PostWithUser;
@@ -517,8 +422,27 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           {/* Hashtags */}
           {post.hashtags && post.hashtags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-4">
-              {post.hashtags.map((hashtag) => (
-                <HashtagWithFollow key={hashtag.id} hashtag={hashtag} />
+              {post.hashtags.map((hashtag: any) => (
+                <div key={hashtag.id} className="inline-flex items-center gap-1 bg-pinterest-red/10 hover:bg-pinterest-red/20 border border-pinterest-red/30 rounded-full text-sm transition-colors">
+                  <button
+                    onClick={() => setLocation(`/search?hashtag=${hashtag.name}`)}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-pinterest-red hover:text-pinterest-red/80 transition-colors"
+                  >
+                    <Hash className="h-3 w-3" />
+                    <span>{hashtag.name}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      toast({
+                        title: "Follow Feature",
+                        description: `Following #${hashtag.name} - feature coming soon!`
+                      });
+                    }}
+                    className="h-6 w-6 rounded-full flex items-center justify-center bg-gray-200 text-gray-600 hover:bg-pinterest-red hover:text-white transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
