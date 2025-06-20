@@ -75,13 +75,22 @@ export default function SimpleAuth({ defaultMode = 'signin', onSuccess }: Simple
       return;
     }
 
+    if (!signUpData.profilePicture) {
+      toast({
+        title: "Profile Picture Required",
+        description: "Please upload a profile picture to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       await signUp({
         name: signUpData.name,
         username: signUpData.username,
         password: signUpData.password
-      }, signUpData.profilePicture || undefined);
+      }, signUpData.profilePicture);
       
       toast({
         title: "Account Created!",
@@ -185,7 +194,7 @@ export default function SimpleAuth({ defaultMode = 'signin', onSuccess }: Simple
                 />
               </div>
               <div>
-                <Label htmlFor="signup-profile">Profile Picture (Optional)</Label>
+                <Label htmlFor="signup-profile">Profile Picture *</Label>
                 <Input
                   id="signup-profile"
                   type="file"
@@ -195,8 +204,9 @@ export default function SimpleAuth({ defaultMode = 'signin', onSuccess }: Simple
                     ...prev, 
                     profilePicture: e.target.files ? e.target.files[0] : null 
                   }))}
+                  required
                 />
-                <p className="text-xs text-gray-500 mt-1">PNG, JPEG, or GIF up to 1MB</p>
+                <p className="text-xs text-gray-500 mt-1">PNG, JPEG, or GIF up to 1MB (required)</p>
               </div>
               <Button
                 type="submit"

@@ -60,6 +60,15 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
   const handleSignUp = async (data: SignUpData & { profilePicture?: FileList }) => {
     try {
       const profilePicture = data.profilePicture?.[0];
+      if (!profilePicture) {
+        toast({
+          title: "Profile Picture Required",
+          description: "Please upload a profile picture to continue",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       await signUp({
         username: data.username,
         password: data.password,
@@ -174,15 +183,15 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
                 />
               </div>
               <div>
-                <Label htmlFor="profilePicture">Profile Picture</Label>
+                <Label htmlFor="profilePicture">Profile Picture *</Label>
                 <Input
                   id="profilePicture"
                   type="file"
                   accept="image/jpeg,image/png,image/jpg"
                   className="focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                  {...signUpForm.register("profilePicture")}
+                  {...signUpForm.register("profilePicture", { required: "Profile picture is required" })}
                 />
-                <p className="text-xs text-gray-500">JPEG or PNG, max 1MB</p>
+                <p className="text-xs text-gray-500">JPEG or PNG, max 1MB (required)</p>
               </div>
               <Button
                 type="submit"
