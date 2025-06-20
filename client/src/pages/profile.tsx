@@ -11,6 +11,7 @@ import { Link, useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest } from "@/lib/queryClient";
+import PostCard from "@/components/post-card";
 
 
 export default function Profile() {
@@ -105,6 +106,26 @@ export default function Profile() {
       
       const response = await fetch(`/api/friends/user/${profileUserId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) return [];
+      return response.json();
+    }
+  });
+
+  // Fetch user posts
+  const { data: userPosts } = useQuery({
+    queryKey: ['/api/posts/user', profileUserId],
+    enabled: !!profileUserId,
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/posts/user/${profileUserId}`, {
+        headers
       });
       
       if (!response.ok) return [];
@@ -504,6 +525,29 @@ export default function Profile() {
             </div>
           </div>
         )}
+
+        {/* User Posts Section */}
+        <div className="px-6 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Posts</h3>
+          {Array.isArray(userPosts) && userPosts.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {userPosts.map((post: any) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">No posts yet</div>
+              {isOwnProfile && (
+                <Link href="/">
+                  <Button size="sm" variant="outline" className="text-xs">
+                    Create your first post
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
         
         <div className="h-20"></div>
       </div>
