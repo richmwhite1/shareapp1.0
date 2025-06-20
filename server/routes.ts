@@ -1086,7 +1086,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const posts = await storage.getAllPosts(viewerId);
-      res.json(posts);
+      
+      // Add hashtags to each post
+      const postsWithHashtags = await Promise.all(
+        posts.map(async (post) => {
+          const hashtags = await storage.getHashtagsByPostId(post.id);
+          return { ...post, hashtags };
+        })
+      );
+      
+      res.json(postsWithHashtags);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
     }

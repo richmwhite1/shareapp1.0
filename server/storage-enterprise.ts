@@ -2,7 +2,7 @@ import { users, type User, type InsertUser, type UserWithFriends, posts, type Po
   lists, type List, type ListWithPosts, type InsertList, listAccess, friendships, notifications, type Notification, type CreateNotificationData,
   hashtags, type Hashtag, postHashtags, comments, type Comment, type CommentWithUser, type InsertComment, 
   postLikes, postShares, postViews, savedPosts, reposts, friendRequests, accessRequests, postFlags, 
-  blacklist, reports, postTags, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows, urlClicks } from "@shared/schema";
+  blacklist, reports, postTags, taggedPosts, profileEnergyRatings, postEnergyRatings, rsvps, hashtagFollows, urlClicks } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, like, exists, not, inArray, count, avg, gte, lt } from 'drizzle-orm';
 
