@@ -2123,6 +2123,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile picture upload endpoint - User-specific route
+  app.post('/api/users/:userId/upload-profile-picture', authenticateToken, upload.single('image'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const userId = req.user.userId;
+      const targetUserId = parseInt(req.params.userId);
+      
+      // Only allow users to upload their own profile picture
+      if (userId !== targetUserId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const fileExtension = path.extname(req.file.originalname);
+      const fileName = `profile-${userId}-${Date.now()}${fileExtension}`;
+      const uploadPath = path.join('uploads', fileName);
+
+      // Move file to permanent location
+      await fs.promises.rename(req.file.path, uploadPath);
+
+      // Update user's profile picture URL in database
+      await db.update(users)
+        .set({ profilePictureUrl: `/uploads/${fileName}` })
+        .where(eq(users.id, userId));
+
+      res.json({ 
+        success: true, 
+        profilePictureUrl: `/uploads/${fileName}` 
+      });
+    } catch (error) {
+      console.error('Profile picture upload error:', error);
+      res.status(500).json({ message: 'Failed to upload profile picture' });
+    }
+  });
+
   // Update user privacy settings endpoint
   app.put('/api/user/privacy', authenticateToken, async (req: any, res) => {
     try {
