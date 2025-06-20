@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus, Trash2, Camera } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
@@ -317,7 +317,7 @@ export default function Profile() {
                       input.click();
                     }}
                   >
-                    <Settings className="h-4 w-4" />
+                    <Camera className="h-4 w-4" />
                   </Button>
                 </div>
               )}
