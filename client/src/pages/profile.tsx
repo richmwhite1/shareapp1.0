@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 
 export default function Profile() {
-  const { userId: paramUserId } = useParams();
+  const { id: paramUserId } = useParams();
   const [selectedList, setSelectedList] = useState<number | null>(null);
   const [pressedList, setPressedList] = useState<number | null>(null);
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
