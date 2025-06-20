@@ -369,12 +369,12 @@ export default function ConnectionsPage() {
                               <div className="flex items-center space-x-3">
                                 <Link href={`/profile/${searchUser.id}`}>
                                   <AuricField profileId={searchUser.id} intensity={0.2}>
-                                    <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+                                    <Avatar className="cursor-pointer hover:opacity-80 transition-opacity w-16 h-16">
                                       <AvatarImage 
                                         src={searchUser.profilePictureUrl || undefined} 
                                         alt={searchUser.name}
                                       />
-                                      <AvatarFallback>
+                                      <AvatarFallback className="text-lg">
                                         {searchUser.name.charAt(0).toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
