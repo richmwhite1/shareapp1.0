@@ -1591,7 +1591,12 @@ export class EnterpriseStorage implements IStorage {
       })
       .from(friendRequests)
       .innerJoin(users, eq(friendRequests.toUserId, users.id))
-      .where(eq(friendRequests.fromUserId, userId))
+      .where(
+        and(
+          eq(friendRequests.fromUserId, userId),
+          not(like(users.username, 'deleted_user_%'))
+        )
+      )
       .orderBy(desc(friendRequests.createdAt));
 
     return result.map(r => ({
