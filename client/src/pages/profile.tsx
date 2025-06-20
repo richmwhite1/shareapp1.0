@@ -264,7 +264,7 @@ export default function Profile() {
         {/* Profile Picture - Large Square Tile */}
         <div className="px-6 py-6">
           <div className="mb-6">
-            <div className="w-full aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-gray-800">
+            <div className="relative w-full aspect-square max-w-sm mx-auto rounded-lg overflow-hidden bg-gray-800">
               <img 
                 src={(userData as any)?.profilePictureUrl || ""} 
                 alt="Profile"
@@ -278,6 +278,79 @@ export default function Profile() {
               <div className="hidden w-full h-full flex items-center justify-center bg-gray-800 text-white text-6xl font-bold">
                 {(userData as any)?.name?.charAt(0) || (userData as any)?.username?.charAt(0)}
               </div>
+              
+              {/* Upload Photo Button - Only for own profile */}
+              {isOwnProfile && (
+                <div className="absolute top-2 right-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 w-8 p-0 bg-black/50 hover:bg-black/70 border-0 text-white"
+                    onClick={() => {
+                      // Create file input and trigger click
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = async (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          const formData = new FormData();
+                          formData.append('image', file);
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch(`/api/users/${profileUserId}/upload-profile-picture`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}` },
+                              body: formData
+                            });
+                            if (response.ok) {
+                              queryClient.invalidateQueries({ queryKey: [`/api/users/${profileUserId}`] });
+                              toast({ title: "Profile picture updated successfully" });
+                            } else {
+                              toast({ title: "Failed to upload image", variant: "destructive" });
+                            }
+                          } catch (error) {
+                            toast({ title: "Failed to upload image", variant: "destructive" });
+                          }
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3 mt-4">
+              {/* Share Profile Button - Always visible but discreet */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-gray-400 hover:text-white text-xs px-3 py-1 h-7"
+                onClick={() => {
+                  const profileUrl = `${window.location.origin}/profile/${profileUserId}`;
+                  navigator.clipboard.writeText(profileUrl);
+                  toast({ title: "Profile link copied to clipboard" });
+                }}
+              >
+                <Share2 className="h-3 w-3 mr-1" />
+                Share
+              </Button>
+              
+              {/* Friends Button - Bigger icon */}
+              <Link href="/friends">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-gray-400 hover:text-white text-xs px-3 py-1 h-7"
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  Friends
+                </Button>
+              </Link>
             </div>
             
             {(userData as any)?.bio && (
