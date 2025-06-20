@@ -636,7 +636,19 @@ export class EnterpriseStorage implements IStorage {
   }
 
   // CONTENT MANAGEMENT - BULLETPROOF PRIVACY
-  async createPost(postData: InsertPost & { userId: number; listId?: number; hashtags?: string[]; taggedUsers?: number[] }): Promise<Post> {
+  async createPost(postData: InsertPost & { 
+    userId: number; 
+    listId?: number; 
+    hashtags?: string[]; 
+    taggedUsers?: number[];
+    privacy?: string;
+    additionalPhotoData?: any;
+    mediaMetadata?: any;
+    reminders?: string[];
+    isRecurring?: boolean;
+    recurringType?: string;
+    taskList?: any[];
+  }): Promise<Post> {
     const [post] = await db
       .insert(posts)
       .values({
@@ -648,11 +660,18 @@ export class EnterpriseStorage implements IStorage {
         privacy: postData.privacy || 'public',
         discountCode: postData.discountCode,
         additionalPhotos: postData.additionalPhotos,
+        additionalPhotoData: postData.additionalPhotoData,
         spotifyUrl: postData.spotifyUrl,
         youtubeUrl: postData.youtubeUrl,
+        mediaMetadata: postData.mediaMetadata,
         isEvent: postData.isEvent || false,
         eventDate: postData.eventDate,
-        allowRsvp: postData.allowRsvp || false
+        reminders: postData.reminders,
+        isRecurring: postData.isRecurring || false,
+        recurringType: postData.recurringType,
+        taskList: postData.taskList,
+        allowRsvp: postData.allowRsvp || false,
+        engagement: 0
       })
       .returning();
 
