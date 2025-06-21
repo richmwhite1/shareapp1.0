@@ -671,6 +671,7 @@ export class EnterpriseStorage implements IStorage {
         isRecurring: postData.isRecurring || false,
         recurringType: postData.recurringType,
         taskList: postData.taskList,
+        attachedLists: postData.attachedLists,
         allowRsvp: postData.allowRsvp || false,
         engagement: 0
       })
@@ -2007,6 +2008,38 @@ export class EnterpriseStorage implements IStorage {
           updatedAt: new Date()
         }
       });
+  }
+
+  // Get attached lists for a post
+  async getAttachedListsByPostId(postId: number): Promise<Array<{ id: number; name: string; userId: number; user?: { username: string } }>> {
+    try {
+      const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
+      if (!post.length || !post[0].attachedLists || post[0].attachedLists.length === 0) {
+        return [];
+      }
+      
+      // Fetch the attached lists with their creators
+      const attachedLists = await db
+        .select({
+          id: lists.id,
+          name: lists.name,
+          userId: lists.userId,
+          username: users.username
+        })
+        .from(lists)
+        .innerJoin(users, eq(lists.userId, users.id))
+        .where(inArray(lists.id, post[0].attachedLists));
+      
+      return attachedLists.map(list => ({
+        id: list.id,
+        name: list.name,
+        userId: list.userId,
+        user: { username: list.username }
+      }));
+    } catch (error) {
+      console.error('Error fetching attached lists:', error);
+      return [];
+    }
   }
 }
 

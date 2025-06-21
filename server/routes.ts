@@ -1146,6 +1146,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get attached lists for a specific post
+  app.get('/api/posts/:postId/attached-lists', async (req, res) => {
+    try {
+      const postId = parseInt(req.params.postId);
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: 'Invalid post ID' });
+      }
+
+      const lists = await storage.getAttachedListsByPostId(postId);
+      res.json(lists);
+    } catch (error) {
+      console.error('Error fetching attached lists:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Get current user's posts
   app.get('/api/posts/user', authenticateToken, async (req: any, res) => {
     try {
