@@ -263,6 +263,31 @@ export default function Profile() {
     }
   });
 
+  // Delete list mutation
+  const deleteListMutation = useMutation({
+    mutationFn: async (listId: number) => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/lists/${listId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to delete list');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lists/user', profileUserId] });
+      setShowDeleteDialog(false);
+      setSelectedList(null);
+      toast({ title: "List deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete list", variant: "destructive" });
+    }
+  });
+
   // Delete profile mutation
   const deleteProfileMutation = useMutation({
     mutationFn: async () => {
@@ -597,56 +622,116 @@ export default function Profile() {
               const hasImage = recentPost?.primaryPhotoUrl || recentPost?.thumbnailUrl;
               
               return (
-                <Link key={list.id} href={`/list/${list.id}`}>
-                  <div className="bg-gray-900 rounded-xl p-2 hover:bg-black transition-colors">
-                    <div className="w-full aspect-square rounded-lg mb-2 overflow-hidden relative">
-                      {hasImage ? (
-                        <img 
-                          src={recentPost.primaryPhotoUrl || recentPost.thumbnailUrl} 
-                          alt={list.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                          <Folder className="h-8 w-8 text-gray-600" />
-                        </div>
-                      )}
-                      
-                      {/* Privacy Indicator */}
-                      {list.privacyLevel !== 'public' && (
-                        <div className="absolute top-1 right-1">
-                          <div className="bg-black/80 text-white px-1.5 py-0.5 rounded text-xs">
-                            {list.privacyLevel === 'private' ? 'Private' : 'Friends'}
-                          </div>
-                        </div>
-                      )}
+                <div
+                  key={list.id}
+                  draggable={isOwnProfile}
+                  onDragStart={(e) => isOwnProfile && handleDragStart(e, list.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, list.id)}
+                  onDragEnd={handleDragEnd}
+                  className={`bg-gray-900 rounded-xl p-2 hover:bg-black transition-colors cursor-pointer relative ${
+                    draggedListId === list.id ? 'opacity-50' : ''
+                  } ${isDragging ? 'transition-transform' : ''}`}
+                  onMouseDown={() => isOwnProfile && handleMouseDown(list.id)}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseLeave}
+                  onClick={() => !isDragging && setLocation(`/list/${list.id}`)}
+                >
+                  {/* Drag Handle - Only visible on own profile */}
+                  {isOwnProfile && (
+                    <div className="absolute top-1 left-1 opacity-30 hover:opacity-60 transition-opacity">
+                      <GripVertical className="h-3 w-3 text-gray-400" />
                     </div>
+                  )}
+                  
+                  <div className="w-full aspect-square rounded-lg mb-2 overflow-hidden relative">
+                    {hasImage ? (
+                      <img 
+                        src={recentPost.primaryPhotoUrl || recentPost.thumbnailUrl} 
+                        alt={list.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
+                        <Folder className="h-8 w-8 text-gray-600" />
+                      </div>
+                    )}
                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-white font-medium truncate flex-1">
-                        {list.name}
-                      </span>
-                      {isOwnProfile && (
-                        <div className="ml-2">
-                          {list.privacyLevel === 'public' && (
-                            <Globe className="h-3 w-3 text-green-500" />
-                          )}
-                          {list.privacyLevel === 'connections' && (
-                            <Users className="h-3 w-3 text-blue-500" />
-                          )}
-                          {list.privacyLevel === 'private' && !list.collaborators?.length && (
-                            <Eye className="h-3 w-3 text-gray-500" />
-                          )}
-                          {list.privacyLevel === 'private' && list.collaborators?.length > 0 && (
-                            <User className="h-3 w-3 text-orange-500" />
-                          )}
+                    {/* Privacy Indicator */}
+                    {list.privacyLevel !== 'public' && (
+                      <div className="absolute top-1 right-1">
+                        <div className="bg-black/80 text-white px-1.5 py-0.5 rounded text-xs">
+                          {list.privacyLevel === 'private' ? 'Private' : 'Friends'}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                </Link>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white font-medium truncate flex-1">
+                      {list.name}
+                    </span>
+                    {isOwnProfile && (
+                      <div className="ml-2 flex items-center gap-1">
+                        {list.privacyLevel === 'public' && (
+                          <Globe className="h-3 w-3 text-green-500" />
+                        )}
+                        {list.privacyLevel === 'connections' && (
+                          <Users className="h-3 w-3 text-blue-500" />
+                        )}
+                        {list.privacyLevel === 'private' && !list.collaborators?.length && (
+                          <Eye className="h-3 w-3 text-gray-500" />
+                        )}
+                        {list.privacyLevel === 'private' && list.collaborators?.length > 0 && (
+                          <User className="h-3 w-3 text-orange-500" />
+                        )}
+                        
+                        {/* Edit/Delete Menu */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-gray-800 border-gray-600" align="end">
+                            <DropdownMenuItem 
+                              className="text-gray-300 hover:bg-gray-700 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast({ title: "Edit list coming soon!" });
+                              }}
+                            >
+                              <Edit3 className="h-4 w-4 mr-2" />
+                              Edit List
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-400 hover:bg-red-900/20 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedList(list.id);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete List
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
-            }) : null}
+            }) : (
+              <div className="col-span-3 text-center text-gray-400 py-8">
+                {isOwnProfile ? "Create your first list!" : "No lists yet"}
+              </div>
+            )}
           </div>
         </div>
 
@@ -700,42 +785,71 @@ export default function Profile() {
         <div className="h-20"></div>
       </div>
 
-      {/* Delete Profile Confirmation Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent className="bg-gray-900 border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-destructive">Delete Profile</DialogTitle>
+            <DialogTitle className="text-white">
+              {selectedList ? "Delete List" : "Delete Profile"}
+            </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-foreground mb-4">
-              Are you sure you want to delete your profile? This action cannot be undone.
+            <p className="text-gray-300 mb-4">
+              {selectedList 
+                ? "Are you sure you want to delete this list? This action cannot be undone."
+                : "Are you sure you want to delete your profile? This action cannot be undone."
+              }
             </p>
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-              <p className="text-sm text-destructive font-medium">
+            <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3">
+              <p className="text-sm text-red-400 font-medium">
                 This will permanently delete:
               </p>
-              <ul className="text-sm text-destructive mt-2 space-y-1">
-                <li>• Your profile and account</li>
-                <li>• All your posts and content</li>
-                <li>• All your lists and collections</li>
-                <li>• All connections and friendships</li>
+              <ul className="text-sm text-red-400 mt-2 space-y-1">
+                {selectedList ? (
+                  <>
+                    <li>• The list and all its contents</li>
+                    <li>• All posts saved to this list</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Your profile and account</li>
+                    <li>• All your posts and content</li>
+                    <li>• All your lists and collections</li>
+                    <li>• All connections and friendships</li>
+                  </>
+                )}
               </ul>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={deleteProfileMutation.isPending}
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setSelectedList(null);
+              }}
+              disabled={deleteProfileMutation.isPending || deleteListMutation.isPending}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleDeleteProfile}
-              disabled={deleteProfileMutation.isPending}
+              onClick={() => {
+                if (selectedList) {
+                  deleteListMutation.mutate(selectedList);
+                } else {
+                  // handleDeleteProfile();
+                  toast({ title: "Profile deletion coming soon!" });
+                  setShowDeleteDialog(false);
+                }
+              }}
+              disabled={deleteProfileMutation.isPending || deleteListMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
             >
-              {deleteProfileMutation.isPending ? "Deleting..." : "Delete Forever"}
+              {(deleteProfileMutation.isPending || deleteListMutation.isPending) 
+                ? "Deleting..." 
+                : "Delete Forever"}
             </Button>
           </DialogFooter>
         </DialogContent>
