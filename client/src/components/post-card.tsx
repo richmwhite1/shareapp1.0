@@ -26,6 +26,7 @@ import TagFriendsContent from "@/components/tag-friends-content";
 import SavePostContent from "@/components/save-post-content";
 import MediaPlayer from "@/components/media-player";
 import InlineMediaPlayer from "@/components/inline-media-player";
+import { AttachedLists } from "@/components/attached-lists";
 
 // Hashtag follow button component
 function HashtagFollowButton({ hashtag }: { hashtag: { id: number; name: string } }) {
@@ -527,6 +528,11 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
       
       {/* Event Task List */}
       {post.isEvent && <EventTaskList post={post} />}
+      
+      {/* Attached Lists - Only show for events with attached lists */}
+      {post.isEvent && (
+        <AttachedLists postId={post.id} />
+      )}
 
       {/* Tag Friends Dialog */}
       <Dialog open={showTagDialog} onOpenChange={setShowTagDialog}>
