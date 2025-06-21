@@ -648,6 +648,7 @@ export class EnterpriseStorage implements IStorage {
     isRecurring?: boolean;
     recurringType?: string;
     taskList?: any[];
+    attachedLists?: number[];
   }): Promise<Post> {
     const [post] = await db
       .insert(posts)
@@ -670,6 +671,7 @@ export class EnterpriseStorage implements IStorage {
         isRecurring: postData.isRecurring || false,
         recurringType: postData.recurringType,
         taskList: postData.taskList,
+        attachedLists: postData.attachedLists,
         allowRsvp: postData.allowRsvp || false,
         engagement: 0
       })

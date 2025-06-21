@@ -85,7 +85,7 @@ export default function CreatePostPage() {
     if (userPrivacy && typeof userPrivacy === 'object' && 'defaultPrivacy' in userPrivacy && userPrivacy.defaultPrivacy && formData.privacy === "public") {
       setFormData(prev => ({
         ...prev,
-        privacy: userPrivacy.defaultPrivacy === 'connections' ? 'friends' : userPrivacy.defaultPrivacy
+        privacy: ((userPrivacy as any).defaultPrivacy === 'connections' ? 'friends' : (userPrivacy as any).defaultPrivacy) as string
       }));
     }
   }, [userPrivacy]);
@@ -1379,7 +1379,7 @@ END:VCALENDAR`;
                     <p className="text-xs text-purple-300 mb-3">Attach existing lists to this event. List items will appear as tasks for attendees.</p>
                     
                     <div className="space-y-2">
-                      {lists && lists.length > 0 && (
+                      {lists && Array.isArray(lists) && lists.length > 0 ? (
                         <Select onValueChange={(value) => {
                           const listId = parseInt(value);
                           if (listId && !attachedLists.includes(listId)) {
@@ -1390,21 +1390,21 @@ END:VCALENDAR`;
                             <SelectValue placeholder="Select a list to attach" />
                           </SelectTrigger>
                           <SelectContent className="bg-gray-800 border-purple-300">
-                            {lists.filter((list: any) => !attachedLists.includes(list.id)).map((list: any) => (
+                            {(lists as any[]).filter((list: any) => !attachedLists.includes(list.id)).map((list: any) => (
                               <SelectItem key={list.id} value={list.id.toString()} className="text-white hover:bg-gray-700">
                                 {list.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      )}
+                      ) : null}
                       
                       {/* Display attached lists */}
                       {attachedLists.length > 0 && (
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium text-purple-200">Attached Lists:</h4>
                           {attachedLists.map(listId => {
-                            const list = lists?.find((l: any) => l.id === listId);
+                            const list = (lists as any[])?.find((l: any) => l.id === listId);
                             return list ? (
                               <div key={listId} className="flex items-center justify-between bg-gray-800 p-2 rounded border border-purple-400">
                                 <span className="text-purple-200 text-sm">{list.name}</span>
