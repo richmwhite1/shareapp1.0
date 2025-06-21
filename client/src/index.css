@@ -117,6 +117,17 @@ html, body {
   /* Gold accent color */
   --gold: #ba9971;
   --gold-hover: #a8875f;
+}
+
+/* iPhone-style wiggle animation for edit mode */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-1deg); }
+  75% { transform: rotate(1deg); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.3s ease-in-out infinite;
   
   /* Pinterest red for hashtags and accents */
   --pinterest-red: #e60023;
