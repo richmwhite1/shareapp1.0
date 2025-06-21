@@ -1765,52 +1765,7 @@ export class EnterpriseStorage implements IStorage {
     }).onConflictDoNothing();
   }
 
-  // SOCIAL NETWORK - CONNECTIONS
-  async getFriendsWithRecentPosts(userId: number): Promise<Array<{ user: User; hasRecentPosts: boolean }>> {
-    // Get user's friends
-    const friends = await db
-      .select({
-        user: {
-          id: users.id,
-          username: users.username,
-          name: users.name,
-          profilePictureUrl: users.profilePictureUrl,
 
-          defaultPrivacy: users.defaultPrivacy
-        }
-      })
-      .from(friendships)
-      .leftJoin(users, eq(friendships.friendId, users.id))
-      .where(eq(friendships.userId, userId));
-
-    // Check each friend for recent posts (within last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const friendsWithRecentPosts = await Promise.all(
-      friends.map(async (friend) => {
-        if (!friend.user) return null;
-        
-        const [recentPost] = await db
-          .select({ id: posts.id })
-          .from(posts)
-          .where(
-            and(
-              eq(posts.userId, friend.user.id),
-              gte(posts.createdAt, sevenDaysAgo)
-            )
-          )
-          .limit(1);
-
-        return {
-          user: friend.user as User,
-          hasRecentPosts: !!recentPost
-        };
-      })
-    );
-
-    return friendsWithRecentPosts.filter(f => f !== null) as Array<{ user: User; hasRecentPosts: boolean }>;
-  }
 
   // EVENTS & RSVP
   async getRsvp(eventId: number, userId: number): Promise<any> {

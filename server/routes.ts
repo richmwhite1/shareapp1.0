@@ -2669,7 +2669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const postId = parseInt(req.params.id);
       const { viewType, viewDuration } = req.body;
-      await storage.trackView(postId, req.user.userId, viewType, viewDuration);
+      await storage.trackView(postId, req.user.userId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
@@ -2744,7 +2744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/saved-posts', authenticateToken, async (req: any, res) => {
     try {
       const categoryId = req.query.categoryId ? parseInt(req.query.categoryId as string) : undefined;
-      const savedPosts = await storage.getSavedPosts(req.user.userId, categoryId);
+      const savedPosts = await storage.getSavedPosts(req.user.userId);
       res.json(savedPosts);
     } catch (error) {
       res.status(500).json({ message: 'Internal server error' });
