@@ -774,9 +774,9 @@ export class EnterpriseStorage implements IStorage {
       .orderBy(desc(posts.createdAt));
 
     if (!viewerId) {
-      // Anonymous users: only public posts in public lists
+      // Anonymous users: only public posts (with or without lists, but if list exists it must be public)
       return allPosts
-        .filter(r => r.post.privacy === 'public' && r.list?.privacyLevel === 'public')
+        .filter(r => r.post.privacy === 'public' && (!r.list || r.list.privacyLevel === 'public'))
         .map(r => ({
           ...r.post,
           user: r.user!,
@@ -1388,7 +1388,7 @@ export class EnterpriseStorage implements IStorage {
       )
       .limit(1);
     
-    return friendship.length > 0 && friendship[0]?.status === 'accepted';
+    return friendship.length > 0;
   }
 
   async getFriends(userId: number): Promise<User[]> {

@@ -1113,7 +1113,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log('Fetching posts for viewerId:', viewerId);
       const posts = await storage.getAllPosts(viewerId);
+      console.log('Posts fetched successfully, count:', posts.length);
       
       // Add hashtags to each post
       const postsWithHashtags = await Promise.all(
@@ -1125,6 +1127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(postsWithHashtags);
     } catch (error) {
+      console.error('Posts endpoint error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
