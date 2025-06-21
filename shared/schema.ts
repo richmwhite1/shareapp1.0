@@ -47,7 +47,7 @@ export const posts = pgTable("posts", {
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurringType: text("recurring_type"), // "weekly", "monthly", "annually"
   taskList: json("task_list"), // Array of {id, text, completed, completedBy: userId}
-  attachedLists: integer("attached_lists").array(), // Array of list IDs attached to this event
+  // attachedLists: integer("attached_lists").array(), // Array of list IDs attached to this event - will be added after schema update
   allowRsvp: boolean("allow_rsvp").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

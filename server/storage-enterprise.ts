@@ -671,7 +671,6 @@ export class EnterpriseStorage implements IStorage {
         isRecurring: postData.isRecurring || false,
         recurringType: postData.recurringType,
         taskList: postData.taskList,
-        attachedLists: postData.attachedLists,
         allowRsvp: postData.allowRsvp || false,
         engagement: 0
       })
