@@ -37,30 +37,14 @@ function HashtagFollowButton({ hashtag }: { hashtag: { id: number; name: string 
   const { data: isFollowing = false } = useQuery({
     queryKey: ['/api/hashtags', hashtag.id, 'following'],
     enabled: !!user,
-    queryFn: async () => {
-      const response = await fetch(`/api/hashtags/${hashtag.id}/following`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
-      if (!response.ok) return false;
-      const data = await response.json();
-      return data.isFollowing || false;
-    }
   });
 
   // Follow/unfollow mutation
   const followMutation = useMutation({
     mutationFn: async (action: 'follow' | 'unfollow') => {
-      const response = await fetch(`/api/hashtags/${hashtag.id}/${action}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json'
-        }
+      return apiRequest(`/api/hashtags/${hashtag.id}/${action}`, {
+        method: 'POST'
       });
-      if (!response.ok) throw new Error(`Failed to ${action} hashtag`);
-      return response.json();
     },
     onSuccess: (_, action) => {
       queryClient.invalidateQueries({ queryKey: ['/api/hashtags', hashtag.id, 'following'] });
