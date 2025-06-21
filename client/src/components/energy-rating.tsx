@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
@@ -80,8 +80,8 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
       queryClient.invalidateQueries({ queryKey: [endpoint, 'stats'] });
       queryClient.invalidateQueries({ queryKey: [`/api/profiles/${profileId}/energy/stats`] });
       toast({
-        title: "Rating submitted",
-        description: "Your rating has been recorded",
+        title: "Aura saved",
+        description: "Your energy rating has been automatically saved",
       });
     },
     onError: () => {
@@ -93,20 +93,28 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
     },
   });
 
+  // Auto-save functionality with debouncing
+  useEffect(() => {
+    if (!user) return;
+    
+    const timer = setTimeout(() => {
+      if (currentRating !== (userRating?.rating || 4)) {
+        ratingMutation.mutate(currentRating);
+      }
+    }, 1000); // Wait 1 second after user stops sliding
+
+    return () => clearTimeout(timer);
+  }, [currentRating, user, userRating?.rating, ratingMutation]);
+
+  // Initialize rating from user's existing rating
+  useEffect(() => {
+    if (userRating?.rating) {
+      setCurrentRating(userRating.rating);
+    }
+  }, [userRating]);
+
   const handleRatingChange = (value: number[]) => {
     setCurrentRating(value[0]);
-  };
-
-  const handleRatingSubmit = () => {
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please log in to submit ratings.",
-        variant: "destructive",
-      });
-      return;
-    }
-    ratingMutation.mutate(currentRating);
   };
 
   const averageRating = (ratingStats as any)?.average || 4;
@@ -129,41 +137,35 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
           </div>
         </div>
         
-        {/* Slider and Rate button side by side */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            {/* Custom gradient background */}
-            <div 
-              className="h-1 rounded-full absolute w-full"
-              style={{ background: sliderGradient }}
-            />
-            {/* Overlay showing current position */}
-            <div 
-              className="h-1 rounded-full absolute transition-all duration-200"
-              style={{ 
-                backgroundColor: RATING_COLORS[currentRating - 1],
-                width: `${((currentRating - 1) / 6) * 100}%`
-              }}
-            />
-            <Slider
-              value={[currentRating]}
-              onValueChange={handleRatingChange}
-              min={1}
-              max={7}
-              step={1}
-              className="absolute top-0 w-full h-1 z-10"
-              style={{ background: 'transparent' }}
-            />
-          </div>
-          
-          {/* Rate button - to the right of slider */}
-          <button
-            onClick={handleRatingSubmit}
-            disabled={ratingMutation.isPending}
-            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 rounded transition-colors text-white whitespace-nowrap"
-          >
-            {ratingMutation.isPending ? 'Rating...' : 'Rate'}
-          </button>
+        {/* Auto-saving slider */}
+        <div className="relative">
+          {/* Custom gradient background */}
+          <div 
+            className="h-1 rounded-full absolute w-full"
+            style={{ background: sliderGradient }}
+          />
+          {/* Overlay showing current position */}
+          <div 
+            className="h-1 rounded-full absolute transition-all duration-200"
+            style={{ 
+              backgroundColor: RATING_COLORS[currentRating - 1],
+              width: `${((currentRating - 1) / 6) * 100}%`
+            }}
+          />
+          <Slider
+            value={[currentRating]}
+            onValueChange={handleRatingChange}
+            min={1}
+            max={7}
+            step={1}
+            className="absolute top-0 w-full h-1 z-10"
+            style={{ background: 'transparent' }}
+          />
+          {ratingMutation.isPending && (
+            <div className="absolute -top-6 right-0 text-xs text-gray-400">
+              Saving...
+            </div>
+          )}
         </div>
       </div>
 

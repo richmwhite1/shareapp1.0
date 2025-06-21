@@ -106,12 +106,12 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center py-6">
-        <p className="text-pinterest-gray mb-4">
+      <div className="text-center py-3">
+        <p className="text-gray-400 mb-2 text-xs">
           Sign in to join the conversation
         </p>
         <Link href="/auth">
-          <Button className="bg-pinterest-red text-white hover:bg-red-700">
+          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white text-xs">
             Sign In
           </Button>
         </Link>
@@ -312,56 +312,52 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
   if (isLoading) {
     return (
-      <Card className="bg-black rounded-2xl border-gray-800 overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-white">Comments</CardTitle>
-        </CardHeader>
-        <CardContent className="bg-black">
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex space-x-3 animate-pulse">
-                <div className="w-10 h-10 bg-gray-800 rounded-full" />
-                <div className="flex-1">
-                  <div className="bg-gray-800 rounded-lg p-4">
-                    <div className="h-4 bg-gray-700 rounded w-1/4 mb-2" />
-                    <div className="h-4 bg-gray-700 rounded w-3/4" />
-                  </div>
+      <div className="mt-4 px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-lg">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm font-medium text-gray-300">Comments</span>
+        </div>
+        <div className="space-y-3">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="flex space-x-2 animate-pulse">
+              <div className="w-6 h-6 bg-gray-700 rounded-full" />
+              <div className="flex-1">
+                <div className="bg-gray-700/50 rounded p-2">
+                  <div className="h-3 bg-gray-600 rounded w-1/4 mb-1" />
+                  <div className="h-3 bg-gray-600 rounded w-3/4" />
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-black rounded-2xl border-gray-800 overflow-hidden">
-      <CardHeader className="border-b border-gray-800 bg-black">
-        <CardTitle className="text-xl font-semibold text-white">
+    <div className="mt-4 px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-lg">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-sm font-medium text-gray-300">
           Comments {comments && comments.length > 0 && `(${comments.length})`}
-        </CardTitle>
-      </CardHeader>
+        </span>
+      </div>
 
-      <CardContent className="p-6 border-b border-gray-800 bg-black">
+      <div className="mb-4">
         <CommentForm postId={postId} />
-      </CardContent>
+      </div>
 
-      <CardContent className="p-0 bg-black">
+      <div className="space-y-3">
         {comments && comments.length > 0 ? (
-          <div className="divide-y divide-gray-800">
-            {comments.map((comment) => (
-              <div key={comment.id} className="p-6 bg-black">
-                <CommentThread comment={comment} postId={postId} />
-              </div>
-            ))}
-          </div>
+          comments.map((comment) => (
+            <div key={comment.id} className="bg-gray-800/20 rounded-md p-3 border border-gray-700/30">
+              <CommentThread comment={comment} postId={postId} />
+            </div>
+          ))
         ) : (
-          <div className="p-6 text-center text-gray-400 bg-black">
-            <p>No comments yet. Be the first to share your thoughts!</p>
+          <div className="text-center text-gray-400 py-4">
+            <p className="text-xs">No comments yet. Be the first to share your thoughts!</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
