@@ -121,15 +121,15 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-        <div className="flex space-x-3">
-          <Avatar className="w-10 h-10 flex-shrink-0">
+      <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-2">
+        <div className="flex space-x-2">
+          <Avatar className="w-6 h-6 flex-shrink-0">
             <AvatarImage src={user?.profilePictureUrl || undefined} />
-            <AvatarFallback>
+            <AvatarFallback className="text-xs">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 space-y-2">
             <FormField
               control={form.control}
               name="text"
@@ -138,8 +138,8 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                   <FormControl>
                     <Textarea
                       placeholder={parentId ? "Write a reply..." : "Add a comment..."}
-                      className="resize-none bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-pinterest-red focus:border-transparent"
-                      rows={3}
+                      className="resize-none bg-gray-800/50 border-gray-700/50 text-gray-200 placeholder-gray-500 focus:ring-1 focus:ring-gray-500 focus:border-gray-500 text-sm"
+                      rows={2}
                       {...field}
                     />
                   </FormControl>
@@ -160,15 +160,15 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                       <FormItem>
                         <Label 
                           htmlFor={fileInputId}
-                          className={`flex items-center space-x-2 text-sm cursor-pointer transition-colors ${
+                          className={`flex items-center space-x-1 text-xs cursor-pointer transition-colors ${
                             hasFile 
-                              ? 'text-pinterest-red bg-red-50 px-2 py-1 rounded' 
-                              : 'text-pinterest-gray hover:text-pinterest-red'
+                              ? 'text-green-400 bg-green-900/20 px-2 py-0.5 rounded' 
+                              : 'text-gray-500 hover:text-gray-300'
                           }`}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Image className="w-4 h-4" />
-                          <span>{hasFile ? `Photo selected (${value[0]?.name})` : 'Add photo'}</span>
+                          <Image className="w-3 h-3" />
+                          <span>{hasFile ? `Selected` : 'Photo'}</span>
                         </Label>
                         <FormControl>
                           <Input
@@ -204,12 +204,13 @@ function CommentForm({ postId, parentId, onSuccess, onCancel }: {
                 )}
                 <Button
                   type="submit"
-                  className="bg-pinterest-red text-white hover:bg-red-700"
+                  variant="ghost"
                   size="sm"
                   disabled={mutation.isPending}
+                  className="bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white text-xs"
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  {mutation.isPending ? 'Posting...' : (parentId ? 'Reply' : 'Post Comment')}
+                  <Send className="w-3 h-3 mr-1" />
+                  {mutation.isPending ? 'Posting...' : (parentId ? 'Reply' : 'Comment')}
                 </Button>
               </div>
             </div>
@@ -233,38 +234,38 @@ function CommentThread({ comment, postId, level = 0 }: {
   };
 
   return (
-    <div className={`${level > 0 ? 'ml-6' : ''}`}>
-      <div className="flex space-x-3">
-        <Avatar className="w-10 h-10 flex-shrink-0">
+    <div className={`${level > 0 ? 'ml-4' : ''}`}>
+      <div className="flex space-x-2">
+        <Avatar className="w-6 h-6 flex-shrink-0">
           <AvatarImage src={comment.user.profilePictureUrl || undefined} />
-          <AvatarFallback>
+          <AvatarFallback className="text-xs">
             {comment.user.name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="font-medium text-white">{comment.user.name}</span>
-              <span className="text-sm text-gray-400">{formatDate(comment.createdAt)}</span>
+          <div className="bg-gray-700/30 rounded p-2 border border-gray-700/50">
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="font-medium text-gray-300 text-xs">{comment.user.name}</span>
+              <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
             </div>
-            <p className="text-gray-200">{comment.text}</p>
+            <p className="text-gray-300 text-xs">{comment.text}</p>
             {comment.imageUrl && (
               <img
                 src={comment.imageUrl}
                 alt="Comment attachment"
-                className="mt-3 max-w-xs rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="mt-2 max-w-24 rounded shadow-sm"
               />
             )}
           </div>
           
-          <div className="mt-3 flex items-center space-x-4">
+          <div className="mt-1 flex items-center">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowReplyForm(!showReplyForm)}
-              className="text-sm text-pinterest-gray hover:text-pinterest-red transition-colors"
+              className="text-xs text-gray-500 hover:text-gray-300 p-1 h-auto"
             >
-              <Reply className="w-4 h-4 mr-1" />
+              <Reply className="w-3 h-3 mr-1" />
               Reply
             </Button>
           </div>
