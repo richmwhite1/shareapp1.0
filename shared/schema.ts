@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, numeric, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -85,7 +85,9 @@ export const postEnergyRatings = pgTable("post_energy_ratings", {
   rating: integer("rating").notNull(), // 1-7 (red to violet chakra)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  postUserUnique: unique().on(table.postId, table.userId),
+}));
 
 export const profileEnergyRatings = pgTable("profile_energy_ratings", {
   id: serial("id").primaryKey(),
@@ -94,7 +96,9 @@ export const profileEnergyRatings = pgTable("profile_energy_ratings", {
   rating: integer("rating").notNull(), // 1-7 (red to violet chakra)
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  profileUserUnique: unique().on(table.profileId, table.userId),
+}));
 
 // Friends system
 export const friendships = pgTable("friendships", {

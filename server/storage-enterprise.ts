@@ -1947,21 +1947,39 @@ export class EnterpriseStorage implements IStorage {
   }
 
   async submitPostEnergyRating(postId: number, userId: number, rating: number): Promise<void> {
-    await db
-      .insert(postEnergyRatings)
-      .values({
-        postId,
-        userId,
-        rating,
-        updatedAt: new Date()
-      })
-      .onConflictDoUpdate({
-        target: [postEnergyRatings.postId, postEnergyRatings.userId],
-        set: {
+    // Check if rating exists
+    const existingRating = await db
+      .select()
+      .from(postEnergyRatings)
+      .where(and(
+        eq(postEnergyRatings.postId, postId),
+        eq(postEnergyRatings.userId, userId)
+      ))
+      .limit(1);
+
+    if (existingRating.length > 0) {
+      // Update existing rating
+      await db
+        .update(postEnergyRatings)
+        .set({
           rating,
           updatedAt: new Date()
-        }
-      });
+        })
+        .where(and(
+          eq(postEnergyRatings.postId, postId),
+          eq(postEnergyRatings.userId, userId)
+        ));
+    } else {
+      // Insert new rating
+      await db
+        .insert(postEnergyRatings)
+        .values({
+          postId,
+          userId,
+          rating,
+          updatedAt: new Date()
+        });
+    }
   }
 
   async getProfileEnergyStats(profileId: number): Promise<{ average: number; count: number }> {
