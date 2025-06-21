@@ -58,29 +58,51 @@ export default function Profile() {
 
   // iPhone-style long press handlers
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent, listId: number) => {
-    e.preventDefault();
+    console.log('Long press start triggered', { isOwnProfile, isEditMode, listId });
     if (!isOwnProfile || isEditMode) return;
     
     const timer = setTimeout(() => {
+      console.log('Long press timer triggered - entering edit mode');
       setIsEditMode(true);
       setLongPressTimer(null);
-    }, 800); // 800ms for long press
+      // Add haptic feedback if supported
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+    }, 600);
     
     setLongPressTimer(timer);
   };
 
-  const handleLongPressEnd = () => {
+  const handleLongPressEnd = (e: React.MouseEvent | React.TouchEvent) => {
+    console.log('Long press end triggered');
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
   };
 
-  const handleListClick = (listId: number) => {
-    if (isEditMode) return; // Prevent navigation in edit mode
-    if (!isDragging) {
+  const handleListClick = (listId: number) => (e: React.MouseEvent) => {
+    console.log('List click triggered', { isEditMode, listId });
+    // If we're in edit mode, don't navigate
+    if (isEditMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    
+    // Only navigate if there was no long press timer running
+    if (!longPressTimer) {
       setLocation(`/list/${listId}`);
     }
+  };
+
+  // Context menu as fallback for right-click
+  const handleContextMenu = (e: React.MouseEvent, listId: number) => {
+    if (!isOwnProfile) return;
+    e.preventDefault();
+    console.log('Context menu triggered - entering edit mode');
+    setIsEditMode(true);
   };
 
   const exitEditMode = () => {
@@ -250,12 +272,22 @@ export default function Profile() {
                 </Button>
               )}
               {isOwnProfile && !isEditMode && (
-                <Dialog open={showCreateListDialog} onOpenChange={setShowCreateListDialog}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white text-xs px-2 py-1">
-                      <Plus className="h-3 w-3 mr-1" />
-                      New
-                    </Button>
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setIsEditMode(true)}
+                    className="text-gray-400 hover:text-white text-xs px-2 py-1"
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Dialog open={showCreateListDialog} onOpenChange={setShowCreateListDialog}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white text-xs px-2 py-1">
+                        <Plus className="h-3 w-3 mr-1" />
+                        New
+                      </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
                     <DialogHeader>
@@ -338,6 +370,7 @@ export default function Profile() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </>
               )}
             </div>
           </div>
@@ -354,11 +387,12 @@ export default function Profile() {
                     isEditMode ? 'animate-wiggle' : ''
                   }`}
                   onMouseDown={(e) => handleLongPressStart(e, list.id)}
-                  onMouseUp={handleLongPressEnd}
-                  onMouseLeave={handleLongPressEnd}
+                  onMouseUp={(e) => handleLongPressEnd(e)}
+                  onMouseLeave={(e) => handleLongPressEnd(e)}
                   onTouchStart={(e) => handleLongPressStart(e, list.id)}
-                  onTouchEnd={handleLongPressEnd}
-                  onClick={() => handleListClick(list.id)}
+                  onTouchEnd={(e) => handleLongPressEnd(e)}
+                  onContextMenu={(e) => handleContextMenu(e, list.id)}
+                  onClick={handleListClick(list.id)}
                 >
                   {/* iPhone-style delete button */}
                   {isEditMode && isOwnProfile && (
