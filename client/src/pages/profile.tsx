@@ -42,16 +42,16 @@ export default function Profile() {
   const { data: userData, isLoading: userLoading } = useQuery({
     queryKey: ['/api/users', profileUserId],
     enabled: !!profileUserId
-  });
+  }) as { data: any, isLoading: boolean };
 
   const { data: lists, refetch: refetchLists } = useQuery({
     queryKey: ['/api/lists'],
     enabled: !!profileUserId
   });
 
-  const isOwnProfile = currentUser?.user?.id === profileUserId;
+  const isOwnProfile = (currentUser as any)?.user?.id === profileUserId;
 
-  console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: currentUser?.user?.id });
+  console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: (currentUser as any)?.user?.id });
 
   // iPhone-style long press handlers
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent, listId: number) => {
@@ -112,11 +112,13 @@ export default function Profile() {
       description?: string;
       privacy: 'public' | 'connections' | 'private';
     }) => {
-      const response = await apiRequest('/api/lists', {
+      const response = await fetch('/api/lists', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      return response;
+      if (!response.ok) throw new Error('Failed to create list');
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -140,10 +142,11 @@ export default function Profile() {
 
   const deleteListMutation = useMutation({
     mutationFn: async (listId: number) => {
-      const response = await apiRequest(`/api/lists/${listId}`, {
+      const response = await fetch(`/api/lists/${listId}`, {
         method: 'DELETE',
       });
-      return response;
+      if (!response.ok) throw new Error('Failed to delete list');
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -204,14 +207,14 @@ export default function Profile() {
           {/* Avatar and Bio */}
           <div className="flex items-start gap-4 mb-4">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={userData?.profilePictureUrl} alt={userData?.name || userData?.username} />
+              <AvatarImage src={(userData as any)?.profilePictureUrl} alt={(userData as any)?.name || (userData as any)?.username} />
               <AvatarFallback className="bg-gray-800 text-white text-lg">
-                {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
+                {((userData as any)?.name || (userData as any)?.username)?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <p className="text-gray-300 text-sm leading-relaxed">
-                {userData?.bio || "No bio yet"}
+                {(userData as any)?.bio || "No bio yet"}
               </p>
             </div>
           </div>
