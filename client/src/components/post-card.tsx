@@ -42,9 +42,7 @@ function HashtagFollowButton({ hashtag }: { hashtag: { id: number; name: string 
   // Follow/unfollow mutation
   const followMutation = useMutation({
     mutationFn: async (action: 'follow' | 'unfollow') => {
-      return apiRequest(`/api/hashtags/${hashtag.id}/${action}`, {
-        method: 'POST'
-      });
+      return apiRequest('POST', `/api/hashtags/${hashtag.id}/${action}`);
     },
     onSuccess: (_, action) => {
       queryClient.invalidateQueries({ queryKey: ['/api/hashtags', hashtag.id, 'following'] });
