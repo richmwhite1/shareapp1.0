@@ -2851,6 +2851,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Hashtag following routes
+  app.post('/api/hashtags/:id/follow', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      await storage.followHashtag(req.user.userId, hashtagId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.post('/api/hashtags/:id/unfollow', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      await storage.unfollowHashtag(req.user.userId, hashtagId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/hashtags/:id/following', authenticateToken, async (req: any, res) => {
+    try {
+      const hashtagId = parseInt(req.params.id);
+      const isFollowing = await storage.isFollowingHashtag(req.user.userId, hashtagId);
+      res.json({ isFollowing });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/hashtags/followed', authenticateToken, async (req: any, res) => {
+    try {
+      const followedHashtags = await storage.getFollowedHashtags(req.user.userId);
+      res.json(followedHashtags);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   // Delete user profile route
   app.delete('/api/user/delete', authenticateToken, async (req: any, res) => {
     try {
