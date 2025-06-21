@@ -492,7 +492,12 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               {post.hashtags.map((hashtag: any) => (
                 <div key={hashtag.id} className="inline-flex items-center gap-1 bg-pinterest-red/10 hover:bg-pinterest-red/20 border border-pinterest-red/30 rounded-full text-sm transition-colors">
                   <button
-                    onClick={() => setLocation(`/search?hashtag=${hashtag.name}`)}
+                    onClick={() => {
+                      console.log('Hashtag clicked:', hashtag.name);
+                      const url = `/search?hashtag=${hashtag.name}`;
+                      console.log('Navigating to:', url);
+                      setLocation(url);
+                    }}
                     className="inline-flex items-center gap-1 px-2 py-1 text-pinterest-red hover:text-pinterest-red/80 transition-colors"
                   >
                     <Hash className="h-3 w-3" />
