@@ -207,14 +207,14 @@ export default function Profile() {
           {/* Avatar and Bio */}
           <div className="flex items-start gap-4 mb-4">
             <Avatar className="w-20 h-20">
-              <AvatarImage src={(userData as any)?.profilePictureUrl} alt={(userData as any)?.name || (userData as any)?.username} />
+              <AvatarImage src={userData?.profilePictureUrl} alt={userData?.name || userData?.username} />
               <AvatarFallback className="bg-gray-800 text-white text-lg">
-                {((userData as any)?.name || (userData as any)?.username)?.[0]?.toUpperCase()}
+                {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <p className="text-gray-300 text-sm leading-relaxed">
-                {(userData as any)?.bio || "No bio yet"}
+                {userData?.bio || "No bio yet"}
               </p>
             </div>
           </div>
