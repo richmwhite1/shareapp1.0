@@ -476,7 +476,16 @@ export default function Profile() {
         </DialogContent>
       </Dialog>
 
-
+      <style jsx>{`
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(-1deg); }
+          75% { transform: rotate(1deg); }
+        }
+        .animate-wiggle {
+          animation: wiggle 0.3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
