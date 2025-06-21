@@ -494,8 +494,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
                   <button
                     onClick={() => {
                       console.log('Hashtag clicked:', hashtag.name);
-                      const url = `/search?hashtag=${hashtag.name}`;
+                      const url = `/search?hashtag=${encodeURIComponent(hashtag.name)}`;
                       console.log('Navigating to:', url);
+                      window.history.pushState({}, '', url);
                       setLocation(url);
                     }}
                     className="inline-flex items-center gap-1 px-2 py-1 text-pinterest-red hover:text-pinterest-red/80 transition-colors"
