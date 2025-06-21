@@ -1011,7 +1011,7 @@ END:VCALENDAR`;
                         onClick={() => setShowFriendSelector(!showFriendSelector)}
                         className={`h-8 text-sm ${taggedUsers.length > 0 ? 'bg-blue-50 border-blue-300 text-blue-700' : ''}`}
                       >
-                        <UserPlus className="h-3 w-3 mr-1" />
+                        <Users className="h-3 w-3 mr-1" />
                         Tag ({taggedUsers.length})
                       </Button>
                     </div>
