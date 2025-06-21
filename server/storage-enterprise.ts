@@ -1313,13 +1313,16 @@ export class EnterpriseStorage implements IStorage {
         count: count(postHashtags.postId)
       })
       .from(hashtags)
-      .innerJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
-      .innerJoin(posts, eq(postHashtags.postId, posts.id))
-      .innerJoin(lists, eq(posts.listId, lists.id))
+      .leftJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
+      .leftJoin(posts, eq(postHashtags.postId, posts.id))
+      .leftJoin(lists, eq(posts.listId, lists.id))
       .where(
-        and(
-          eq(posts.privacy, 'public'),
-          eq(lists.privacyLevel, 'public')
+        or(
+          postHashtags.postId.isNull(), // Include hashtags with no posts
+          and(
+            eq(posts.privacy, 'public'),
+            eq(lists.privacyLevel, 'public')
+          )
         )
       )
       .groupBy(hashtags.id, hashtags.name)
