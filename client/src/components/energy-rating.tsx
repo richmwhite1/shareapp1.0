@@ -95,21 +95,25 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
 
   // Auto-save functionality with debouncing
   useEffect(() => {
-    if (!user) return;
+    if (!user || ratingMutation.isPending) return;
+    
+    const existingRating = typeof userRating === 'number' ? userRating : userRating?.rating || 4;
+    if (currentRating === existingRating) return;
     
     const timer = setTimeout(() => {
-      if (currentRating !== (userRating?.rating || 4)) {
+      if (currentRating !== existingRating && !ratingMutation.isPending) {
         ratingMutation.mutate(currentRating);
       }
     }, 1000); // Wait 1 second after user stops sliding
 
     return () => clearTimeout(timer);
-  }, [currentRating, user, userRating?.rating, ratingMutation]);
+  }, [currentRating, user, userRating, ratingMutation.isPending]);
 
   // Initialize rating from user's existing rating
   useEffect(() => {
-    if (userRating?.rating) {
-      setCurrentRating(userRating.rating);
+    const existingRating = typeof userRating === 'number' ? userRating : userRating?.rating;
+    if (existingRating && existingRating !== currentRating) {
+      setCurrentRating(existingRating);
     }
   }, [userRating]);
 
