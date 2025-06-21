@@ -32,15 +32,16 @@ export default function Profile() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [, setLocation] = useLocation();
 
-  const profileUserId = paramUserId ? parseInt(paramUserId) : undefined;
-
   const { data: currentUser } = useQuery({
     queryKey: ['/api/user'],
     enabled: true
   });
 
+  // If no ID in URL, use current user's ID
+  const profileUserId = paramUserId ? parseInt(paramUserId) : (currentUser as any)?.user?.id;
+
   const { data: userData, isLoading: userLoading } = useQuery({
-    queryKey: ['/api/users', profileUserId],
+    queryKey: [`/api/users/${profileUserId}`],
     enabled: !!profileUserId
   }) as { data: any, isLoading: boolean };
 
