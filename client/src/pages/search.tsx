@@ -22,17 +22,20 @@ export default function SearchPage() {
 
   // Handle URL parameters for direct hashtag navigation
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    const hashtagParam = params.get('hashtag');
-    if (hashtagParam && !selectedHashtags.includes(hashtagParam)) {
-      setSelectedHashtags(prev => [...prev, hashtagParam]);
-      setHashtagInput('#' + hashtagParam); // Also populate the input field
-      // Clear the URL parameter after processing
-      if (window.history.replaceState) {
-        window.history.replaceState({}, '', '/search');
+    const urlParts = location.split('?');
+    console.log('Location changed:', location);
+    if (urlParts.length > 1) {
+      const params = new URLSearchParams(urlParts[1]);
+      const hashtagParam = params.get('hashtag');
+      console.log('Hashtag param found:', hashtagParam);
+      if (hashtagParam && !selectedHashtags.includes(hashtagParam)) {
+        console.log('Setting hashtag:', hashtagParam);
+        setSelectedHashtags([hashtagParam]); // Set as the only selected hashtag
+        setHashtagInput(`#${hashtagParam}`); // Populate the input field
+        // Don't clear URL immediately - let user see it worked
       }
     }
-  }, [location]);
+  }, [location, selectedHashtags]);
 
   // Hashtag input handling
   const addHashtag = (tag: string) => {
