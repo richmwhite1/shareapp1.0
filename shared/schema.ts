@@ -47,6 +47,7 @@ export const posts = pgTable("posts", {
   isRecurring: boolean("is_recurring").notNull().default(false),
   recurringType: text("recurring_type"), // "weekly", "monthly", "annually"
   taskList: json("task_list"), // Array of {id, text, completed, completedBy: userId}
+  attachedLists: integer("attached_lists").array(), // Array of list IDs attached to this event
   allowRsvp: boolean("allow_rsvp").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -453,6 +454,7 @@ export const createPostRequestSchema = z.object({
   isRecurring: z.string().optional(), // "true" or "false" as string from form
   recurringType: z.enum(["weekly", "monthly", "annually"]).optional(),
   taskList: z.string().optional(), // JSON string of task array
+  attachedLists: z.string().optional(), // JSON string of list ID array
   allowRsvp: z.string().optional(), // "true" or "false" as string from form
 }).refine(
   (data) => {

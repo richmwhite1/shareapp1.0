@@ -299,7 +299,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reminders: req.body.reminders || undefined,
         isRecurring: req.body.isRecurring || undefined,
         recurringType: req.body.recurringType || undefined,
-        taskList: req.body.taskList || undefined
+        taskList: req.body.taskList || undefined,
+        attachedLists: req.body.attachedLists || undefined
       };
       
       let validatedData;

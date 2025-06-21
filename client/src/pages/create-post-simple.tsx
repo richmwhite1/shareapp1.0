@@ -48,6 +48,7 @@ export default function CreatePostPage() {
   const [taskList, setTaskList] = useState<{id: string, text: string, completed: boolean, completedBy?: number}[]>([]);
   const [newTaskText, setNewTaskText] = useState("");
   const [allowRsvp, setAllowRsvp] = useState(false);
+  const [attachedLists, setAttachedLists] = useState<number[]>([]);
   const [showNewListDialog, setShowNewListDialog] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
@@ -715,6 +716,9 @@ END:VCALENDAR`;
         if (taskList.length > 0) {
           formDataToSend.append('taskList', JSON.stringify(taskList));
         }
+        if (attachedLists.length > 0) {
+          formDataToSend.append('attachedLists', JSON.stringify(attachedLists));
+        }
         formDataToSend.append('allowRsvp', allowRsvp.toString());
       }
 
@@ -1366,6 +1370,58 @@ END:VCALENDAR`;
                           </Button>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Attach Lists to Event */}
+                  <div>
+                    <Label className="text-purple-200 mb-2 block">Attach Lists (Optional)</Label>
+                    <p className="text-xs text-purple-300 mb-3">Attach existing lists to this event. List items will appear as tasks for attendees.</p>
+                    
+                    <div className="space-y-2">
+                      {lists && lists.length > 0 && (
+                        <Select onValueChange={(value) => {
+                          const listId = parseInt(value);
+                          if (listId && !attachedLists.includes(listId)) {
+                            setAttachedLists(prev => [...prev, listId]);
+                          }
+                        }}>
+                          <SelectTrigger className="bg-gray-800 border-purple-300 text-white">
+                            <SelectValue placeholder="Select a list to attach" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-800 border-purple-300">
+                            {lists.filter((list: any) => !attachedLists.includes(list.id)).map((list: any) => (
+                              <SelectItem key={list.id} value={list.id.toString()} className="text-white hover:bg-gray-700">
+                                {list.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      
+                      {/* Display attached lists */}
+                      {attachedLists.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-purple-200">Attached Lists:</h4>
+                          {attachedLists.map(listId => {
+                            const list = lists?.find((l: any) => l.id === listId);
+                            return list ? (
+                              <div key={listId} className="flex items-center justify-between bg-gray-800 p-2 rounded border border-purple-400">
+                                <span className="text-purple-200 text-sm">{list.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => setAttachedLists(prev => prev.filter(id => id !== listId))}
+                                  className="h-6 w-6 p-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
