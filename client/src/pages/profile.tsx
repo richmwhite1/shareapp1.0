@@ -3,13 +3,17 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus, Trash2, Camera } from "lucide-react";
+import { Heart, MessageCircle, Share2, Eye, Folder, User, Lock, Users, Globe, Plus, Settings, MoreHorizontal, UserPlus, Trash2, Camera, GripVertical, Edit3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { Switch } from "@/components/ui/switch";
 import { Link, useLocation } from "wouter";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import PostCard from "@/components/post-card";
 
@@ -22,6 +26,12 @@ export default function Profile() {
   const [defaultPrivacy, setDefaultPrivacy] = useState<'public' | 'connections' | 'private'>('public');
   const [showPrivacyControls, setShowPrivacyControls] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateListDialog, setShowCreateListDialog] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [newListDescription, setNewListDescription] = useState('');
+  const [newListPrivacy, setNewListPrivacy] = useState<'public' | 'connections' | 'private'>('public');
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedListId, setDraggedListId] = useState<number | null>(null);
   const [, setLocation] = useLocation();
 
   // Get current user first
@@ -196,6 +206,62 @@ export default function Profile() {
     }
     setPressedList(null);
   };
+
+  // List drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, listId: number) => {
+    setDraggedListId(listId);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetListId: number) => {
+    e.preventDefault();
+    if (draggedListId && draggedListId !== targetListId) {
+      // Implement list reordering logic here
+      console.log(`Reorder list ${draggedListId} to position of ${targetListId}`);
+      toast({ title: "List reordering coming soon!" });
+    }
+    setDraggedListId(null);
+    setIsDragging(false);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedListId(null);
+    setIsDragging(false);
+  };
+
+  // Create list mutation
+  const createListMutation = useMutation({
+    mutationFn: async (listData: { name: string; description?: string; privacy: string }) => {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/lists', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(listData)
+      });
+      if (!response.ok) throw new Error('Failed to create list');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lists/user', profileUserId] });
+      setShowCreateListDialog(false);
+      setNewListName('');
+      setNewListDescription('');
+      setNewListPrivacy('public');
+      toast({ title: "List created successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create list", variant: "destructive" });
+    }
+  });
 
   // Delete profile mutation
   const deleteProfileMutation = useMutation({
@@ -434,12 +500,94 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Lists</h3>
             {isOwnProfile && (
-              <Link href="/create-list">
-                <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white text-xs px-2 py-1">
-                  <Plus className="h-3 w-3 mr-1" />
-                  New
-                </Button>
-              </Link>
+              <Dialog open={showCreateListDialog} onOpenChange={setShowCreateListDialog}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white text-xs px-2 py-1">
+                    <Plus className="h-3 w-3 mr-1" />
+                    New
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Create New List</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="listName" className="text-gray-300">List Name *</Label>
+                      <Input
+                        id="listName"
+                        placeholder="e.g., Travel Plans, Wishlist"
+                        value={newListName}
+                        onChange={(e) => setNewListName(e.target.value)}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="listDescription" className="text-gray-300">Description (Optional)</Label>
+                      <Textarea
+                        id="listDescription"
+                        placeholder="Describe this list..."
+                        value={newListDescription}
+                        onChange={(e) => setNewListDescription(e.target.value)}
+                        className="bg-gray-800 border-gray-600 text-white"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="listPrivacy" className="text-gray-300">Privacy</Label>
+                      <Select value={newListPrivacy} onValueChange={(value: 'public' | 'connections' | 'private') => setNewListPrivacy(value)}>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-800 border-gray-600">
+                          <SelectItem value="public">
+                            <div className="flex items-center gap-2">
+                              <Globe className="h-4 w-4 text-green-500" />
+                              <span className="text-white">Public</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="connections">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-blue-500" />
+                              <span className="text-white">Friends Only</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="private">
+                            <div className="flex items-center gap-2">
+                              <Lock className="h-4 w-4 text-gray-500" />
+                              <span className="text-white">Private</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowCreateListDialog(false)}
+                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (newListName.trim()) {
+                          createListMutation.mutate({
+                            name: newListName.trim(),
+                            description: newListDescription.trim() || undefined,
+                            privacy: newListPrivacy
+                          });
+                        }
+                      }}
+                      disabled={!newListName.trim() || createListMutation.isPending}
+                      className="bg-pinterest-red hover:bg-red-700 text-white"
+                    >
+                      {createListMutation.isPending ? 'Creating...' : 'Create List'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             )}
           </div>
 
