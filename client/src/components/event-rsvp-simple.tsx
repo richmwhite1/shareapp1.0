@@ -77,57 +77,57 @@ export default function EventRsvp({ post }: EventRsvpProps) {
   const stats = rsvpStats || { going: 0, maybe: 0, not_going: 0 };
 
   return (
-    <div className="mt-6 p-6 bg-purple-900/20 border border-purple-700 rounded-lg">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="h-5 w-5 text-purple-300" />
-        <h3 className="text-lg font-semibold text-purple-300">Event RSVP</h3>
+    <div className="mt-4 px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-lg">
+      <div className="flex items-center gap-2 mb-3">
+        <Users className="h-4 w-4 text-gray-400" />
+        <span className="text-sm font-medium text-gray-300">RSVP</span>
       </div>
 
       {/* RSVP Buttons */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-2 mb-3">
         <Button
           onClick={() => handleRsvp('going')}
-          variant={currentStatus === 'going' ? 'default' : 'outline'}
+          variant="ghost"
           size="sm"
           disabled={rsvpMutation.isPending}
-          className={`flex items-center gap-2 ${
+          className={`flex items-center gap-1 text-xs px-3 py-1 ${
             currentStatus === 'going'
-              ? 'bg-green-600 hover:bg-green-700 text-white'
-              : 'border-green-600 text-green-400 hover:bg-green-600 hover:text-white'
+              ? 'bg-green-700/30 text-green-300 hover:bg-green-700/40'
+              : 'text-gray-400 hover:text-green-300 hover:bg-green-700/20'
           }`}
         >
-          <Check className="h-4 w-4" />
-          Going ({stats.going})
+          <Check className="h-3 w-3" />
+          Going {stats.going > 0 && `(${stats.going})`}
         </Button>
 
         <Button
           onClick={() => handleRsvp('maybe')}
-          variant={currentStatus === 'maybe' ? 'default' : 'outline'}
+          variant="ghost"
           size="sm"
           disabled={rsvpMutation.isPending}
-          className={`flex items-center gap-2 ${
+          className={`flex items-center gap-1 text-xs px-3 py-1 ${
             currentStatus === 'maybe'
-              ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-              : 'border-yellow-600 text-yellow-400 hover:bg-yellow-600 hover:text-white'
+              ? 'bg-yellow-700/30 text-yellow-300 hover:bg-yellow-700/40'
+              : 'text-gray-400 hover:text-yellow-300 hover:bg-yellow-700/20'
           }`}
         >
-          <Clock className="h-4 w-4" />
-          Maybe ({stats.maybe})
+          <Clock className="h-3 w-3" />
+          Maybe {stats.maybe > 0 && `(${stats.maybe})`}
         </Button>
 
         <Button
           onClick={() => handleRsvp('not_going')}
-          variant={currentStatus === 'not_going' ? 'default' : 'outline'}
+          variant="ghost"
           size="sm"
           disabled={rsvpMutation.isPending}
-          className={`flex items-center gap-2 ${
+          className={`flex items-center gap-1 text-xs px-3 py-1 ${
             currentStatus === 'not_going'
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'border-red-600 text-red-400 hover:bg-red-600 hover:text-white'
+              ? 'bg-red-700/30 text-red-300 hover:bg-red-700/40'
+              : 'text-gray-400 hover:text-red-300 hover:bg-red-700/20'
           }`}
         >
-          <X className="h-4 w-4" />
-          Not Going ({stats.not_going})
+          <X className="h-3 w-3" />
+          Can't Go {stats.not_going > 0 && `(${stats.not_going})`}
         </Button>
       </div>
 
