@@ -148,7 +148,7 @@ export default function PostPage() {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="text-center text-pinterest-gray">
-            <p>&copy; 2025 PinShare. All rights reserved.</p>
+            <p>&copy; 2025 Share. All rights reserved.</p>
           </div>
         </div>
       </footer>

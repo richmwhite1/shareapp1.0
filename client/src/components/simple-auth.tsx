@@ -114,7 +114,7 @@ export default function SimpleAuth({ defaultMode = 'signin', onSuccess }: Simple
       <Card className="w-full max-w-md bg-card border-border">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-pinterest-red">
-            {mode === 'signin' ? 'Welcome Back' : 'Join PinShare'}
+            {mode === 'signin' ? 'Welcome Back' : 'Join Share'}
           </CardTitle>
           <p className="text-muted-foreground">
             {mode === 'signin' ? 'Sign in to your account' : 'Create your account to get started'}

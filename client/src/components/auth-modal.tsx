@@ -76,7 +76,7 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
       }, profilePicture);
       toast({
         title: "Account created!",
-        description: "Welcome to PinShare! You are now signed in.",
+        description: "Welcome to Share! You are now signed in.",
       });
       onSuccess?.();
       setLocation('/');
@@ -94,7 +94,7 @@ export default function AuthModal({ defaultMode = 'signin', onSuccess }: AuthMod
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-            {mode === 'signin' ? 'Welcome Back' : 'Join PinShare'}
+            {mode === 'signin' ? 'Welcome Back' : 'Join Share'}
           </CardTitle>
           <p className="text-pinterest-gray">
             {mode === 'signin' 

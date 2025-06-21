@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe, Calendar, CheckSquare, Repeat, CalendarPlus } from "lucide-react";
+import { Upload, X, Image, ExternalLink, Plus, FolderPlus, Download, LinkIcon, Hash, Users, Lock, Globe, Calendar, CheckSquare, Repeat, CalendarPlus, UserPlus } from "lucide-react";
 import { DayPicker } from 'react-day-picker';
 
 import MediaProcessor from "@/components/media-processor";
@@ -992,7 +992,7 @@ END:VCALENDAR`;
                       </Select>
                     </div>
                     
-                    <div className="mt-5">
+                    <div className="mt-5 flex gap-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -1002,6 +1002,17 @@ END:VCALENDAR`;
                       >
                         <Calendar className="h-3 w-3 mr-1" />
                         {isEvent ? 'Event' : 'Event'}
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFriendSelector(!showFriendSelector)}
+                        className={`h-8 text-sm ${taggedUsers.length > 0 ? 'bg-blue-50 border-blue-300 text-blue-700' : ''}`}
+                      >
+                        <UserPlus className="h-3 w-3 mr-1" />
+                        Tag ({taggedUsers.length})
                       </Button>
                     </div>
                   </div>
