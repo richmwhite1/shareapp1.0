@@ -28,30 +28,27 @@ export default function Profile() {
   const [newListDescription, setNewListDescription] = useState('');
   const [newListPrivacy, setNewListPrivacy] = useState<'public' | 'connections' | 'private'>('public');
   const [isDragging, setIsDragging] = useState(false);
-  const [draggedListId, setDraggedListId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [, setLocation] = useLocation();
 
-  // Get current user first
+  const profileUserId = paramUserId ? parseInt(paramUserId) : undefined;
+
   const { data: currentUser } = useQuery({
-    queryKey: ['/api/auth/verify'],
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-      
-      const response = await fetch('/api/auth/verify', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!response.ok) return null;
-      return response.json();
-    }
+    queryKey: ['/api/user'],
+    enabled: true
   });
 
-  console.log('Profile page params:', { paramUserId, currentUser: currentUser?.user?.id });
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['/api/users', profileUserId],
+    enabled: !!profileUserId
+  });
 
-  const profileUserId = paramUserId ? parseInt(paramUserId) : currentUser?.user?.id;
+  const { data: lists, refetch: refetchLists } = useQuery({
+    queryKey: ['/api/lists'],
+    enabled: !!profileUserId
+  });
+
   const isOwnProfile = currentUser?.user?.id === profileUserId;
 
   console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: currentUser?.user?.id });
@@ -107,105 +104,79 @@ export default function Profile() {
 
   const exitEditMode = () => {
     setIsEditMode(false);
-    setIsDragging(false);
-    setDraggedListId(null);
   };
 
-  // Create list mutation
   const createListMutation = useMutation({
-    mutationFn: async (listData: { name: string; description?: string; privacy: string }) => {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/lists', {
+    mutationFn: async (data: {
+      name: string;
+      description?: string;
+      privacy: 'public' | 'connections' | 'private';
+    }) => {
+      const response = await apiRequest('/api/lists', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(listData)
+        body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error('Failed to create list');
-      return response.json();
+      return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/lists/user', profileUserId] });
+      toast({
+        title: "Success",
+        description: "List created successfully!",
+      });
       setShowCreateListDialog(false);
       setNewListName('');
       setNewListDescription('');
       setNewListPrivacy('public');
-      toast({ title: "List created successfully" });
+      refetchLists();
     },
-    onError: () => {
-      toast({ title: "Failed to create list", variant: "destructive" });
-    }
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create list",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Delete list mutation
   const deleteListMutation = useMutation({
     mutationFn: async (listId: number) => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/lists/${listId}`, {
+      const response = await apiRequest(`/api/lists/${listId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
       });
-      if (!response.ok) throw new Error('Failed to delete list');
-      return response.json();
+      return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/lists/user', profileUserId] });
-      setShowDeleteDialog(false);
-      setSelectedList(null);
-      toast({ title: "List deleted successfully" });
+      toast({
+        title: "Success",
+        description: "List deleted successfully",
+      });
+      refetchLists();
+      setIsEditMode(false);
     },
-    onError: () => {
-      toast({ title: "Failed to delete list", variant: "destructive" });
-    }
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete list",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Fetch user data
-  const { data: userData, isLoading: userLoading } = useQuery({
-    queryKey: ['/api/users', profileUserId],
-    enabled: !!profileUserId,
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
       }
-      
-      const response = await fetch(`/api/users/${profileUserId}`, {
-        headers
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch user data');
-      }
-      
-      return response.json();
-    }
-  });
+    };
+  }, [longPressTimer]);
 
-  // Fetch user's lists
-  const { data: lists } = useQuery({
-    queryKey: ['/api/lists/user', profileUserId],
-    enabled: !!profileUserId,
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`/api/lists/user/${profileUserId}`, {
-        headers
-      });
-      
-      if (!response.ok) return [];
-      return response.json();
-    }
-  });
+  if (!profileUserId) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div>Invalid profile ID</div>
+      </div>
+    );
+  }
 
   if (userLoading || !userData) {
     return (
@@ -228,15 +199,21 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Profile Section */}
+        {/* Profile Info */}
         <div className="px-6 py-6">
-          <div className="relative w-32 h-32 mx-auto mb-4">
-            <Avatar className="w-32 h-32">
-              <AvatarImage src={userData?.profilePictureUrl || ""} />
-              <AvatarFallback className="bg-gray-800 text-white text-4xl">
-                {userData?.name?.charAt(0) || userData?.username?.charAt(0)}
+          {/* Avatar and Bio */}
+          <div className="flex items-start gap-4 mb-4">
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={userData?.profilePictureUrl} alt={userData?.name || userData?.username} />
+              <AvatarFallback className="bg-gray-800 text-white text-lg">
+                {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
+            <div className="flex-1">
+              <p className="text-gray-300 text-sm leading-relaxed">
+                {userData?.bio || "No bio yet"}
+              </p>
+            </div>
           </div>
 
           {/* Stats */}
@@ -272,14 +249,14 @@ export default function Profile() {
                 </Button>
               )}
               {isOwnProfile && !isEditMode && (
-                <>
+                <div className="flex items-center gap-2">
                   <Button 
                     size="sm" 
                     variant="ghost" 
                     onClick={() => setIsEditMode(true)}
                     className="text-gray-400 hover:text-white text-xs px-2 py-1"
                   >
-                    <Edit className="h-3 w-3 mr-1" />
+                    <Edit3 className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
                   <Dialog open={showCreateListDialog} onOpenChange={setShowCreateListDialog}>
@@ -288,98 +265,113 @@ export default function Profile() {
                         <Plus className="h-3 w-3 mr-1" />
                         New
                       </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Create New List</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="listName" className="text-gray-300">List Name *</Label>
-                        <Input
-                          id="listName"
-                          placeholder="e.g., Travel Plans, Wishlist"
-                          value={newListName}
-                          onChange={(e) => setNewListName(e.target.value)}
-                          className="bg-gray-800 border-gray-600 text-white"
-                        />
+                    </DialogTrigger>
+                    <DialogContent className="bg-gray-900 border-gray-700 max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">Create New List</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <Label htmlFor="listName" className="text-white text-sm font-medium">
+                            List Name
+                          </Label>
+                          <Input
+                            id="listName"
+                            value={newListName}
+                            onChange={(e) => setNewListName(e.target.value)}
+                            className="mt-2 bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+                            placeholder="Enter list name..."
+                            maxLength={50}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="listDescription" className="text-white text-sm font-medium">
+                            Description (Optional)
+                          </Label>
+                          <Textarea
+                            id="listDescription"
+                            value={newListDescription}
+                            onChange={(e) => setNewListDescription(e.target.value)}
+                            className="mt-2 bg-gray-800 border-gray-600 text-white placeholder-gray-400 resize-none"
+                            placeholder="What's this list about?"
+                            rows={3}
+                            maxLength={200}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-white text-sm font-medium">Privacy</Label>
+                          <Select value={newListPrivacy} onValueChange={(value: 'public' | 'connections' | 'private') => setNewListPrivacy(value)}>
+                            <SelectTrigger className="mt-2 bg-gray-800 border-gray-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-700">
+                              <SelectItem value="public">
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4 text-green-500" />
+                                  <span className="text-white">Public</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="connections">
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-blue-500" />
+                                  <span className="text-white">Friends Only</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="private">
+                                <div className="flex items-center gap-2">
+                                  <Lock className="h-4 w-4 text-gray-500" />
+                                  <span className="text-white">Private</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="listDescription" className="text-gray-300">Description (Optional)</Label>
-                        <Textarea
-                          id="listDescription"
-                          placeholder="Describe this list..."
-                          value={newListDescription}
-                          onChange={(e) => setNewListDescription(e.target.value)}
-                          className="bg-gray-800 border-gray-600 text-white"
-                          rows={3}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="listPrivacy" className="text-gray-300">Privacy</Label>
-                        <Select value={newListPrivacy} onValueChange={(value: 'public' | 'connections' | 'private') => setNewListPrivacy(value)}>
-                          <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-600">
-                            <SelectItem value="public">
-                              <div className="flex items-center gap-2">
-                                <Globe className="h-4 w-4 text-green-500" />
-                                <span className="text-white">Public</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="connections">
-                              <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-blue-500" />
-                                <span className="text-white">Friends Only</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="private">
-                              <div className="flex items-center gap-2">
-                                <Lock className="h-4 w-4 text-gray-500" />
-                                <span className="text-white">Private</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowCreateListDialog(false)}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          if (newListName.trim()) {
-                            createListMutation.mutate({
-                              name: newListName.trim(),
-                              description: newListDescription.trim() || undefined,
-                              privacy: newListPrivacy
-                            });
-                          }
-                        }}
-                        disabled={!newListName.trim() || createListMutation.isPending}
-                        className="bg-pinterest-red hover:bg-red-700 text-white"
-                      >
-                        {createListMutation.isPending ? 'Creating...' : 'Create List'}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                </>
+                      <DialogFooter className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowCreateListDialog(false)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (newListName.trim()) {
+                              createListMutation.mutate({
+                                name: newListName.trim(),
+                                description: newListDescription.trim() || undefined,
+                                privacy: newListPrivacy
+                              });
+                            }
+                          }}
+                          disabled={!newListName.trim() || createListMutation.isPending}
+                          className="bg-pinterest-red hover:bg-red-700 text-white"
+                        >
+                          {createListMutation.isPending ? 'Creating...' : 'Create List'}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
           </div>
+          
+          {/* Edit Mode Instructions */}
+          {isEditMode && isOwnProfile && (
+            <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-3 mb-4">
+              <p className="text-yellow-400 text-sm text-center">
+                Edit mode active - Click the red X to delete lists, or click "Done" to finish
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             {Array.isArray(lists) ? lists.map((list: any) => {
               const recentPost = list.posts?.[0];
               const hasImage = recentPost?.primaryPhotoUrl || recentPost?.thumbnailUrl;
-              
+
               return (
                 <div
                   key={list.id}
@@ -397,118 +389,44 @@ export default function Profile() {
                   {/* iPhone-style delete button */}
                   {isEditMode && isOwnProfile && (
                     <button
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10 animate-pulse"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedList(list.id);
-                        setShowDeleteDialog(true);
+                        deleteListMutation.mutate(list.id);
                       }}
+                      className="absolute -top-1 -right-1 z-10 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
                     >
-                      <X className="h-3 w-3 text-white" />
+                      <X className="w-3 h-3 text-white" />
                     </button>
                   )}
-                  
-                  <div className="w-full aspect-square rounded-lg mb-2 overflow-hidden relative">
+
+                  {/* List content */}
+                  <div className="aspect-square bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                     {hasImage ? (
                       <img 
                         src={recentPost.primaryPhotoUrl || recentPost.thumbnailUrl} 
-                        alt={list.name}
+                        alt="List preview"
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-800 rounded-lg flex items-center justify-center">
-                        <Folder className="h-8 w-8 text-gray-600" />
-                      </div>
-                    )}
-                    
-                    {/* Privacy Indicator */}
-                    {list.privacyLevel !== 'public' && (
-                      <div className="absolute top-1 right-1">
-                        <div className="bg-black/80 text-white px-1.5 py-0.5 rounded text-xs">
-                          {list.privacyLevel === 'private' ? 'Private' : 'Friends'}
-                        </div>
-                      </div>
+                      <Folder className="w-8 h-8 text-gray-600" />
                     )}
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-white font-medium truncate flex-1">
-                      {list.name}
-                    </span>
-                    {isOwnProfile && !isEditMode && (
-                      <div className="ml-2 flex items-center gap-1">
-                        {list.privacyLevel === 'public' && (
-                          <Globe className="h-3 w-3 text-green-500" />
-                        )}
-                        {list.privacyLevel === 'connections' && (
-                          <Users className="h-3 w-3 text-blue-500" />
-                        )}
-                        {list.privacyLevel === 'private' && (
-                          <Lock className="h-3 w-3 text-gray-500" />
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <h4 className="text-sm font-medium text-white truncate">{list.name}</h4>
+                  <p className="text-xs text-gray-400">{list.postCount || 0} posts</p>
                 </div>
               );
             }) : (
-              <div className="col-span-3 text-center text-gray-400 py-8">
-                {isOwnProfile ? "Create your first list!" : "No lists yet"}
+              <div className="col-span-3 text-center py-8">
+                <Folder className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">No lists yet</p>
+                {isOwnProfile && (
+                  <p className="text-gray-500 text-sm mt-1">Create your first list to get started</p>
+                )}
               </div>
             )}
           </div>
         </div>
-        
-        <div className="h-20"></div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-gray-900 border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="text-white">Delete List</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-gray-300 mb-4">
-              Are you sure you want to delete this list? This action cannot be undone.
-            </p>
-            <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3">
-              <p className="text-sm text-red-400 font-medium">
-                This will permanently delete:
-              </p>
-              <ul className="text-sm text-red-400 mt-2 space-y-1">
-                <li>• The list and all its contents</li>
-                <li>• All posts saved to this list</li>
-              </ul>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowDeleteDialog(false);
-                setSelectedList(null);
-              }}
-              disabled={deleteListMutation.isPending}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (selectedList) {
-                  deleteListMutation.mutate(selectedList);
-                }
-              }}
-              disabled={deleteListMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteListMutation.isPending ? "Deleting..." : "Delete Forever"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
 
     </div>
