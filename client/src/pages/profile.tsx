@@ -49,6 +49,11 @@ export default function Profile() {
     enabled: !!profileUserId
   });
 
+  const { data: userPosts, isLoading: postsLoading } = useQuery({
+    queryKey: ['/api/posts/user', profileUserId],
+    enabled: !!profileUserId
+  });
+
   const isOwnProfile = (currentUser as any)?.user?.id === profileUserId;
 
   console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: (currentUser as any)?.user?.id });
@@ -222,7 +227,7 @@ export default function Profile() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 py-3 px-4 bg-gray-900 rounded-lg">
             <div className="text-center">
-              <div className="text-lg font-bold text-white">0</div>
+              <div className="text-lg font-bold text-white">{Array.isArray(userPosts) ? userPosts.length : 0}</div>
               <div className="text-xs text-gray-400">Posts</div>
             </div>
             <div className="text-center">
@@ -428,6 +433,32 @@ export default function Profile() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Posts Section */}
+        <div className="px-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Posts</h3>
+          </div>
+          
+          {postsLoading ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400">Loading posts...</div>
+            </div>
+          ) : Array.isArray(userPosts) && userPosts.length > 0 ? (
+            <div className="space-y-4">
+              {userPosts.map((post: any) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-gray-400">No posts yet</div>
+              {isOwnProfile && (
+                <p className="text-gray-500 text-sm mt-1">Share your first post to get started</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
