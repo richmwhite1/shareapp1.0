@@ -82,7 +82,7 @@ export default function CreatePostPage() {
 
   // Update form data privacy when user privacy loads
   useEffect(() => {
-    if (userPrivacy?.defaultPrivacy && formData.privacy === "public") {
+    if (userPrivacy && typeof userPrivacy === 'object' && 'defaultPrivacy' in userPrivacy && userPrivacy.defaultPrivacy && formData.privacy === "public") {
       setFormData(prev => ({
         ...prev,
         privacy: userPrivacy.defaultPrivacy === 'connections' ? 'friends' : userPrivacy.defaultPrivacy

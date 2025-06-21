@@ -575,6 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let eventReminders: string[] = [];
       let isRecurringBool = false;
       let eventTaskList: any[] = [];
+      let attachedListsArray: number[] = [];
       let eventDateObj: Date | undefined = undefined;
 
       if (isEventBool) {
@@ -593,6 +594,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             eventTaskList = JSON.parse(taskList);
           } catch (error) {
             console.error('Failed to parse taskList:', error);
+          }
+        }
+
+        // Parse attached lists
+        if (validatedData.attachedLists) {
+          try {
+            attachedListsArray = JSON.parse(validatedData.attachedLists);
+          } catch (error) {
+            console.error('Failed to parse attachedLists:', error);
           }
         }
 
@@ -633,6 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isRecurring: isEventBool ? isRecurringBool : undefined,
         recurringType: isEventBool && isRecurringBool ? recurringType : undefined,
         taskList: isEventBool ? eventTaskList : undefined,
+        attachedLists: isEventBool ? attachedListsArray : undefined,
         allowRsvp: isEventBool ? (validatedData.allowRsvp === 'true') : false
       });
 
