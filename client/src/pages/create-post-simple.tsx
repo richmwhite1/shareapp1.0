@@ -28,7 +28,9 @@ export default function CreatePostPage() {
     discountCode: "",
     listId: "", 
     spotifyUrl: "",
+    spotifyLabel: "",
     youtubeUrl: "",
+    youtubeLabel: "",
     hashtags: "",
     privacy: "public"
   });
@@ -689,7 +691,9 @@ END:VCALENDAR`;
       formDataToSend.append('discountCode', postData.discountCode);
       formDataToSend.append('listId', postData.listId);
       formDataToSend.append('spotifyUrl', postData.spotifyUrl);
+      formDataToSend.append('spotifyLabel', postData.spotifyLabel || '');
       formDataToSend.append('youtubeUrl', postData.youtubeUrl);
+      formDataToSend.append('youtubeLabel', postData.youtubeLabel || '');
       formDataToSend.append('privacy', postData.privacy);
       
       // Hashtags
@@ -921,30 +925,52 @@ END:VCALENDAR`;
 
               {/* Media URLs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="relative flex-1">
-                  <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
-                    <Download className="h-2 w-2 text-white" />
+                <div className="space-y-2">
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                      <Download className="h-2 w-2 text-white" />
+                    </div>
+                    <Input
+                      type="url"
+                      placeholder="Spotify link"
+                      value={formData.spotifyUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                      className="pl-10 bg-input border-border"
+                    />
                   </div>
-                  <Input
-                    type="url"
-                    placeholder="Spotify link"
-                    value={formData.spotifyUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                    className="pl-10 bg-input border-border"
-                  />
+                  {formData.spotifyUrl.trim() && (
+                    <Input
+                      type="text"
+                      placeholder="Spotify label (optional)"
+                      value={formData.spotifyLabel}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
+                  )}
                 </div>
 
-                <div className="relative flex-1">
-                  <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                    <Download className="h-2 w-2 text-white" />
+                <div className="space-y-2">
+                  <div className="relative flex-1">
+                    <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+                      <Download className="h-2 w-2 text-white" />
+                    </div>
+                    <Input
+                      type="url"
+                      placeholder="YouTube link"
+                      value={formData.youtubeUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                      className="pl-10 bg-input border-border"
+                    />
                   </div>
-                  <Input
-                    type="url"
-                    placeholder="YouTube link"
-                    value={formData.youtubeUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                    className="pl-10 bg-input border-border"
-                  />
+                  {formData.youtubeUrl.trim() && (
+                    <Input
+                      type="text"
+                      placeholder="YouTube label (optional)"
+                      value={formData.youtubeLabel}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1487,6 +1513,14 @@ END:VCALENDAR`;
                         onChange={(e) => updateAdditionalPhoto(index, 'link', e.target.value)}
                         className="bg-input border-border"
                       />
+                      {photo.link.trim() && (
+                        <Input
+                          placeholder="Link label (optional) - defaults to 'link'"
+                          value={photo.linkLabel || ''}
+                          onChange={(e) => updateAdditionalPhoto(index, 'linkLabel', e.target.value)}
+                          className="bg-input border-border text-sm"
+                        />
+                      )}
                       <Input
                         placeholder="Description for this photo (optional)"
                         value={photo.description}
