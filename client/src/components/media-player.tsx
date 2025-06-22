@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 interface MediaPlayerProps {
   youtubeUrl?: string;
   spotifyUrl?: string;
+  youtubeLabel?: string;
+  spotifyLabel?: string;
   className?: string;
 }
 
-export default function MediaPlayer({ youtubeUrl, spotifyUrl, className = "" }: MediaPlayerProps) {
+export default function MediaPlayer({ youtubeUrl, spotifyUrl, youtubeLabel, spotifyLabel, className = "" }: MediaPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Extract YouTube video ID from URL
@@ -40,7 +42,7 @@ export default function MediaPlayer({ youtubeUrl, spotifyUrl, className = "" }: 
           <div className="p-3 border-b border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-white text-sm font-medium">YouTube Video</span>
+              <span className="text-white text-sm font-medium">{youtubeLabel || 'YouTube Video'}</span>
             </div>
             <a
               href={youtubeUrl}
@@ -97,7 +99,7 @@ export default function MediaPlayer({ youtubeUrl, spotifyUrl, className = "" }: 
           <div className="p-3 border-b border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-white text-sm font-medium">Spotify Track</span>
+              <span className="text-white text-sm font-medium">{spotifyLabel || 'Spotify Track'}</span>
             </div>
             <a
               href={spotifyUrl}

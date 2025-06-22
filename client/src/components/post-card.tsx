@@ -517,7 +517,9 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           <div className="mt-6">
             <MediaPlayer 
               youtubeUrl={post.youtubeUrl || undefined} 
-              spotifyUrl={post.spotifyUrl || undefined} 
+              spotifyUrl={post.spotifyUrl || undefined}
+              youtubeLabel={post.youtubeLabel || undefined}
+              spotifyLabel={post.spotifyLabel || undefined}
             />
           </div>
         )}
