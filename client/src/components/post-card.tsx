@@ -404,6 +404,13 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
           src={post.primaryPhotoUrl}
           alt={post.primaryDescription}
           className="w-full h-96 object-cover"
+          onError={(e) => {
+            console.error('Image failed to load:', post.primaryPhotoUrl);
+            e.currentTarget.style.display = 'none';
+          }}
+          onLoad={() => {
+            console.log('Image loaded successfully:', post.primaryPhotoUrl);
+          }}
         />
         
 
