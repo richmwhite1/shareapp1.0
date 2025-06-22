@@ -399,12 +399,15 @@ export const signInSchema = z.object({
 export const insertPostSchema = createInsertSchema(posts).pick({
   primaryPhotoUrl: true,
   primaryLink: true,
+  linkLabel: true,
   primaryDescription: true,
   discountCode: true,
   additionalPhotos: true,
   additionalPhotoData: true,
   spotifyUrl: true,
+  spotifyLabel: true,
   youtubeUrl: true,
+  youtubeLabel: true,
   mediaMetadata: true,
   privacy: true,
   isEvent: true,
@@ -446,11 +449,14 @@ export const createPostSchema = insertPostSchema.extend({
 
 export const createPostRequestSchema = z.object({
   primaryLink: z.string().optional(),
+  linkLabel: z.string().optional(),
   primaryDescription: z.string().min(1).max(500, "Description must be between 1 and 500 characters"),
   discountCode: z.string().optional(),
   listId: z.coerce.number().optional(),
   spotifyUrl: z.string().optional(),
+  spotifyLabel: z.string().optional(),
   youtubeUrl: z.string().optional(),
+  youtubeLabel: z.string().optional(),
   hashtags: z.string().optional(),
   privacy: z.enum(["public", "connections", "private"]).default("public"),
   taggedUsers: z.string().optional(), // JSON string of user IDs
