@@ -317,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid request data" });
       }
       
-      const { primaryLink, primaryDescription, discountCode, listId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers, isEvent, eventDate, reminders, isRecurring, recurringType, taskList } = validatedData;
+      const { primaryLink, linkLabel, primaryDescription, discountCode, listId, spotifyUrl, youtubeUrl, hashtags, privacy, taggedUsers, isEvent, eventDate, reminders, isRecurring, recurringType, taskList } = validatedData;
       
       // Parse hashtags from JSON array or hashtag string
       const parseHashtags = (input: string): string[] => {
@@ -625,6 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.user.userId,
         primaryPhotoUrl: primaryPhotoUrl || '/placeholder-image.svg',
         primaryLink: primaryLink || '',
+        linkLabel: linkLabel || null,
         primaryDescription,
         discountCode,
         additionalPhotos: additionalPhotos.length > 0 ? additionalPhotos : null,

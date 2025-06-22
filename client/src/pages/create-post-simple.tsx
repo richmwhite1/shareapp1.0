@@ -684,6 +684,7 @@ END:VCALENDAR`;
       
       // Basic post data
       formDataToSend.append('primaryLink', postData.primaryLink);
+      formDataToSend.append('linkLabel', postData.linkLabel || '');
       formDataToSend.append('primaryDescription', postData.primaryDescription);
       formDataToSend.append('discountCode', postData.discountCode);
       formDataToSend.append('listId', postData.listId);
