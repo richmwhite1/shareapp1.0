@@ -1337,14 +1337,23 @@ export class EnterpriseStorage implements IStorage {
     await db.delete(hashtagFollows).where(and(eq(hashtagFollows.userId, userId), eq(hashtagFollows.hashtagId, hashtagId)));
   }
 
-  async getFollowedHashtags(userId: number): Promise<Hashtag[]> {
+  async getFollowedHashtags(userId: number): Promise<Array<Hashtag & { count: number }>> {
     const result = await db
-      .select({ hashtag: hashtags })
+      .select({ 
+        hashtag: hashtags,
+        count: sql<number>`count(${postHashtags.postId})::int`
+      })
       .from(hashtagFollows)
       .innerJoin(hashtags, eq(hashtagFollows.hashtagId, hashtags.id))
-      .where(eq(hashtagFollows.userId, userId));
+      .leftJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
+      .where(eq(hashtagFollows.userId, userId))
+      .groupBy(hashtags.id, hashtagFollows.createdAt)
+      .orderBy(desc(hashtagFollows.createdAt));
 
-    return result.map(r => r.hashtag);
+    return result.map(r => ({
+      ...r.hashtag,
+      count: r.count
+    }));
   }
 
   async isFollowingHashtag(userId: number, hashtagId: number): Promise<boolean> {

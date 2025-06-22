@@ -481,7 +481,7 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
             className="text-yellow-400 hover:text-yellow-300 font-medium transition-colors inline-flex items-center space-x-2 text-lg"
           >
             <ExternalLink className="w-5 h-5" />
-            <span>Link</span>
+            <span>{post.linkLabel || 'Link'}</span>
           </a>
           <p className="text-gray-300 leading-relaxed mt-3">
             {post.primaryDescription}
