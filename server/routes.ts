@@ -284,12 +284,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and validate the request body
       const bodyData = {
         primaryLink: req.body.primaryLink,
+        linkLabel: req.body.linkLabel || undefined,
         primaryDescription: req.body.primaryDescription,
         discountCode: req.body.discountCode || undefined,
         listId: req.body.listId ? parseInt(req.body.listId) : undefined,
         categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : 1,
         spotifyUrl: req.body.spotifyUrl || undefined,
+        spotifyLabel: req.body.spotifyLabel || undefined,
         youtubeUrl: req.body.youtubeUrl || undefined,
+        youtubeLabel: req.body.youtubeLabel || undefined,
         hashtags: req.body.hashtags || undefined,
         privacy: req.body.privacy || 'public',
         taggedUsers: req.body.taggedUsers || undefined,

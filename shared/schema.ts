@@ -37,7 +37,9 @@ export const posts = pgTable("posts", {
   additionalPhotos: text("additional_photos").array(),
   additionalPhotoData: json("additional_photo_data"), // Array of {url, link, description} objects
   spotifyUrl: text("spotify_url"),
+  spotifyLabel: text("spotify_label"), // Optional custom label for Spotify link
   youtubeUrl: text("youtube_url"),
+  youtubeLabel: text("youtube_label"), // Optional custom label for YouTube link
   mediaMetadata: json("media_metadata"), // Stores metadata from link previews
   privacy: text("privacy").notNull().default("public"), // public, friends, private
   engagement: integer("engagement").notNull().default(0),

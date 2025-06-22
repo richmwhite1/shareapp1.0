@@ -65,7 +65,7 @@ export default function CreatePostPage() {
 
   // Photo state
   const [primaryPhoto, setPrimaryPhoto] = useState<File | null>(null);
-  const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; description: string; discountCode: string }[]>([]);
+  const [additionalPhotos, setAdditionalPhotos] = useState<{ file: File; link: string; linkLabel: string; description: string; discountCode: string }[]>([]);
   const [primaryPhotoPreview, setPrimaryPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [autoThumbnailUrl, setAutoThumbnailUrl] = useState<string | null>(null);
@@ -484,6 +484,7 @@ END:VCALENDAR`;
           return {
             file: processedFile,
             link: '',
+            linkLabel: '',
             description: '',
             discountCode: ''
           };
@@ -740,6 +741,7 @@ END:VCALENDAR`;
       additionalPhotos.forEach((photo, index) => {
         formDataToSend.append(`additionalPhotos`, photo.file);
         formDataToSend.append(`additionalPhoto_${index}_link`, photo.link);
+        formDataToSend.append(`additionalPhoto_${index}_linkLabel`, photo.linkLabel);
         formDataToSend.append(`additionalPhoto_${index}_description`, photo.description);
         formDataToSend.append(`additionalPhoto_${index}_discountCode`, photo.discountCode);
       });
