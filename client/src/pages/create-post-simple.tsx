@@ -732,9 +732,9 @@ END:VCALENDAR`;
       // Primary photo or auto-generated thumbnail
       if (primaryPhoto) {
         formDataToSend.append('primaryPhoto', primaryPhoto);
-      } else if (autoThumbnailUrl) {
+      } else if (primaryPhotoPreview) {
         // Send thumbnail URL for server to download and process
-        formDataToSend.append('thumbnailUrl', autoThumbnailUrl);
+        formDataToSend.append('thumbnailUrl', primaryPhotoPreview);
       }
 
       // Additional photos
