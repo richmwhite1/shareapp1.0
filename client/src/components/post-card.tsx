@@ -278,6 +278,13 @@ export default function PostCard({ post, isDetailView = false }: PostCardProps) 
               src={post.primaryPhotoUrl}
               alt={post.primaryDescription}
               className="w-full h-96 object-cover cursor-pointer"
+              onError={(e) => {
+                console.error('Feed image failed to load:', post.primaryPhotoUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+              onLoad={() => {
+                console.log('Feed image loaded successfully:', post.primaryPhotoUrl);
+              }}
             />
           </Link>
         )}

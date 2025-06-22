@@ -365,9 +365,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const fetch = (await import('node-fetch')).default;
           const response = await fetch(thumbnailUrl);
           if (response.ok) {
+            const contentType = response.headers.get('content-type') || 'image/jpeg';
+            let extension = '.jpg';
+            if (contentType.includes('png')) extension = '.png';
+            if (contentType.includes('gif')) extension = '.gif';
+            if (contentType.includes('webp')) extension = '.webp';
+            
             const buffer = await response.buffer();
+            
+            // Validate that we actually have image data
+            if (buffer.length === 0) {
+              throw new Error('Empty image buffer received');
+            }
+            
             const timestamp = Date.now();
-            const filename = `${timestamp}-fetched-image.jpg`;
+            const randomString = Math.random().toString(36).substring(2);
+            const filename = `${timestamp}-${randomString}-fetched-image${extension}`;
             const fs = await import('fs');
             const path = await import('path');
             const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -378,7 +391,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             const filepath = path.join(uploadsDir, filename);
             fs.writeFileSync(filepath, buffer);
+            
+            // Verify the file was written correctly
+            if (!fs.existsSync(filepath)) {
+              throw new Error('Failed to save image file');
+            }
+            
             primaryPhotoUrl = `/uploads/${filename}`;
+            console.log('Successfully saved fetched image:', primaryPhotoUrl);
+          } else {
+            console.error('Failed to fetch thumbnail:', response.status, response.statusText);
           }
         } catch (error) {
           console.error('Failed to save fetched image:', error);
