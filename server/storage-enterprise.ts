@@ -1314,17 +1314,14 @@ export class EnterpriseStorage implements IStorage {
       })
       .from(hashtags)
       .leftJoin(postHashtags, eq(hashtags.id, postHashtags.hashtagId))
-      .leftJoin(posts, eq(postHashtags.postId, posts.id))
-      .leftJoin(lists, eq(posts.listId, lists.id))
-      .where(
-        or(
-          postHashtags.postId.isNull(), // Include hashtags with no posts
-          and(
-            eq(posts.privacy, 'public'),
-            eq(lists.privacyLevel, 'public')
-          )
-        )
-      )
+      .leftJoin(posts, and(
+        eq(postHashtags.postId, posts.id),
+        eq(posts.privacy, 'public')
+      ))
+      .leftJoin(lists, and(
+        eq(posts.listId, lists.id),
+        eq(lists.privacyLevel, 'public')
+      ))
       .groupBy(hashtags.id, hashtags.name)
       .orderBy(desc(count(postHashtags.postId)))
       .limit(limit);

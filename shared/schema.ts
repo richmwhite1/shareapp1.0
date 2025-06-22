@@ -31,6 +31,7 @@ export const posts = pgTable("posts", {
   listId: integer("list_id").notNull().default(1), // Default to "General" list
   primaryPhotoUrl: text("primary_photo_url").notNull(),
   primaryLink: text("primary_link").notNull(),
+  linkLabel: text("link_label"), // Optional custom label for the link
   primaryDescription: text("primary_description").notNull(),
   discountCode: text("discount_code"),
   additionalPhotos: text("additional_photos").array(),

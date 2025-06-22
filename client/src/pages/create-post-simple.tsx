@@ -23,6 +23,7 @@ import 'react-day-picker/dist/style.css';
 export default function CreatePostPage() {
   const [formData, setFormData] = useState({
     primaryLink: "",
+    linkLabel: "",
     primaryDescription: "",
     discountCode: "",
     listId: "", 
@@ -899,6 +900,22 @@ END:VCALENDAR`;
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
+                
+                {/* Optional Link Label - appears when link is entered */}
+                {formData.primaryLink.trim() && (
+                  <div className="mt-2">
+                    <Input
+                      type="text"
+                      placeholder="Link label (optional) - defaults to 'link'"
+                      value={formData.linkLabel}
+                      onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      How this link will appear in your post
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Media URLs */}

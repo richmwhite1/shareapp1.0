@@ -173,9 +173,9 @@ export default function EnergyRating({ postId, profileId, className = "" }: Ener
         </div>
       </div>
 
-      {/* Rating Stats */}
+      {/* Rating Stats - moved down for better spacing */}
       {totalRatings > 0 && (
-        <div className="text-xs text-gray-400 flex items-center gap-2">
+        <div className="text-xs text-gray-400 flex items-center gap-2 mt-3">
           <div className="flex items-center gap-1">
             <span 
               className="w-3 h-3 rounded-full"
