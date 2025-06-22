@@ -359,7 +359,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle thumbnail URL from frontend or auto-fetch from media URLs
       const thumbnailUrl = req.body.thumbnailUrl;
-      if (!primaryPhotoUrl && (thumbnailUrl || spotifyUrl || youtubeUrl)) {
+      if (!primaryPhotoUrl && thumbnailUrl) {
+        // If a thumbnail URL is provided from frontend (fetched image), save it
+        try {
+          const fetch = (await import('node-fetch')).default;
+          const response = await fetch(thumbnailUrl);
+          if (response.ok) {
+            const buffer = await response.buffer();
+            const timestamp = Date.now();
+            const filename = `${timestamp}-fetched-image.jpg`;
+            const fs = await import('fs');
+            const path = await import('path');
+            const uploadsDir = path.join(process.cwd(), 'uploads');
+            
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+            
+            const filepath = path.join(uploadsDir, filename);
+            fs.writeFileSync(filepath, buffer);
+            primaryPhotoUrl = `/uploads/${filename}`;
+          }
+        } catch (error) {
+          console.error('Failed to save fetched image:', error);
+        }
+      } else if (!primaryPhotoUrl && (spotifyUrl || youtubeUrl)) {
         try {
           let imageUrl = thumbnailUrl || '';
           
