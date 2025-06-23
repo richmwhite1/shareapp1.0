@@ -414,9 +414,10 @@ export default function CreatePostPage() {
     submitData.append('spotifyLabel', formData.spotifyLabel);
     submitData.append('privacy', formData.privacy);
     submitData.append('discountCode', formData.discountCode);
-    // Use hashtag list instead of single hashtag string
-    const allHashtags = formData.hashtagList.join(' ');
-    submitData.append('hashtags', allHashtags);
+    // Send hashtags as JSON array
+    if (formData.hashtagList.length > 0) {
+      submitData.append('hashtags', JSON.stringify(formData.hashtagList));
+    }
 
     if (formData.listId) {
       submitData.append('listId', formData.listId);
