@@ -1491,7 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image scraping endpoint
-  app.post('/api/scrape-image', authenticateToken, async (req: any, res) => {
+  app.post('/api/scrape-image', async (req: any, res) => {
     try {
       const { url } = req.body;
       if (!url) {
