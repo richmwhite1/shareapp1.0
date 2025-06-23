@@ -57,7 +57,8 @@ export default function CreatePostPage() {
     imageHeight: null as number | null,
     fetchErrorMessage: '',
     discountCode: '',
-    hashtags: ''
+    hashtags: '',
+    hashtagList: [] as string[]
   });
 
   // Additional photos state
@@ -282,19 +283,17 @@ export default function CreatePostPage() {
     setFormData(prev => ({ ...prev, fetchErrorMessage: '' }));
 
     try {
-      const response = await apiRequest('POST', '/api/fetch-image', { imageUrl: url });
+      // Use scrape-image endpoint instead which saves the image and returns a path
+      const response = await apiRequest('POST', '/api/scrape-image', { url });
+      const data = await response.json();
       
-      if (response.ok) {
-        // API returns raw image data, create blob URL for display
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
+      if (response.ok && data.imagePath) {
         setFormData(prev => ({
           ...prev,
-          fetchedImagePath: blobUrl,
+          fetchedImagePath: data.imagePath,
           primaryPhoto: null,
-          imageWidth: null,
-          imageHeight: null,
+          imageWidth: data.width || null,
+          imageHeight: data.height || null,
           fetchErrorMessage: ''
         }));
 
@@ -303,8 +302,7 @@ export default function CreatePostPage() {
           description: "Image fetched successfully!",
         });
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch image');
+        throw new Error(data.message || 'Failed to fetch image');
       }
     } catch (error: any) {
       setFormData(prev => ({
@@ -320,6 +318,29 @@ export default function CreatePostPage() {
     } finally {
       setIsLoadingImage(false);
     }
+  };
+
+  // Handle hashtag entry
+  const handleHashtagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const hashtag = formData.hashtags.trim();
+      
+      if (hashtag && formData.hashtagList.length < 10 && !formData.hashtagList.includes(hashtag)) {
+        setFormData(prev => ({
+          ...prev,
+          hashtagList: [...prev.hashtagList, hashtag],
+          hashtags: ''
+        }));
+      }
+    }
+  };
+
+  const removeHashtag = (indexToRemove: number) => {
+    setFormData(prev => ({
+      ...prev,
+      hashtagList: prev.hashtagList.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   // Handle privacy change
@@ -696,17 +717,39 @@ END:VCALENDAR`;
                   className="bg-input border-border text-foreground min-h-[80px] text-sm"
                   required
                 />
-                <Input
-                  placeholder="Add hashtags: travel food inspiration (without # symbols)"
-                  value={formData.hashtags || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                    }
-                  }}
-                  className="bg-input border-border text-sm"
-                />
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Type hashtags and press Enter (up to 10)"
+                    value={formData.hashtags || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                    onKeyDown={handleHashtagKeyDown}
+                    className="bg-input border-border text-sm"
+                    disabled={formData.hashtagList.length >= 10}
+                  />
+                  
+                  {/* Display selected hashtags */}
+                  {formData.hashtagList.length > 0 && (
+                    <div className="flex flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+                      {formData.hashtagList.map((tag, index) => (
+                        <Badge
+                          key={index}
+                          className="flex items-center gap-1 h-6 px-2 text-xs bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                          #{tag}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeHashtag(index)}
+                            className="h-4 w-4 p-0 hover:bg-blue-800 text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
               </div>
 
