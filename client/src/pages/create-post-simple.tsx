@@ -97,6 +97,10 @@ export default function CreatePostPage() {
   const { data: friends } = useQuery({
     queryKey: ['/api/friends'],
     enabled: true,
+    select: (data: any) => {
+      if (!Array.isArray(data)) return [];
+      return data;
+    }
   });
 
   // Get current user
