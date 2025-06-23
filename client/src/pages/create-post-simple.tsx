@@ -295,32 +295,35 @@ export default function CreatePostPage() {
     setFormData(prev => ({ ...prev, fetchErrorMessage: '' }));
 
     try {
-      // Use scrape-image endpoint instead which saves the image and returns a path
-      const response = await apiRequest('POST', '/api/scrape-image', { url });
+      // Use scrape-image endpoint with proper authentication
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/scrape-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ url })
+      });
       
       if (response.ok) {
-        try {
-          const data = await response.json();
-          if (data.imagePath) {
-            setFormData(prev => ({
-              ...prev,
-              fetchedImagePath: data.imagePath,
-              primaryPhoto: null,
-              imageWidth: data.width || null,
-              imageHeight: data.height || null,
-              fetchErrorMessage: ''
-            }));
+        const data = await response.json();
+        if (data.success && data.imagePath) {
+          setFormData(prev => ({
+            ...prev,
+            fetchedImagePath: data.imagePath,
+            primaryPhoto: null,
+            imageWidth: data.width || null,
+            imageHeight: data.height || null,
+            fetchErrorMessage: ''
+          }));
 
-            toast({
-              title: "Success",
-              description: "Image fetched successfully!",
-            });
-          } else {
-            throw new Error(data.message || 'Failed to fetch image');
-          }
-        } catch (parseError) {
-          // If response isn't JSON, treat it as an error
-          throw new Error('Invalid response from server');
+          toast({
+            title: "Success",
+            description: "Image fetched successfully!",
+          });
+        } else {
+          throw new Error(data.message || 'Failed to fetch image');
         }
       } else {
         const errorData = await response.json();

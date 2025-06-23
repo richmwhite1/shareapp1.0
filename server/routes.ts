@@ -1528,10 +1528,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const buffer = await imageResponse.arrayBuffer();
           
-          // Set appropriate headers for image response
-          res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Length', buffer.byteLength);
-          return res.send(Buffer.from(buffer));
+          // Save the image to uploads directory
+          const fs = await import('fs');
+          const path = await import('path');
+          const uploadsDir = path.join(process.cwd(), 'uploads');
+          
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          
+          const timestamp = Date.now();
+          const urlHash = Math.random().toString(36).substring(2, 15);
+          const extension = contentType?.split('/')[1] || 'jpg';
+          const filename = `${timestamp}-${urlHash}-fetched-image.${extension}`;
+          const filepath = path.join(uploadsDir, filename);
+          
+          fs.writeFileSync(filepath, Buffer.from(buffer));
+          
+          const imagePath = `/uploads/${filename}`;
+          return res.json({ 
+            success: true, 
+            imagePath, 
+            message: 'Image fetched and saved successfully' 
+          });
           
         } catch (error) {
           return res.status(404).json({ message: 'Failed to fetch image from URL' });
@@ -1596,9 +1615,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const buffer = await imageResponse.arrayBuffer();
           const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
           
-          res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Length', buffer.byteLength);
-          return res.send(Buffer.from(buffer));
+          // Save the image to uploads directory
+          const fs = await import('fs');
+          const path = await import('path');
+          const uploadsDir = path.join(process.cwd(), 'uploads');
+          
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          
+          const timestamp = Date.now();
+          const urlHash = Math.random().toString(36).substring(2, 15);
+          const extension = contentType?.split('/')[1] || 'jpg';
+          const filename = `${timestamp}-${urlHash}-spotify-image.${extension}`;
+          const filepath = path.join(uploadsDir, filename);
+          
+          fs.writeFileSync(filepath, Buffer.from(buffer));
+          
+          const imagePath = `/uploads/${filename}`;
+          return res.json({ 
+            success: true, 
+            imagePath, 
+            message: 'Spotify image fetched and saved successfully' 
+          });
           
         } catch (error) {
           return res.status(404).json({ message: 'Failed to extract Spotify album artwork' });
