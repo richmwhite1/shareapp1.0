@@ -1427,6 +1427,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // OpenGraph image generation for link previews
+  app.get('/api/og-image', async (req, res) => {
+    try {
+      const { postId, userId, type = 'default' } = req.query;
+      
+      // Generate SVG-based thumbnail
+      let svgContent = '';
+      
+      if (type === 'post' && postId) {
+        const post = await storage.getPost(parseInt(postId as string));
+        if (post) {
+          svgContent = `
+            <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+              <rect width="1200" height="630" fill="#000"/>
+              <text x="60" y="100" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#fff">Share</text>
+              <text x="60" y="200" font-family="Arial, sans-serif" font-size="32" fill="#ccc" text-anchor="start">
+                ${post.description.substring(0, 50)}${post.description.length > 50 ? '...' : ''}
+              </text>
+              <text x="60" y="280" font-family="Arial, sans-serif" font-size="24" fill="#888">
+                by ${post.username || 'User'}
+              </text>
+              ${post.primaryPhotoUrl ? `<image x="600" y="100" width="500" height="400" href="${post.primaryPhotoUrl}" preserveAspectRatio="xMidYMid slice"/>` : ''}
+            </svg>`;
+        }
+      } else if (type === 'profile' && userId) {
+        const user = await storage.getUser(parseInt(userId as string));
+        if (user) {
+          svgContent = `
+            <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+              <rect width="1200" height="630" fill="#000"/>
+              <text x="60" y="100" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#fff">Share</text>
+              <text x="60" y="200" font-family="Arial, sans-serif" font-size="32" fill="#ccc">
+                ${user.name || user.username}'s Profile
+              </text>
+              <text x="60" y="280" font-family="Arial, sans-serif" font-size="24" fill="#888">
+                ${user.bio ? user.bio.substring(0, 80) : 'Discover amazing posts and content'}
+              </text>
+            </svg>`;
+        }
+      } else {
+        // Default Share platform image
+        svgContent = `
+          <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+            <rect width="1200" height="630" fill="#000"/>
+            <text x="60" y="200" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#fff">Share</text>
+            <text x="60" y="300" font-family="Arial, sans-serif" font-size="32" fill="#ccc">
+              Social Post Sharing Platform
+            </text>
+            <text x="60" y="380" font-family="Arial, sans-serif" font-size="24" fill="#888">
+              Create, share, and discover amazing content
+            </text>
+          </svg>`;
+      }
+      
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(svgContent);
+    } catch (error) {
+      console.error('OG image generation error:', error);
+      res.status(500).json({ message: 'Failed to generate image' });
+    }
+  });
+
   // Image scraping endpoint
   app.post('/api/scrape-image', authenticateToken, async (req: any, res) => {
     try {

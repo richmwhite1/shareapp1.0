@@ -583,7 +583,19 @@ END:VCALENDAR`;
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto bg-card border-border">
           <CardContent className="p-6">
-            <h1 className="text-2xl font-bold mb-6 text-foreground">Create New Post</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold text-foreground">Create New Post</h1>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTutorial(true)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <span className="text-sm mr-1">?</span>
+                Help
+              </Button>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* 1. Links Section - More Subtle */}
@@ -1272,6 +1284,12 @@ END:VCALENDAR`;
             </form>
           </CardContent>
         </Card>
+
+        {/* Tutorial Component */}
+        <CreatePostTutorial 
+          isOpen={showTutorial} 
+          onClose={() => setShowTutorial(false)} 
+        />
       </div>
     </div>
   );
