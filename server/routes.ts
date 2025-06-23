@@ -25,20 +25,8 @@ const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    // Allow placeholder files (empty files for "Add by Link" functionality)
-    if (file.size === 0 && file.originalname === 'placeholder.jpg') {
-      return cb(null, true);
-    }
-    
-    const allowedTypes = /jpeg|jpg|png/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only JPEG and PNG images are allowed'));
-    }
+    // Always allow files to pass through - validation will happen later
+    cb(null, true);
   }
 });
 

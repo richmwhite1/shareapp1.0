@@ -273,7 +273,7 @@ export default function CreatePostPage() {
     setFormData(prev => ({ ...prev, fetchErrorMessage: '' }));
 
     try {
-      const response = await apiRequest('POST', '/api/fetch-image', { url });
+      const response = await apiRequest('POST', '/api/fetch-image', { imageUrl: url });
       const data = await response.json();
 
       if (data.success && data.imagePath) {
@@ -689,9 +689,7 @@ END:VCALENDAR`;
                   onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
                   className="bg-input border-border text-sm"
                 />
-                <div className="text-xs text-muted-foreground">
-                  Add hashtags to help people discover your post
-                </div>
+
               </div>
 
               {/* 4. Post Settings */}
