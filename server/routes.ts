@@ -3139,7 +3139,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete user profile route
+  // Profile picture upload endpoint
+  app.post('/api/upload-profile-picture', authenticateToken, upload.single('profilePicture'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      const profilePictureUrl = `/uploads/${req.file.filename}`;
+      
+      // Update user's profile picture in database
+      await storage.updateUser(req.user.userId, { profilePictureUrl });
+
+      res.json({ 
+        success: true, 
+        profilePictureUrl,
+        message: 'Profile picture updated successfully' 
+      });
+    } catch (error) {
+      console.error('Profile picture upload error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Update user privacy settings
+  app.put('/api/users/:userId/privacy', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Only allow users to update their own privacy settings
+      if (userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      const { defaultPrivacy } = req.body;
+      
+      if (!['public', 'connections', 'private'].includes(defaultPrivacy)) {
+        return res.status(400).json({ message: 'Invalid privacy setting' });
+      }
+
+      await storage.updateUserPrivacy(userId, defaultPrivacy);
+      
+      res.json({ 
+        success: true, 
+        message: 'Privacy settings updated successfully' 
+      });
+    } catch (error) {
+      console.error('Privacy update error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Delete user profile route (updated to use proper endpoint)
+  app.delete('/api/users/:userId', authenticateToken, async (req: any, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Only allow users to delete their own profile
+      if (userId !== req.user.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await storage.deleteUser(userId);
+      res.json({ success: true, message: 'Profile deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Legacy delete endpoint for backward compatibility
   app.delete('/api/user/delete', authenticateToken, async (req: any, res) => {
     try {
       await storage.deleteUser(req.user.userId);

@@ -206,6 +206,16 @@ export default function Profile() {
               <span className="text-gray-400 text-sm">@{userData?.username}</span>
             )}
           </div>
+          {isOwnProfile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPrivacyControls(true)}
+              className="text-gray-400 hover:text-white"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
         {/* Profile Info */}
@@ -222,6 +232,46 @@ export default function Profile() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white text-6xl font-bold">
                   {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
+                </div>
+              )}
+              {/* Camera Icon for Upload - Only for own profile */}
+              {isOwnProfile && (
+                <div className="absolute top-2 right-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        // Handle profile picture upload
+                        const formData = new FormData();
+                        formData.append('profilePicture', file);
+                        
+                        apiRequest('POST', '/api/upload-profile-picture', formData)
+                          .then(() => {
+                            toast({
+                              title: "Success",
+                              description: "Profile picture updated!",
+                            });
+                            queryClient.invalidateQueries({ queryKey: [`/api/users/${profileUserId}`] });
+                          })
+                          .catch(() => {
+                            toast({
+                              title: "Error",
+                              description: "Failed to update profile picture",
+                              variant: "destructive",
+                            });
+                          });
+                      }
+                    }}
+                    className="hidden"
+                    id="profile-picture-upload"
+                  />
+                  <label htmlFor="profile-picture-upload" className="cursor-pointer">
+                    <div className="bg-black/60 hover:bg-black/80 rounded-full p-2 transition-all">
+                      <Camera className="h-5 w-5 text-white" />
+                    </div>
+                  </label>
                 </div>
               )}
             </div>
@@ -513,6 +563,150 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Settings Dialog */}
+      <Dialog open={showPrivacyControls} onOpenChange={setShowPrivacyControls}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle>Profile Settings</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Default Privacy Settings */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Default Privacy for New Posts</Label>
+              <Select value={defaultPrivacy} onValueChange={(value: 'public' | 'connections' | 'private') => setDefaultPrivacy(value)}>
+                <SelectTrigger className="bg-gray-800 border-gray-600">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-blue-400" />
+                      <span>Public - Anyone can see</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="connections">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-green-400" />
+                      <span>Connections Only</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-red-400" />
+                      <span>Private - Only you</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="border-t border-gray-700 pt-6">
+              <h4 className="text-red-400 font-medium mb-4">Danger Zone</h4>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowPrivacyControls(false);
+                  setShowDeleteDialog(true);
+                }}
+                className="w-full bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Profile
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPrivacyControls(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                // Save privacy settings
+                apiRequest('PUT', `/api/users/${profileUserId}/privacy`, {
+                  defaultPrivacy
+                })
+                  .then(() => {
+                    toast({
+                      title: "Success",
+                      description: "Privacy settings updated!",
+                    });
+                    setShowPrivacyControls(false);
+                  })
+                  .catch(() => {
+                    toast({
+                      title: "Error", 
+                      description: "Failed to update privacy settings",
+                      variant: "destructive",
+                    });
+                  });
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Profile Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Delete Profile</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Are you sure you want to delete your profile? This action cannot be undone.
+            </p>
+            <p className="text-red-400 font-medium">
+              All your posts, lists, and data will be permanently deleted.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                apiRequest('DELETE', `/api/users/${profileUserId}`)
+                  .then(() => {
+                    toast({
+                      title: "Profile Deleted",
+                      description: "Your profile has been permanently deleted",
+                    });
+                    // Redirect to login or home
+                    setLocation('/');
+                  })
+                  .catch(() => {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete profile",
+                      variant: "destructive",
+                    });
+                  });
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Forever
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

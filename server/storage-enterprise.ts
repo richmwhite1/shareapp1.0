@@ -13,6 +13,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getUserWithFriends(id: number): Promise<UserWithFriends | undefined>;
   searchUsers(query: string): Promise<User[]>;
+  updateUser(userId: number, updates: Partial<User>): Promise<void>;
   updateUserPrivacy(userId: number, privacy: string): Promise<void>;
   deleteUser(userId: number): Promise<void>;
 
@@ -204,6 +205,13 @@ export class EnterpriseStorage implements IStorage {
         )
       )
       .limit(20);
+  }
+
+  async updateUser(userId: number, updates: Partial<User>): Promise<void> {
+    await db
+      .update(users)
+      .set(updates)
+      .where(eq(users.id, userId));
   }
 
   async updateUserPrivacy(userId: number, privacy: string): Promise<void> {
