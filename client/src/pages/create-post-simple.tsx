@@ -73,6 +73,8 @@ export default function CreatePostPage() {
   const [taggedUsers, setTaggedUsers] = useState<number[]>([]);
   const [showNewListDialog, setShowNewListDialog] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showYouTubeInput, setShowYouTubeInput] = useState(false);
+  const [showSpotifyInput, setShowSpotifyInput] = useState(false);
 
   // New List State
   const [newListName, setNewListName] = useState('');
@@ -629,17 +631,43 @@ END:VCALENDAR`;
                   </div>
                   
                   <Input
-                    placeholder="Custom link text (optional)"
+                    placeholder="Link Label"
                     value={formData.linkLabel}
                     onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
                     className="bg-input border-border text-sm"
                   />
                 </div>
 
-                {/* YouTube Link */}
+                {/* YouTube and Spotify Icons */}
                 <div className="flex gap-2">
-                  <Youtube className="h-4 w-4 text-red-500 mt-2 flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowYouTubeInput(!showYouTubeInput)}
+                    className="p-2"
+                  >
+                    <Youtube className="h-4 w-4 text-red-500" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSpotifyInput(!showSpotifyInput)}
+                    className="p-2"
+                  >
+                    <Music className="h-4 w-4 text-green-500" />
+                  </Button>
+                </div>
+
+                {/* YouTube Link - Collapsible */}
+                {showYouTubeInput && (
+                  <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+                    <div className="flex gap-2 items-center">
+                      <Youtube className="h-4 w-4 text-red-500 flex-shrink-0" />
+                      <Label className="text-sm font-medium">YouTube</Label>
+                    </div>
                     <Input
                       placeholder="YouTube URL"
                       value={formData.youtubeUrl}
@@ -647,18 +675,21 @@ END:VCALENDAR`;
                       className="bg-input border-border text-sm"
                     />
                     <Input
-                      placeholder="YouTube label"
+                      placeholder="Link Label"
                       value={formData.youtubeLabel}
                       onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
                       className="bg-input border-border text-sm"
                     />
                   </div>
-                </div>
+                )}
 
-                {/* Spotify Link */}
-                <div className="flex gap-2">
-                  <Music className="h-4 w-4 text-green-500 mt-2 flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
+                {/* Spotify Link - Collapsible */}
+                {showSpotifyInput && (
+                  <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+                    <div className="flex gap-2 items-center">
+                      <Music className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <Label className="text-sm font-medium">Spotify</Label>
+                    </div>
                     <Input
                       placeholder="Spotify URL"
                       value={formData.spotifyUrl}
@@ -666,13 +697,13 @@ END:VCALENDAR`;
                       className="bg-input border-border text-sm"
                     />
                     <Input
-                      placeholder="Spotify label"
+                      placeholder="Link Label"
                       value={formData.spotifyLabel}
                       onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
                       className="bg-input border-border text-sm"
                     />
                   </div>
-                </div>
+                )}
               </div>
 
               {/* 2. Photo Section */}
@@ -683,7 +714,7 @@ END:VCALENDAR`;
                 {(formData.primaryPhoto || formData.fetchedImagePath) && (
                   <div className="relative">
                     <img
-                      src={formData.fetchedImagePath ? `/uploads/${formData.fetchedImagePath}` : URL.createObjectURL(formData.primaryPhoto!)}
+                      src={formData.fetchedImagePath ? formData.fetchedImagePath : URL.createObjectURL(formData.primaryPhoto!)}
                       alt="Preview"
                       className="w-full max-w-md rounded-lg border border-border"
                       style={{

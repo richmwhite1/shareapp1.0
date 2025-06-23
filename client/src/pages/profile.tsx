@@ -234,6 +234,47 @@ export default function Profile() {
             </p>
           </div>
 
+          {/* Privacy Toggle - Only for own profile */}
+          {isOwnProfile && (
+            <div className="mb-4 p-3 bg-gray-900 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  {defaultPrivacy === 'public' && (
+                    <>
+                      <Globe className="h-4 w-4 text-blue-400" />
+                      <span className="text-gray-300">Public Profile</span>
+                    </>
+                  )}
+                  {defaultPrivacy === 'connections' && (
+                    <>
+                      <Users className="h-4 w-4 text-green-400" />
+                      <span className="text-gray-300">Connections Only</span>
+                    </>
+                  )}
+                  {defaultPrivacy === 'private' && (
+                    <>
+                      <Lock className="h-4 w-4 text-red-400" />
+                      <span className="text-gray-300">Private</span>
+                    </>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const privacyOrder = ['public', 'connections', 'private'] as const;
+                    const currentIndex = privacyOrder.indexOf(defaultPrivacy);
+                    const nextIndex = (currentIndex + 1) % privacyOrder.length;
+                    setDefaultPrivacy(privacyOrder[nextIndex]);
+                  }}
+                  className="text-xs text-gray-400 hover:text-white"
+                >
+                  Change
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 py-3 px-4 bg-gray-900 rounded-lg">
             <div className="text-center">
