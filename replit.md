@@ -132,6 +132,15 @@ Share is a comprehensive social media platform that combines traditional social 
 ```
 Changelog:
 - June 23, 2025. Initial setup
+- June 23, 2025. Fixed create post form issues:
+  * Added dedicated hashtag input field separate from description
+  * Fixed YouTube/Spotify posts to not require manual image upload
+  * Fixed image fetching API parameter mapping (url -> imageUrl)
+  * Removed redundant hashtag description text
+  * Created multi-select collaborator component for private lists
+  * Updated friend tagging to work for all privacy levels
+  * Fixed file validation to allow posts without images
+  * Enhanced collaborator addition workflow for efficiency
 ```
 
 ## User Preferences

@@ -30,6 +30,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useLocation } from 'wouter';
 import { ListCollaborators } from '@/components/list-collaborators';
 import FriendSelector from '@/components/friend-selector';
+import { MultiSelectCollaborators } from '@/components/multi-select-collaborators';
 import MediaPlayer from '@/components/media-player';
 
 export default function CreatePostPage() {
@@ -853,10 +854,9 @@ END:VCALENDAR`;
                         {/* Collaborators section for private lists */}
                         {newListPrivacy === 'private' && (
                           <div>
-                            <ListCollaborators
+                            <MultiSelectCollaborators
                               initialCollaborators={newListCollaborators}
                               onCollaboratorsChange={setNewListCollaborators}
-                              showTitle={true}
                             />
                           </div>
                         )}
