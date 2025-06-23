@@ -347,7 +347,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle thumbnail URL from frontend or auto-fetch from media URLs
       const thumbnailUrl = req.body.thumbnailUrl;
-      if (!primaryPhotoUrl && thumbnailUrl) {
+      const fetchedImagePath = req.body.fetchedImagePath;
+      
+      // If we have a fetched image path, use it directly
+      if (!primaryPhotoUrl && fetchedImagePath) {
+        primaryPhotoUrl = fetchedImagePath;
+      } else if (!primaryPhotoUrl && thumbnailUrl) {
         // If a thumbnail URL is provided from frontend (fetched image), save it
         try {
           const fetch = (await import('node-fetch')).default;
