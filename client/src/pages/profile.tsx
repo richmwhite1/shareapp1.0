@@ -210,19 +210,28 @@ export default function Profile() {
 
         {/* Profile Info */}
         <div className="px-6 py-6">
-          {/* Avatar and Bio */}
-          <div className="flex items-start gap-4 mb-4">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src={userData?.profilePictureUrl} alt={userData?.name || userData?.username} />
-              <AvatarFallback className="bg-gray-800 text-white text-lg">
-                {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-gray-300 text-sm leading-relaxed">
-                {userData?.bio || "No bio yet"}
-              </p>
+          {/* Large Profile Picture Tile */}
+          <div className="mb-6">
+            <div className="relative aspect-square w-full max-w-sm mx-auto rounded-lg overflow-hidden bg-gray-800">
+              {userData?.profilePictureUrl ? (
+                <img 
+                  src={userData.profilePictureUrl} 
+                  alt={userData?.name || userData?.username}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white text-6xl font-bold">
+                  {(userData?.name || userData?.username)?.[0]?.toUpperCase()}
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Bio */}
+          <div className="mb-4">
+            <p className="text-gray-300 text-sm leading-relaxed text-center">
+              {userData?.bio || "No bio yet"}
+            </p>
           </div>
 
           {/* Stats */}

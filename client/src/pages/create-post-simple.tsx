@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DayPicker } from 'react-day-picker';
 import { useToast } from '@/hooks/use-toast';
@@ -387,7 +388,9 @@ export default function CreatePostPage() {
     submitData.append('spotifyLabel', formData.spotifyLabel);
     submitData.append('privacy', formData.privacy);
     submitData.append('discountCode', formData.discountCode);
-    submitData.append('hashtags', formData.hashtags);
+    // Use hashtag list instead of single hashtag string
+    const allHashtags = formData.hashtagList.join(' ');
+    submitData.append('hashtags', allHashtags);
 
     if (formData.listId) {
       submitData.append('listId', formData.listId);
