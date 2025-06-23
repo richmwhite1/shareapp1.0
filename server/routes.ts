@@ -210,6 +210,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User routes
+  app.get('/api/user', authenticateToken, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          profilePictureUrl: user.profilePictureUrl,
+          defaultPrivacy: user.defaultPrivacy
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/users/:id', async (req, res) => {
     try {
       const userId = parseInt(req.params.id);

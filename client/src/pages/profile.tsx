@@ -55,9 +55,10 @@ export default function Profile() {
     enabled: !!profileUserId
   });
 
-  const isOwnProfile = (currentUser as any)?.user?.id === profileUserId;
+  const currentUserId = (currentUser as any)?.user?.id || (currentUser as any)?.id;
+  const isOwnProfile = currentUserId === profileUserId;
 
-  console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId: (currentUser as any)?.user?.id });
+  console.log('Profile logic:', { profileUserId, isOwnProfile, paramUserId, currentUserId });
 
   // iPhone-style long press handlers
   const handleLongPressStart = (e: React.MouseEvent | React.TouchEvent, listId: number) => {
