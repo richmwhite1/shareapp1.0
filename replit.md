@@ -141,6 +141,12 @@ Changelog:
   * Updated friend tagging to work for all privacy levels
   * Fixed file validation to allow posts without images
   * Enhanced collaborator addition workflow for efficiency
+- June 23, 2025. Comprehensive image format support enhancement:
+  * Fixed JSON parsing errors in fetch button functionality
+  * Added automatic SVG to PNG conversion for browser compatibility
+  * Implemented support for all major image formats: JPG, PNG, GIF, WebP, SVG
+  * Enhanced error handling with user-friendly messages
+  * Tested and verified multi-format image fetching capability
 ```
 
 ## User Preferences
