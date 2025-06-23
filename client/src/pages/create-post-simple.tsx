@@ -162,7 +162,7 @@ export default function CreatePostPage() {
   // Create post mutation
   const mutation = useMutation({
     mutationFn: async (postData: FormData) => {
-      return apiRequest('/api/posts', 'POST', postData);
+      return apiRequest('POST', '/api/posts', postData);
     },
     onSuccess: () => {
       toast({
@@ -184,9 +184,10 @@ export default function CreatePostPage() {
   // Create list mutation
   const createListMutation = useMutation({
     mutationFn: async (listData: any) => {
-      return apiRequest('/api/lists', 'POST', JSON.stringify(listData));
+      return apiRequest('POST', '/api/lists', listData);
     },
-    onSuccess: (newList) => {
+    onSuccess: async (response) => {
+      const newList = await response.json();
       toast({
         title: "Success",
         description: "List created successfully!",
@@ -267,21 +268,16 @@ export default function CreatePostPage() {
     setFormData(prev => ({ ...prev, fetchErrorMessage: '' }));
 
     try {
-      const response = await apiRequest('/api/fetch-image', {
-        method: 'POST',
-        body: JSON.stringify({ url }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiRequest('POST', '/api/fetch-image', { url });
+      const data = await response.json();
 
-      if (response.success && response.imagePath) {
+      if (data.success && data.imagePath) {
         setFormData(prev => ({
           ...prev,
-          fetchedImagePath: response.imagePath,
+          fetchedImagePath: data.imagePath,
           primaryPhoto: null,
-          imageWidth: response.width || null,
-          imageHeight: response.height || null,
+          imageWidth: data.width || null,
+          imageHeight: data.height || null,
           fetchErrorMessage: ''
         }));
 
@@ -290,7 +286,7 @@ export default function CreatePostPage() {
           description: "Image fetched successfully!",
         });
       } else {
-        throw new Error(response.error || 'Failed to fetch image');
+        throw new Error(data.error || 'Failed to fetch image');
       }
     } catch (error: any) {
       setFormData(prev => ({
@@ -534,80 +530,76 @@ END:VCALENDAR`;
             <h1 className="text-2xl font-bold mb-6 text-foreground">Create New Post</h1>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 1. Links Section */}
-              <div className="space-y-4">
-                <Label className="text-lg font-semibold">Links</Label>
-                
+              {/* 1. Links Section - More Subtle */}
+              <div className="space-y-3">
                 {/* Primary Link */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Paste any link here (fetches image automatically)"
+                      placeholder="Add a link (fetches image automatically)"
                       value={formData.primaryLink}
                       onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
-                      className="bg-input border-border flex-1"
+                      className="bg-input border-border flex-1 text-sm"
                     />
                     <Button
                       type="button"
                       onClick={() => fetchImageFromUrl(formData.primaryLink)}
                       disabled={isLoadingImage || !formData.primaryLink.trim()}
-                      className="bg-pinterest-red hover:bg-red-700 text-white"
+                      variant="outline"
+                      size="sm"
+                      className="px-3"
                     >
                       {isLoadingImage ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div>
                       ) : (
-                        <Link className="h-4 w-4" />
+                        <Link className="h-3 w-3" />
                       )}
                     </Button>
                   </div>
                   
                   <Input
-                    placeholder="Link label (optional)"
+                    placeholder="Custom link text (optional)"
                     value={formData.linkLabel}
                     onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
-                    className="bg-input border-border"
+                    className="bg-input border-border text-sm"
                   />
                 </div>
 
                 {/* YouTube Link */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Youtube className="h-5 w-5 text-red-600 mt-2.5" />
-                    <div className="flex-1 space-y-2">
-                      <Input
-                        placeholder="YouTube URL (optional)"
-                        value={formData.youtubeUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                        className="bg-input border-border"
-                      />
-                      <Input
-                        placeholder="YouTube label (optional)"
-                        value={formData.youtubeLabel}
-                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
-                        className="bg-input border-border"
-                      />
-                    </div>
+                <div className="flex gap-2">
+                  <Youtube className="h-4 w-4 text-red-500 mt-2 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="YouTube URL"
+                      value={formData.youtubeUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
+                    <Input
+                      placeholder="YouTube label"
+                      value={formData.youtubeLabel}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
                   </div>
                 </div>
 
                 {/* Spotify Link */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Music className="h-5 w-5 text-green-600 mt-2.5" />
-                    <div className="flex-1 space-y-2">
-                      <Input
-                        placeholder="Spotify URL (optional)"
-                        value={formData.spotifyUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                        className="bg-input border-border"
-                      />
-                      <Input
-                        placeholder="Spotify label (optional)"
-                        value={formData.spotifyLabel}
-                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
-                        className="bg-input border-border"
-                      />
-                    </div>
+                <div className="flex gap-2">
+                  <Music className="h-4 w-4 text-green-500 mt-2 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      placeholder="Spotify URL"
+                      value={formData.spotifyUrl}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
+                    <Input
+                      placeholder="Spotify label"
+                      value={formData.spotifyLabel}
+                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
+                      className="bg-input border-border text-sm"
+                    />
                   </div>
                 </div>
               </div>
@@ -683,11 +675,18 @@ END:VCALENDAR`;
                 )}
               </div>
 
-              {/* 3. Hashtags Section */}
+              {/* 3. Hashtags & Description Section */}
               <div className="space-y-4">
-                <Label className="text-lg font-semibold">Hashtags</Label>
-                <div className="text-sm text-muted-foreground">
-                  Add hashtags in your description using # (e.g., #travel #food)
+                <Label className="text-lg font-semibold">Description & Hashtags</Label>
+                <Textarea
+                  placeholder="What's this about? Add hashtags like #travel #food #inspiration"
+                  value={formData.primaryDescription}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
+                  className="bg-input border-border text-foreground min-h-[100px]"
+                  required
+                />
+                <div className="text-xs text-muted-foreground">
+                  Use hashtags (#example) to help people discover your post
                 </div>
               </div>
 
@@ -894,16 +893,7 @@ END:VCALENDAR`;
                 />
               </div>
 
-              {/* 7. Description */}
-              <div>
-                <Textarea
-                  placeholder="What's this about?"
-                  value={formData.primaryDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
-                  className="bg-input border-border text-foreground min-h-[70px]"
-                  required
-                />
-              </div>
+
               
               {formData.privacy === 'private' && taggedUsers.length > 0 && (
                 <div className="text-xs text-gray-600">
