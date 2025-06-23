@@ -746,10 +746,23 @@ export class EnterpriseStorage implements IStorage {
     if (result.length === 0) return undefined;
 
     const row = result[0];
+    
+    // Fetch hashtags for this post
+    const postHashtagsResult = await db
+      .select({
+        hashtag: hashtags
+      })
+      .from(postHashtags)
+      .leftJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+      .where(eq(postHashtags.postId, id));
+
+    const hashtagsArray = postHashtagsResult.map(row => row.hashtag).filter(Boolean);
+
     return {
       ...row.post,
       user: row.user!,
-      list: row.list || undefined
+      list: row.list || undefined,
+      hashtags: hashtagsArray
     } as PostWithUser;
   }
 
@@ -848,6 +861,35 @@ export class EnterpriseStorage implements IStorage {
           });
         }
       }
+    }
+
+    // Fetch hashtags for all posts
+    const postIds = filteredPosts.map(post => post.id);
+    if (postIds.length > 0) {
+      const hashtagsResult = await db
+        .select({
+          postId: postHashtags.postId,
+          hashtag: hashtags
+        })
+        .from(postHashtags)
+        .leftJoin(hashtags, eq(postHashtags.hashtagId, hashtags.id))
+        .where(inArray(postHashtags.postId, postIds));
+
+      // Group hashtags by post ID
+      const hashtagsByPost: Record<number, any[]> = {};
+      hashtagsResult.forEach(row => {
+        if (row.hashtag) {
+          if (!hashtagsByPost[row.postId]) {
+            hashtagsByPost[row.postId] = [];
+          }
+          hashtagsByPost[row.postId].push(row.hashtag);
+        }
+      });
+
+      // Add hashtags to each post
+      filteredPosts.forEach(post => {
+        (post as any).hashtags = hashtagsByPost[post.id] || [];
+      });
     }
 
     return filteredPosts as PostWithUser[];
