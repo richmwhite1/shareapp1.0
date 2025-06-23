@@ -1702,13 +1702,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Failed to fetch image' });
       }
 
-      // Set appropriate headers and pipe the image
-      res.setHeader('Content-Type', imageResponse.headers.get('content-type') || 'image/jpeg');
-      res.setHeader('Content-Length', imageResponse.headers.get('content-length') || '0');
+      const contentType = imageResponse.headers.get('content-type');
       
-      // Convert the response to a buffer and send
-      const buffer = await imageResponse.buffer();
-      res.send(buffer);
+      // Check if it's SVG content (which is text/xml or image/svg+xml)
+      if (contentType && (contentType.includes('svg') || contentType.includes('xml'))) {
+        return res.status(400).json({ message: 'SVG images are not supported. Please use JPG, PNG, or other standard image formats.' });
+      }
+      
+      if (!contentType || !contentType.startsWith('image/')) {
+        return res.status(400).json({ message: 'URL does not point to a valid image format' });
+      }
+
+      const buffer = await imageResponse.arrayBuffer();
+      
+      // Save the image to uploads directory
+      const fs = await import('fs');
+      const path = await import('path');
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      
+      const timestamp = Date.now();
+      const urlHash = Math.random().toString(36).substring(2, 15);
+      const extension = contentType?.split('/')[1] || 'jpg';
+      const filename = `${timestamp}-${urlHash}-scraped-image.${extension}`;
+      const filepath = path.join(uploadsDir, filename);
+      
+      fs.writeFileSync(filepath, Buffer.from(buffer));
+      
+      const imagePath = `/uploads/${filename}`;
+      return res.json({ 
+        success: true, 
+        imagePath, 
+        message: 'Image scraped and saved successfully' 
+      });
       
     } catch (error: any) {
       console.error('Image scraping error:', error);
