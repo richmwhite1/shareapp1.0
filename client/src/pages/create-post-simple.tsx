@@ -829,7 +829,103 @@ END:VCALENDAR`;
           <CardContent className="p-4 pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Primary Photo Upload */}
+              {/* 1. Links Section */}
+              <div className="space-y-3">
+                {/* Primary Link */}
+                <div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="url"
+                        placeholder="Add a link"
+                        value={formData.primaryLink}
+                        onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
+                        className="pl-10 bg-input border-border"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchLinkMetadata(formData.primaryLink, 'primary')}
+                      disabled={!formData.primaryLink.trim() || isLoading}
+                      className="px-3"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Optional Link Label - appears when link is entered */}
+                  {formData.primaryLink.trim() && (
+                    <div className="mt-2">
+                      <Input
+                        type="text"
+                        placeholder="Link label (optional) - defaults to full URL"
+                        value={formData.linkLabel}
+                        onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
+                        className="bg-input border-border text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        How this link will appear in your post
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Media URLs */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+                        <Download className="h-2 w-2 text-white" />
+                      </div>
+                      <Input
+                        type="url"
+                        placeholder="Spotify link"
+                        value={formData.spotifyUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
+                        className="pl-10 bg-input border-border"
+                      />
+                    </div>
+                    {formData.spotifyUrl.trim() && (
+                      <Input
+                        type="text"
+                        placeholder="Spotify label (optional)"
+                        value={formData.spotifyLabel}
+                        onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
+                        className="bg-input border-border text-sm"
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="relative flex-1">
+                      <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+                        <Download className="h-2 w-2 text-white" />
+                      </div>
+                      <Input
+                        type="url"
+                        placeholder="YouTube link"
+                        value={formData.youtubeUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
+                        className="pl-10 bg-input border-border"
+                      />
+                    </div>
+                    {formData.youtubeUrl.trim() && (
+                      <Input
+                        type="text"
+                        placeholder="YouTube label (optional)"
+                        value={formData.youtubeLabel}
+                        onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
+                        className="bg-input border-border text-sm"
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Photo Section */}
               <div>
                 <div 
                   className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-pinterest-red transition-colors"
@@ -872,111 +968,7 @@ END:VCALENDAR`;
                 />
               </div>
 
-              {/* Post Description */}
-              <div>
-                <Textarea
-                  placeholder="What's this about?"
-                  value={formData.primaryDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
-                  className="bg-input border-border text-foreground min-h-[70px]"
-                  required
-                />
-              </div>
-
-              {/* Primary Link */}
-              <div>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="url"
-                      placeholder="Add a link"
-                      value={formData.primaryLink}
-                      onChange={(e) => setFormData(prev => ({ ...prev, primaryLink: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchLinkMetadata(formData.primaryLink, 'primary')}
-                    disabled={!formData.primaryLink.trim() || isLoading}
-                    className="px-3"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Optional Link Label - appears when link is entered */}
-                {formData.primaryLink.trim() && (
-                  <div className="mt-2">
-                    <Input
-                      type="text"
-                      placeholder="Link label (optional) - defaults to 'link'"
-                      value={formData.linkLabel}
-                      onChange={(e) => setFormData(prev => ({ ...prev, linkLabel: e.target.value }))}
-                      className="bg-input border-border text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      How this link will appear in your post
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Media URLs */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
-                    </div>
-                    <Input
-                      type="url"
-                      placeholder="Spotify link"
-                      value={formData.spotifyUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
-                  </div>
-                  {formData.spotifyUrl.trim() && (
-                    <Input
-                      type="text"
-                      placeholder="Spotify label (optional)"
-                      value={formData.spotifyLabel}
-                      onChange={(e) => setFormData(prev => ({ ...prev, spotifyLabel: e.target.value }))}
-                      className="bg-input border-border text-sm"
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="relative flex-1">
-                    <div className="absolute left-3 top-3 w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                      <Download className="h-2 w-2 text-white" />
-                    </div>
-                    <Input
-                      type="url"
-                      placeholder="YouTube link"
-                      value={formData.youtubeUrl}
-                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeUrl: e.target.value }))}
-                      className="pl-10 bg-input border-border"
-                    />
-                  </div>
-                  {formData.youtubeUrl.trim() && (
-                    <Input
-                      type="text"
-                      placeholder="YouTube label (optional)"
-                      value={formData.youtubeLabel}
-                      onChange={(e) => setFormData(prev => ({ ...prev, youtubeLabel: e.target.value }))}
-                      className="bg-input border-border text-sm"
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Hashtags */}
+              {/* 3. Hashtags */}
               <div className="space-y-2">
                 <div className="relative">
                   <Hash className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -1006,7 +998,7 @@ END:VCALENDAR`;
                 )}
               </div>
 
-              {/* Privacy Settings & Category - More Discreet */}
+              {/* 4. Post Settings */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -1066,150 +1058,455 @@ END:VCALENDAR`;
                       </Button>
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div>
-                    <Label htmlFor="category" className="text-sm">List</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.listId}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, listId: value }))}
+              {/* 5. Lists Section */}
+              <div>
+                <Label htmlFor="category" className="text-sm">List</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.listId}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, listId: value }))}
+                  >
+                    <SelectTrigger className="w-40 h-8 text-sm bg-input border-border">
+                      <SelectValue placeholder="Select list" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border">
+                      {Array.isArray(lists) && lists.map((list: any) => (
+                        <SelectItem key={list.id} value={list.id.toString()}>
+                          {list.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Dialog open={showNewListDialog} onOpenChange={setShowNewListDialog}>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
                       >
-                        <SelectTrigger className="w-40 h-8 text-sm bg-input border-border">
-                          <SelectValue placeholder="Select list" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
-                          {Array.isArray(lists) && lists.map((list: any) => (
-                            <SelectItem key={list.id} value={list.id.toString()}>
-                              {list.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Dialog open={showNewListDialog} onOpenChange={setShowNewListDialog}>
-                        <DialogTrigger asChild>
+                        <FolderPlus className="h-3 w-3" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-foreground">Create New List</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 pr-2">
+                        <div>
+                          <Label htmlFor="listName">List Name *</Label>
+                          <Input
+                            id="listName"
+                            placeholder="e.g., Christmas, Travel, Recipes"
+                            value={newListName}
+                            onChange={(e) => setNewListName(e.target.value)}
+                            className="bg-input border-border"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="listDescription">Description (Optional)</Label>
+                          <Textarea
+                            id="listDescription"
+                            placeholder="Describe this list..."
+                            value={newListDescription}
+                            onChange={(e) => setNewListDescription(e.target.value)}
+                            className="bg-input border-border"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="listPrivacy">Privacy Level</Label>
+                          <Select value={newListPrivacy} onValueChange={setNewListPrivacy}>
+                            <SelectTrigger className="bg-input border-border">
+                              <SelectValue placeholder="Select privacy level" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover border-border">
+                              <SelectItem value="public">
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4 text-green-500" />
+                                  <div>
+                                    <div className="font-medium">Public</div>
+                                    <div className="text-xs text-muted-foreground">Visible to everyone</div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="connections">
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-blue-500" />
+                                  <div>
+                                    <div className="font-medium">Connections Only</div>
+                                    <div className="text-xs text-muted-foreground">Only your friends can see</div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="private">
+                                <div className="flex items-center gap-2">
+                                  <Lock className="h-4 w-4 text-red-500" />
+                                  <div>
+                                    <div className="font-medium">Private</div>
+                                    <div className="text-xs text-muted-foreground">Only you and invited collaborators</div>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {/* Collaborators section for private lists */}
+                        {newListPrivacy === 'private' && (
+                          <div>
+                            <ListCollaborators
+                              initialCollaborators={newListCollaborators}
+                              onCollaboratorsChange={setNewListCollaborators}
+                              showTitle={true}
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-end space-x-2">
                           <Button
                             type="button"
                             variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                            onClick={() => setShowNewListDialog(false)}
+                            className="border-border"
                           >
-                            <FolderPlus className="h-3 w-3" />
+                            Cancel
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-card border-border max-h-[80vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle className="text-foreground">Create New List</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4 pr-2">
-                            <div>
-                              <Label htmlFor="listName">List Name *</Label>
-                              <Input
-                                id="listName"
-                                placeholder="e.g., Christmas, Travel, Recipes"
-                                value={newListName}
-                                onChange={(e) => setNewListName(e.target.value)}
-                                className="bg-input border-border"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="listDescription">Description (Optional)</Label>
-                              <Textarea
-                                id="listDescription"
-                                placeholder="Describe this list..."
-                                value={newListDescription}
-                                onChange={(e) => setNewListDescription(e.target.value)}
-                                className="bg-input border-border"
-                                rows={3}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="listPrivacy">Privacy Level</Label>
-                              <Select value={newListPrivacy} onValueChange={setNewListPrivacy}>
-                                <SelectTrigger className="bg-input border-border">
-                                  <SelectValue placeholder="Select privacy level" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover border-border">
-                                  <SelectItem value="public">
-                                    <div className="flex items-center gap-2">
-                                      <Globe className="h-4 w-4 text-green-500" />
-                                      <div>
-                                        <div className="font-medium">Public</div>
-                                        <div className="text-xs text-muted-foreground">Visible to everyone</div>
-                                      </div>
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="connections">
-                                    <div className="flex items-center gap-2">
-                                      <Users className="h-4 w-4 text-blue-500" />
-                                      <div>
-                                        <div className="font-medium">Connections Only</div>
-                                        <div className="text-xs text-muted-foreground">Only your friends can see</div>
-                                      </div>
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="private">
-                                    <div className="flex items-center gap-2">
-                                      <Lock className="h-4 w-4 text-red-500" />
-                                      <div>
-                                        <div className="font-medium">Private</div>
-                                        <div className="text-xs text-muted-foreground">Only you and invited collaborators</div>
-                                      </div>
-                                    </div>
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            {/* Collaborators section for private lists */}
-                            {newListPrivacy === 'private' && (
-                              <div>
-                                <ListCollaborators
-                                  initialCollaborators={newListCollaborators}
-                                  onCollaboratorsChange={setNewListCollaborators}
-                                  showTitle={true}
-                                />
-                              </div>
-                            )}
-                            
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setShowNewListDialog(false)}
-                                className="border-border"
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                type="button"
-                                onClick={handleCreateList}
-                                disabled={!newListName.trim() || mutation.isPending}
-                                className="bg-pinterest-red hover:bg-red-700 text-white"
-                              >
-                                {mutation.isPending ? 'Creating...' : 'Create List'}
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                  
-                  {formData.privacy === 'private' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFriendSelector(true)}
-                      className="text-xs"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Tag Connections
-                    </Button>
-                  )}
+                          <Button
+                            type="button"
+                            onClick={handleCreateList}
+                            disabled={!newListName.trim() || mutation.isPending}
+                            className="bg-pinterest-red hover:bg-red-700 text-white"
+                          >
+                            {mutation.isPending ? 'Creating...' : 'Create List'}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
+
+              {/* 6. Discount Code Option */}
+              <div>
+                <Input
+                  placeholder="Discount code (optional)"
+                  value={formData.discountCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, discountCode: e.target.value }))}
+                  className="bg-input border-border"
+                />
+              </div>
+
+              {/* 7. Description */}
+              <div>
+                <Textarea
+                  placeholder="What's this about?"
+                  value={formData.primaryDescription}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
+                  className="bg-input border-border text-foreground min-h-[70px]"
+                  required
+                />
+              </div>
+              
+              {formData.privacy === 'private' && taggedUsers.length > 0 && (
+                <div className="text-xs text-gray-600">
+                  Tagged: {getTaggedFriendNames()}
+                </div>
+              )}
+
+              {/* Event Configuration */}
+              {isEvent && (
+                <div className="mt-6 p-4 bg-black border border-purple-400 rounded-lg space-y-4">
+                  <h3 className="text-lg font-semibold text-purple-300 flex items-center">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Event Details
+                  </h3>
+                  
+                  {/* Event Date & Time */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-purple-200">Event Date *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal bg-gray-800 border-purple-300 text-white"
+                          >
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            {selectedDate ? selectedDate.toDateString() : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-card" align="start">
+                          <DayPicker
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={handleDateSelect}
+                            disabled={{ before: new Date() }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-purple-200">Event Time</Label>
+                      <Input
+                        type="time"
+                        value={eventTime}
+                        onChange={(e) => {
+                          setEventTime(e.target.value);
+                          if (selectedDate) {
+                            const eventDateTime = new Date(selectedDate);
+                            const [hours, minutes] = e.target.value.split(':');
+                            eventDateTime.setHours(parseInt(hours), parseInt(minutes));
+                            setEventDate(eventDateTime.toISOString());
+                          }
+                        }}
+                        className="bg-gray-800 border-purple-300 text-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Calendar Export Buttons */}
+                  {selectedDate && eventTime && (
+                    <div className="flex gap-2">
+                      <a
+                        href={generateCalendarUrl('google')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                      >
+                        Add to Google Calendar
+                      </a>
+                      <a
+                        href={generateCalendarUrl('apple')}
+                        download="event.ics"
+                        className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                      >
+                        Download .ics file
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Event Reminders */}
+                  <div>
+                    <Label className="text-purple-200">Event Reminders {formData.privacy === 'public' ? '(Pick up to 3)' : ''}</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {['1_month', '2_weeks', '1_week', '3_days', '1_day'].map((reminderValue) => {
+                        const reminderLabel = {
+                          '1_month': '1 month',
+                          '2_weeks': '2 weeks', 
+                          '1_week': '1 week',
+                          '3_days': '3 days',
+                          '1_day': '1 day'
+                        }[reminderValue];
+                        
+                        const isSelected = reminders.includes(reminderValue);
+                        const canSelect = formData.privacy !== 'public' || reminders.length < 3 || isSelected;
+                        
+                        return (
+                          <Button
+                            key={reminderValue}
+                            type="button"
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleReminderToggle(reminderValue)}
+                            disabled={!canSelect}
+                            className={`text-xs ${isSelected ? 'bg-purple-600' : ''} ${!canSelect ? 'opacity-50' : ''}`}
+                          >
+                            {reminderLabel}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    {formData.privacy === 'public' && reminders.length >= 3 && (
+                      <p className="text-xs text-purple-300 mt-1">Maximum 3 reminders for public events</p>
+                    )}
+                  </div>
+
+                  {/* Recurring Options */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="recurring"
+                      checked={isRecurring}
+                      onCheckedChange={setIsRecurring}
+                      className="border-purple-300"
+                    />
+                    <Label htmlFor="recurring" className="text-purple-200 text-sm">
+                      Recurring Event
+                    </Label>
+                  </div>
+
+                  {isRecurring && (
+                    <div>
+                      <Label className="text-purple-200">Repeat</Label>
+                      <Select value={recurringType} onValueChange={setRecurringType}>
+                        <SelectTrigger className="bg-gray-800 border-purple-300 text-white">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Task List */}
+                  <div>
+                    <Label className="text-purple-200">Event Tasks</Label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Add a task (press Enter)"
+                          value={taskInput}
+                          onChange={(e) => setTaskInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addTask();
+                            }
+                          }}
+                          className="bg-gray-800 border-purple-300 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={addTask}
+                          size="sm"
+                          variant="outline"
+                          className="border-purple-300"
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      
+                      {taskList.length > 0 && (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {taskList.map((task, index) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-gray-800 rounded">
+                              <span className="text-white text-sm flex-1">{task}</span>
+                              <Button
+                                type="button"
+                                onClick={() => removeTask(index)}
+                                size="sm"
+                                variant="ghost"
+                                className="text-red-400 hover:text-red-300 p-1"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* List Attachment */}
+                  <div>
+                    <Label className="text-purple-200">Attach Lists (Optional)</Label>
+                    <div className="space-y-2">
+                      <Select
+                        value=""
+                        onValueChange={(value) => {
+                          const listId = parseInt(value);
+                          if (!attachedLists.includes(listId)) {
+                            setAttachedLists([...attachedLists, listId]);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-gray-800 border-purple-300 text-white">
+                          <SelectValue placeholder="Select lists to attach" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card border-border">
+                          {Array.isArray(lists) && lists
+                            .filter((list: any) => !attachedLists.includes(list.id))
+                            .map((list: any) => (
+                              <SelectItem key={list.id} value={list.id.toString()}>
+                                {list.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {attachedLists.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {attachedLists.map((listId) => {
+                            const list = Array.isArray(lists) ? lists.find((l: any) => l.id === listId) : null;
+                            if (!list) return null;
+                            
+                            return (
+                              <div key={listId} className="flex items-center gap-1 bg-purple-600 text-white px-2 py-1 rounded text-sm">
+                                <span>{list.name}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setAttachedLists(attachedLists.filter(id => id !== listId))}
+                                  className="ml-1 hover:text-red-300"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RSVP Toggle */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="allowRsvp"
+                      checked={allowRsvp}
+                      onCheckedChange={setAllowRsvp}
+                      className="border-purple-300"
+                    />
+                    <Label htmlFor="allowRsvp" className="text-purple-200 text-sm">
+                      Allow RSVP responses
+                    </Label>
+                  </div>
+                </div>
+              )}
+
+              {/* Friend Selector Dialog */}
+              <Dialog open={showFriendSelector} onOpenChange={setShowFriendSelector}>
+                <DialogContent className="bg-card border-border">
+                  <DialogHeader>
+                    <DialogTitle className="text-foreground">Tag Connections</DialogTitle>
+                  </DialogHeader>
+                  <FriendSelector
+                    onSelectionChange={setTaggedUsers}
+                    initialSelection={taggedUsers}
+                  />
+                </DialogContent>
+              </Dialog>
+
+              {/* Submit Button */}
+              <Button 
+                type="submit" 
+                className="w-full bg-pinterest-red hover:bg-red-700 text-white py-3"
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Creating Post...</span>
+                  </div>
+                ) : (
+                  'Create Post'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
               
               {formData.privacy === 'private' && taggedUsers.length > 0 && (
                 <div className="text-xs text-gray-600">
