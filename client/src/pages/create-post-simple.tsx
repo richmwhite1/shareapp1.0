@@ -92,6 +92,7 @@ export default function CreatePostPage() {
   const { data: lists } = useQuery({
     queryKey: ['/api/lists'],
     enabled: true,
+    select: (data: any) => Array.isArray(data) ? data : []
   });
 
   // Set default list when lists are loaded
