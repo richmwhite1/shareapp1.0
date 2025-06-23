@@ -496,18 +496,8 @@ END:VCALENDAR`;
     if (!friends || taggedUsers.length === 0) return '';
     
     const taggedNames = taggedUsers.map(userId => {
-      const friendship = friends.find((f: any) => 
-        f.status === 'accepted' && 
-        (f.requester.id === userId || f.addressee.id === userId)
-      );
-      
-      if (friendship) {
-        const friendUser = friendship.requester.id === currentUser?.id 
-          ? friendship.addressee 
-          : friendship.requester;
-        return friendUser.username;
-      }
-      return '';
+      const friend = friends.find((f: any) => f.id === userId);
+      return friend ? friend.username : '';
     }).filter(Boolean);
     
     return taggedNames.join(', ');

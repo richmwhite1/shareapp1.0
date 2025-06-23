@@ -19,20 +19,14 @@ export default function FriendSelector({ onSelectionChange, initialSelection = [
     queryKey: ['/api/friends'],
     select: (data: any) => {
       if (!Array.isArray(data)) return [];
-      return data.filter((friend: any) => friend.status === 'accepted');
+      return data; // Friends API returns simple User[] array
     },
-  });
-
-  // Get current user
-  const { data: currentUser } = useQuery({
-    queryKey: ['/api/auth/me'],
   });
 
   // Filter friends based on search query
   const filteredFriends = friends?.filter((friend: any) => {
-    const friendUser = friend.requester.id === currentUser?.id ? friend.addressee : friend.requester;
-    return friendUser.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           friendUser.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return friend.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           friend.name?.toLowerCase().includes(searchQuery.toLowerCase());
   }) || [];
 
   // Update parent when selection changes
@@ -81,27 +75,26 @@ export default function FriendSelector({ onSelectionChange, initialSelection = [
       {/* Friends list */}
       <div className="max-h-64 overflow-y-auto space-y-2">
         {filteredFriends.map((friend: any) => {
-          const friendUser = friend.requester.id === currentUser?.id ? friend.addressee : friend.requester;
-          const isSelected = selectedFriends.includes(friendUser.id);
+          const isSelected = selectedFriends.includes(friend.id);
           
           return (
             <div
-              key={friendUser.id}
+              key={friend.id}
               className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
                 isSelected ? 'bg-accent' : 'hover:bg-accent/50'
               }`}
-              onClick={() => toggleFriend(friendUser.id)}
+              onClick={() => toggleFriend(friend.id)}
             >
               <div className="flex items-center space-x-3">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={friendUser.profilePictureUrl || undefined} />
+                  <AvatarImage src={friend.profilePictureUrl || undefined} />
                   <AvatarFallback>
-                    {friendUser.name?.charAt(0) || friendUser.username.charAt(0)}
+                    {friend.name?.charAt(0) || friend.username?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium">{friendUser.name || friendUser.username}</div>
-                  <div className="text-sm text-muted-foreground">@{friendUser.username}</div>
+                  <div className="font-medium">{friend.name || friend.username}</div>
+                  <div className="text-sm text-muted-foreground">@{friend.username}</div>
                 </div>
               </div>
               {isSelected && (
