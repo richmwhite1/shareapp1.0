@@ -33,6 +33,7 @@ import { ListCollaborators } from '@/components/list-collaborators';
 import FriendSelector from '@/components/friend-selector';
 import { MultiSelectCollaborators } from '@/components/multi-select-collaborators';
 import MediaPlayer from '@/components/media-player';
+import { CreatePostTutorial } from '@/components/create-post-tutorial';
 
 export default function CreatePostPage() {
   const { toast } = useToast();
@@ -71,6 +72,7 @@ export default function CreatePostPage() {
   const [showFriendSelector, setShowFriendSelector] = useState(false);
   const [taggedUsers, setTaggedUsers] = useState<number[]>([]);
   const [showNewListDialog, setShowNewListDialog] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // New List State
   const [newListName, setNewListName] = useState('');
@@ -103,6 +105,15 @@ export default function CreatePostPage() {
       setFormData(prev => ({ ...prev, listId: lists[0].id.toString() }));
     }
   }, [lists, formData.listId]);
+
+  // Check if first-time user and show tutorial
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('hasSeenCreatePostTutorial');
+    if (!hasSeenTutorial) {
+      setShowTutorial(true);
+      localStorage.setItem('hasSeenCreatePostTutorial', 'true');
+    }
+  }, []);
 
   // Fetch friends
   const { data: friends } = useQuery({
@@ -286,24 +297,34 @@ export default function CreatePostPage() {
     try {
       // Use scrape-image endpoint instead which saves the image and returns a path
       const response = await apiRequest('POST', '/api/scrape-image', { url });
-      const data = await response.json();
       
-      if (response.ok && data.imagePath) {
-        setFormData(prev => ({
-          ...prev,
-          fetchedImagePath: data.imagePath,
-          primaryPhoto: null,
-          imageWidth: data.width || null,
-          imageHeight: data.height || null,
-          fetchErrorMessage: ''
-        }));
+      if (response.ok) {
+        try {
+          const data = await response.json();
+          if (data.imagePath) {
+            setFormData(prev => ({
+              ...prev,
+              fetchedImagePath: data.imagePath,
+              primaryPhoto: null,
+              imageWidth: data.width || null,
+              imageHeight: data.height || null,
+              fetchErrorMessage: ''
+            }));
 
-        toast({
-          title: "Success",
-          description: "Image fetched successfully!",
-        });
+            toast({
+              title: "Success",
+              description: "Image fetched successfully!",
+            });
+          } else {
+            throw new Error(data.message || 'Failed to fetch image');
+          }
+        } catch (parseError) {
+          // If response isn't JSON, treat it as an error
+          throw new Error('Invalid response from server');
+        }
       } else {
-        throw new Error(data.message || 'Failed to fetch image');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch image');
       }
     } catch (error: any) {
       setFormData(prev => ({
@@ -732,11 +753,11 @@ END:VCALENDAR`;
                   
                   {/* Display selected hashtags */}
                   {formData.hashtagList.length > 0 && (
-                    <div className="flex flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-md">
+                    <div className="flex flex-wrap gap-2 p-2 bg-black rounded-md border border-gray-700">
                       {formData.hashtagList.map((tag, index) => (
-                        <Badge
+                        <div
                           key={index}
-                          className="flex items-center gap-1 h-6 px-2 text-xs bg-blue-600 text-white hover:bg-blue-700"
+                          className="flex items-center gap-1 h-6 px-2 text-xs bg-gray-800 text-gray-300 rounded border border-gray-600 hover:bg-gray-700"
                         >
                           #{tag}
                           <Button
@@ -744,11 +765,11 @@ END:VCALENDAR`;
                             variant="ghost"
                             size="sm"
                             onClick={() => removeHashtag(index)}
-                            className="h-4 w-4 p-0 hover:bg-blue-800 text-white"
+                            className="h-4 w-4 p-0 hover:bg-gray-600 text-gray-400 hover:text-white ml-1"
                           >
                             <X className="h-3 w-3" />
                           </Button>
-                        </Badge>
+                        </div>
                       ))}
                     </div>
                   )}
