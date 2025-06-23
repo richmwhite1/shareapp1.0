@@ -344,8 +344,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const hashtagArray = parseHashtags(hashtags || '');
-      console.log('DEBUG - Hashtags received:', hashtags);
-      console.log('DEBUG - Parsed hashtag array:', hashtagArray);
 
       // Handle thumbnail URL from frontend or auto-fetch from media URLs
       const thumbnailUrl = req.body.thumbnailUrl;

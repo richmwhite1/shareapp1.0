@@ -147,6 +147,15 @@ Changelog:
   * Implemented support for all major image formats: JPG, PNG, GIF, WebP, SVG
   * Enhanced error handling with user-friendly messages
   * Tested and verified multi-format image fetching capability
+- June 23, 2025. Complete hashtag and profile enhancement:
+  * Fixed hashtag display in post detail views and feeds
+  * Updated server-side storage to properly fetch and include hashtag data
+  * Corrected frontend hashtag submission format (JSON array vs space-separated)
+  * Added profile picture upload functionality with camera icon overlay
+  * Implemented comprehensive settings dialog with privacy controls
+  * Added profile deletion functionality with confirmation dialog
+  * Created server-side API endpoints for profile picture upload, privacy updates, and account deletion
+  * Enhanced profile page with settings button and complete user management features
 ```
 
 ## User Preferences
