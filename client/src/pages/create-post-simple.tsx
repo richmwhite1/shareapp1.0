@@ -72,7 +72,7 @@ export default function CreatePostPage() {
   const [newListName, setNewListName] = useState('');
   const [newListDescription, setNewListDescription] = useState('');
   const [newListPrivacy, setNewListPrivacy] = useState('public');
-  const [newListCollaborators, setNewListCollaborators] = useState<number[]>([]);
+  const [newListCollaborators, setNewListCollaborators] = useState<{ userId: number; username: string; name: string; role: "collaborator" | "viewer" }[]>([]);
 
   // Event State
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -1015,7 +1015,7 @@ END:VCALENDAR`;
                     <Checkbox
                       id="recurring"
                       checked={isRecurring}
-                      onCheckedChange={setIsRecurring}
+                      onCheckedChange={(checked) => setIsRecurring(checked === true)}
                       className="border-purple-300"
                     />
                     <Label htmlFor="recurring" className="text-purple-200 text-sm">
@@ -1026,7 +1026,7 @@ END:VCALENDAR`;
                   {isRecurring && (
                     <div>
                       <Label className="text-purple-200">Repeat</Label>
-                      <Select value={recurringType} onValueChange={setRecurringType}>
+                      <Select value={recurringType} onValueChange={(value: string) => setRecurringType(value as 'weekly' | 'monthly' | 'annually' | '')}>
                         <SelectTrigger className="bg-gray-800 border-purple-300 text-white">
                           <SelectValue placeholder="Select frequency" />
                         </SelectTrigger>
@@ -1145,7 +1145,7 @@ END:VCALENDAR`;
                     <Checkbox
                       id="allowRsvp"
                       checked={allowRsvp}
-                      onCheckedChange={setAllowRsvp}
+                      onCheckedChange={(checked) => setAllowRsvp(checked === true)}
                       className="border-purple-300"
                     />
                     <Label htmlFor="allowRsvp" className="text-purple-200 text-sm">
