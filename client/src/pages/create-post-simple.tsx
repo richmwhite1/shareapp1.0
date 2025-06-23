@@ -94,6 +94,13 @@ export default function CreatePostPage() {
     enabled: true,
   });
 
+  // Set default list when lists are loaded
+  useEffect(() => {
+    if (lists && lists.length > 0 && !formData.listId) {
+      setFormData(prev => ({ ...prev, listId: lists[0].id.toString() }));
+    }
+  }, [lists, formData.listId]);
+
   // Fetch friends
   const { data: friends } = useQuery({
     queryKey: ['/api/friends'],
@@ -275,15 +282,18 @@ export default function CreatePostPage() {
 
     try {
       const response = await apiRequest('POST', '/api/fetch-image', { imageUrl: url });
-      const data = await response.json();
-
-      if (data.success && data.imagePath) {
+      
+      if (response.ok) {
+        // API returns raw image data, create blob URL for display
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
         setFormData(prev => ({
           ...prev,
-          fetchedImagePath: data.imagePath,
+          fetchedImagePath: blobUrl,
           primaryPhoto: null,
-          imageWidth: data.width || null,
-          imageHeight: data.height || null,
+          imageWidth: null,
+          imageHeight: null,
           fetchErrorMessage: ''
         }));
 
@@ -292,7 +302,8 @@ export default function CreatePostPage() {
           description: "Image fetched successfully!",
         });
       } else {
-        throw new Error(data.error || 'Failed to fetch image');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch image');
       }
     } catch (error: any) {
       setFormData(prev => ({
@@ -681,13 +692,18 @@ END:VCALENDAR`;
                   placeholder="What's this about?"
                   value={formData.primaryDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
-                  className="bg-input border-border text-foreground min-h-[80px]"
+                  className="bg-input border-border text-foreground min-h-[80px] text-sm"
                   required
                 />
                 <Input
                   placeholder="Add hashtags: travel food inspiration (without # symbols)"
                   value={formData.hashtags || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="bg-input border-border text-sm"
                 />
 
@@ -891,7 +907,7 @@ END:VCALENDAR`;
                   placeholder="Discount code (optional)"
                   value={formData.discountCode}
                   onChange={(e) => setFormData(prev => ({ ...prev, discountCode: e.target.value }))}
-                  className="bg-input border-border"
+                  className="bg-input border-border text-sm"
                 />
               </div>
 
