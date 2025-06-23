@@ -55,7 +55,8 @@ export default function CreatePostPage() {
     imageWidth: null as number | null,
     imageHeight: null as number | null,
     fetchErrorMessage: '',
-    discountCode: ''
+    discountCode: '',
+    hashtags: ''
   });
 
   // Additional photos state
@@ -325,10 +326,12 @@ export default function CreatePostPage() {
       return;
     }
 
-    if (!formData.primaryPhoto && !formData.fetchedImagePath) {
+    // Only require image if no YouTube/Spotify URL is provided
+    const hasMediaUrl = formData.youtubeUrl.trim() || formData.spotifyUrl.trim();
+    if (!formData.primaryPhoto && !formData.fetchedImagePath && !hasMediaUrl) {
       toast({
         title: "Error", 
-        description: "Please add an image",
+        description: "Please add an image or YouTube/Spotify link",
         variant: "destructive",
       });
       return;
@@ -346,6 +349,7 @@ export default function CreatePostPage() {
     submitData.append('spotifyLabel', formData.spotifyLabel);
     submitData.append('privacy', formData.privacy);
     submitData.append('discountCode', formData.discountCode);
+    submitData.append('hashtags', formData.hashtags);
 
     if (formData.listId) {
       submitData.append('listId', formData.listId);
@@ -679,14 +683,20 @@ END:VCALENDAR`;
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Description & Hashtags</Label>
                 <Textarea
-                  placeholder="What's this about? Add hashtags like #travel #food #inspiration"
+                  placeholder="What's this about?"
                   value={formData.primaryDescription}
                   onChange={(e) => setFormData(prev => ({ ...prev, primaryDescription: e.target.value }))}
-                  className="bg-input border-border text-foreground min-h-[100px]"
+                  className="bg-input border-border text-foreground min-h-[80px]"
                   required
                 />
+                <Input
+                  placeholder="Add hashtags: travel food inspiration (without # symbols)"
+                  value={formData.hashtags || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                  className="bg-input border-border text-sm"
+                />
                 <div className="text-xs text-muted-foreground">
-                  Use hashtags (#example) to help people discover your post
+                  Add hashtags to help people discover your post
                 </div>
               </div>
 
